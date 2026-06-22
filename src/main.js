@@ -98,9 +98,9 @@ elEnterBtn?.addEventListener('click', async () => {
 
   try {
     await initPhysics();
-    buildArenaColliders(ARENA_HALF, WALL_H);
-    const body = spawnPlayerBody();
-    setPlayerBody(body);
+    buildArenaColliders();
+    const handle = spawnPlayerBody();
+    setPlayerBody(handle);
   } catch (e) {
     console.error('Physics init failed:', e);
     elEnterBtn.textContent = 'ENTER ARENA';

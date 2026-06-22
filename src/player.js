@@ -4,9 +4,9 @@ import { state, PHASE, resetRun } from './state.js';
 import { emit, EV } from './events.js';
 import { keys, getYaw, getPitch, setYaw, onKeyDown, onShoot, requestLock } from './input.js';
 import { scene, camera } from './scene.js';
-import { stepPhysics, createKinematic, physicsReady } from './physics.js';
+import { stepPhysics, createKinematic, movePlayer, physicsReady, PLAYER_BODY_CENTRE_OFFSET } from './physics.js';
 import { getGunBarrelWorld } from './weapons.js';
-import { PLAYER_HP, PLAYER_SPEED, MAX_AMMO, RELOAD_TIME, SHOOT_CD, RESPAWN_TIME, ARENA_HALF, CRATES, OBSTACLES, JUMP_FORCE, GRAVITY, godMode, EAST_GAP_HALF, NAP_X, NAP_FAR_X } from './config.js';
+import { PLAYER_HP, PLAYER_SPEED, MAX_AMMO, RELOAD_TIME, SHOOT_CD, RESPAWN_TIME, ARENA_HALF, JUMP_FORCE, GRAVITY, godMode, NAP_X, NAP_FAR_X } from './config.js';
 
 
 
@@ -20,10 +20,16 @@ const _right = new THREE.Vector3();
 const _move  = new THREE.Vector3();
 
 let _body = null;
+let _collider = null;
 let _vy = 0;          // vertical velocity (m/s)
 let _onGround = false;
 let _recoilTimer = 0;
 const RECOIL_DUR = 0.08;
+
+// Eye sits 1.7m above the foot. Capsule centre sits PLAYER_BODY_CENTRE_OFFSET
+// (0.9m) above the foot. So body.y = playerObj.y - EYE + BODY_CENTRE_OFFSET.
+const EYE = 1.7;
+const BODY_FROM_EYE = PLAYER_BODY_CENTRE_OFFSET - EYE; // -0.8
 
 export function initPlayer() {
   playerObj.position.set(0, 1.7, 0);
@@ -42,7 +48,11 @@ export function initPlayer() {
   });
 }
 
-export function setPlayerBody(body) { _body = body; }
+export function setPlayerBody(handle) {
+  if (!handle) { _body = null; _collider = null; return; }
+  _body = handle.body;
+  _collider = handle.collider;
+}
 
 // Safe respawn corner — southwest (-X,-Z), opposite the torii gate (east) and furthest from bots
 const SPAWN_X = -14;
@@ -51,7 +61,9 @@ const SPAWN_Y =  1.7;
 export const PLAYER_SAFE_CORNER = { x: SPAWN_X, z: SPAWN_Z, radius: 6 }; // bots stay out
 
 export function spawnPlayerBody() {
-  return createKinematic(SPAWN_X, SPAWN_Y, SPAWN_Z);
+  // Body is placed at capsule CENTRE, not eye. visual eye y = SPAWN_Y (1.7);
+  // body centre y = SPAWN_Y + BODY_FROM_EYE = 0.9.
+  return createKinematic(SPAWN_X, SPAWN_Y + BODY_FROM_EYE, SPAWN_Z);
 }
 
 // Spawn yaw: face NE into arena from SW corner (-14,-14) toward centre (0,0).
@@ -65,7 +77,9 @@ export function setNextSpawn(x, z, yaw) { _spawnX = x; _spawnZ = z; _spawnYaw = 
 
 export function resetPlayerPos() {
   playerObj.position.set(_spawnX, SPAWN_Y, _spawnZ);
-  if (_body) _body.setTranslation({x:_spawnX, y:SPAWN_Y, z:_spawnZ}, true);
+  if (_body) _body.setTranslation({x:_spawnX, y:SPAWN_Y + BODY_FROM_EYE, z:_spawnZ}, true);
+  _vy = 0;
+  _onGround = true;
   setYaw(_spawnYaw);
   // Update safe-corner so bots stay clear of the new spawn point
   PLAYER_SAFE_CORNER.x = _spawnX;
@@ -91,71 +105,52 @@ export function tickPlayer(dt) {
 
   if (_move.lengthSq() > 0) _move.normalize().multiplyScalar(PLAYER_SPEED);
 
-  const PR  = 0.4;   // player XZ radius
-  const EYE = 1.7;   // eye offset above foot
-
-  // --- Gravity + vertical ---
+  // --- Rapier kinematic character controller (v0.2.61-alpha Phase 1) ---
+  // Replaces the manual AABB pushout. We compute the *desired* delta (XZ from
+  // input, Y from gravity), hand it to Rapier, and it returns the corrected
+  // delta after sliding against walls, crates, obstacles, and the floor.
   _vy += GRAVITY * dt;
-  const cx = playerObj.position;
-  let ny = cx.y + _vy * dt;
-  let nx = cx.x + _move.x * dt;
-  let nz = cx.z + _move.z * dt;
+  const desiredDX = _move.x * dt;
+  const desiredDY = _vy   * dt;
+  const desiredDZ = _move.z * dt;
 
-  // Arena wall clamp XZ. East wall has a gate gap centred on z=0 — only
-  // block the east plane when the player is outside that opening. Past the
-  // gate the player is in the NAP zone: x clamps to NAP_FAR_X and the z
-  // clamp loosens so they can wander a bit around the tree.
-  nx = Math.max(-ARENA_HALF + PR, nx);
-  const inGap     = Math.abs(nz) < EAST_GAP_HALF - PR;
-  const inNap     = nx > NAP_X - PR;
-  if (!inGap && !inNap) nx = Math.min(ARENA_HALF - PR, nx);
-  if (inNap) {
-    // Past the east wall — clamp at the far edge of the NAP zone, and let z
-    // open up to roughly the arena width so the player can stroll around.
-    nx = Math.min(NAP_FAR_X - PR, nx);
-    nz = Math.max(-ARENA_HALF + PR, Math.min(ARENA_HALF - PR, nz));
+  if (_collider && _body) {
+    const result = movePlayer(_collider, desiredDX, desiredDY, desiredDZ);
+
+    // Kinematic bodies move via setNextKinematicTranslation, NOT setTranslation,
+    // so Rapier can resolve contacts with dynamic bodies in future phases.
+    const t  = _body.translation();
+    const bx = t.x + result.dx;
+    const by = t.y + result.dy;
+    const bz = t.z + result.dz;
+    _body.setNextKinematicTranslation({ x: bx, y: by, z: bz });
+
+    // Visual follows body: eye sits BODY_FROM_EYE below the capsule centre.
+    playerObj.position.set(bx, by - BODY_FROM_EYE, bz);
+
+    _onGround = result.grounded;
+    if (_onGround && _vy < 0) _vy = 0;
   } else {
-    nz = Math.max(-ARENA_HALF + PR, Math.min(ARENA_HALF - PR, nz));
+    // Pre-physics fallback during the ~100ms Rapier init window.
+    playerObj.position.x += desiredDX;
+    playerObj.position.z += desiredDZ;
+    playerObj.position.y  = EYE;
+    _vy = 0; _onGround = true;
   }
 
-  // Default ground
-  _onGround = false;
-  if (ny <= EYE) { ny = EYE; _vy = 0; _onGround = true; }
-
-  // Per-collider AABB: top landing + side pushout.
-  // Run twice so corner cases resolve after a first-pass pushout.
-  // CRATES = visual + collidable. OBSTACLES = collidable only (tree trunk,
-  // torii pillars). Both use the same [cx, cz, hw, hd, fullH] tuple shape.
-  for (let pass = 0; pass < 2; pass++) {
-    for (let src = 0; src < 2; src++) {
-      const list = src === 0 ? CRATES : OBSTACLES;
-      for (const [cx2, cz2, hw, hd, ch] of list) {
-        const footY  = ny - EYE;
-        const dX     = nx - cx2;
-        const dZ     = nz - cz2;
-        const overlapX = hw + PR - Math.abs(dX);
-        const overlapZ = hd + PR - Math.abs(dZ);
-        if (overlapX <= 0 || overlapZ <= 0) continue; // no XZ overlap
-
-        if (footY >= ch - 0.05 && _vy <= 0) {
-          // Standing/landing on top of crate
-          ny = ch + EYE;
-          _vy = 0;
-          _onGround = true;
-        } else if (footY < ch) {
-          // Inside collider column — push out on smallest penetration axis
-          if (overlapX <= overlapZ) {
-            nx += dX >= 0 ?  overlapX : -overlapX;
-          } else {
-            nz += dZ >= 0 ?  overlapZ : -overlapZ;
-          }
-        }
+  // NAP-zone z-clamp — there are no walls past the gate, so Rapier won't
+  // bound z out there. Clamp the visual + body to arena width so the player
+  // can't drift into the void around the bonsai tree.
+  if (playerObj.position.x > NAP_X) {
+    const zClamped = Math.max(-ARENA_HALF, Math.min(ARENA_HALF, playerObj.position.z));
+    if (zClamped !== playerObj.position.z) {
+      playerObj.position.z = zClamped;
+      if (_body) {
+        const t2 = _body.translation();
+        _body.setNextKinematicTranslation({ x: t2.x, y: t2.y, z: zClamped });
       }
     }
   }
-
-  playerObj.position.set(nx, ny, nz);
-  if (_body) _body.setNextKinematicTranslation({ x: nx, y: ny, z: nz });
 
   // Reload tick
   if (state.reloading) {
