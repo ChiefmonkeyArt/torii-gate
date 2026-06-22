@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { scene } from './scene.js';
 import { keys } from './input.js';
+import { setRightHandBone } from './weapons.js';
 
 // ── Character definitions ─────────────────────────────────────────────────────
 // Each entry maps logical animation slots → actual clip names in that GLB.
@@ -127,6 +128,17 @@ export function loadPlayerModel(parentObj) {
     });
 
     parentObj.add(_root);
+
+    // Find RightHand bone for world-gun attachment (mirror visibility).
+    // Mixamo-rigged GLBs use names like 'mixamorigRightHand' or 'RightHand'.
+    let _rh = null;
+    _root.traverse(o => {
+      if (_rh || !o.isBone) return;
+      const n = (o.name || '').toLowerCase();
+      if (n.endsWith('righthand') || n.endsWith('right_hand') || n === 'righthand') _rh = o;
+    });
+    if (_rh) setRightHandBone(_rh);
+    else console.warn('[playerModel] RightHand bone not found — world gun will not attach');
 
     _mixer = new THREE.AnimationMixer(_root);
     _clips = {};

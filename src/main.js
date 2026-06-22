@@ -6,7 +6,7 @@ import { initAtmosphere, tickAtmosphere } from './atmosphere.js';
 import { buildArena } from './arena.js';
 import { buildMirror, tickMirror, shouldUpdateMirror } from './mirror.js';
 import { initLoop, startLoop } from './loop.js';
-import { onKeyDown, requestLock, setYaw, onPointerLockLost } from './input.js';
+import { onKeyDown, requestLock, setYaw, onPointerLockLost, keys } from './input.js';
 import { initPlayer, tickPlayer, tickDeath, playerObj, setPlayerBody, spawnPlayerBody, takeDamage, setNextSpawn } from './player.js';
 import { loadPlayerModel, tickPlayerModel, triggerHit, triggerDeath, triggerReload, setCharacter } from './playerModel.js';
 import { initPhysics, stepPhysics, buildArenaColliders } from './physics.js';
@@ -15,7 +15,7 @@ import { initWeapons, spawnBullet, tickWeapons, triggerRecoil } from './weapons.
 import { initHUD, tickHUD, flashCross, drawMinimap } from './hud.js';
 import { ARENA_HALF, WALL_H } from './config.js';
 import { nostrLogin } from './nostr.js';
-import { playShoot } from './audio.js';
+import { playShoot, playFootstep, playJumpLand } from './audio.js';
 import { initPlayerStats } from './playerStats.js';
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -197,6 +197,13 @@ let _isShooting  = false;   // set true for 1 frame on shoot event
 let _isJumping   = false;
 let _prevOnGround = true;
 
+// Footstep dt-accumulator — fires playFootstep() every STEP_INTERVAL while
+// the player is moving and on the ground. Interval shortens when running.
+let _footAccum  = 0;
+const FOOT_WALK_INTERVAL = 0.45;
+const FOOT_RUN_INTERVAL  = 0.30;
+const EYE = 1.7;
+
 on(EV.SHOOT, () => { _isShooting = true; });
 
 function update(dt, frame) {
@@ -205,8 +212,27 @@ function update(dt, frame) {
   tickDeath(dt, renderer);
   tickBots(dt);
   tickWeapons(dt, playerObj.position);
-  // Detect jump start — playerObj.position.y rising above floor eye
-  _isJumping = playerObj.position.y > 1.75;
+  // Detect jump / ground state from world Y (eye at EYE when on floor).
+  _isJumping = playerObj.position.y > EYE + 0.05;
+  const onGround = !_isJumping;
+
+  // Jump land — one-shot thump on transition from airborne to grounded.
+  if (onGround && !_prevOnGround) playJumpLand();
+  _prevOnGround = onGround;
+
+  // Footsteps — only while moving on the ground in PLAYING phase.
+  const moving =
+    keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] ||
+    keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
+  if (state.phase === PHASE.PLAYING && onGround && moving) {
+    const running = keys['ShiftLeft'] || keys['ShiftRight'];
+    const interval = running ? FOOT_RUN_INTERVAL : FOOT_WALK_INTERVAL;
+    _footAccum += dt;
+    if (_footAccum >= interval) { _footAccum = 0; playFootstep(); }
+  } else {
+    _footAccum = 0;
+  }
+
   tickPlayerModel(dt, _isShooting, state.reloading, _isJumping, !_isJumping);
   _isShooting = false; // reset after 1 frame
   tickHUD(dt);
