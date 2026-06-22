@@ -387,17 +387,30 @@ function _attachWorldGun() {
   //   barrel pointing along bone +Y  (down the fingers)
   //   grip   pointing along bone -Z  (into the palm)
   //
-  // Previous rotation `(0, π/2, -π/2)` left the gun's SIDE pressed against the
-  // palm (the grip was perpendicular to the fingers — "the side of the gun is
-  // stuck to the palm"). Replace with a rotation that swings the barrel along
-  // bone +Y and rolls the grip into the palm.
+  // GLB-local frame for gun-steampunk:
+  //   barrel direction = +X (FP view-model yaws by -π/2 to point it down -Z)
+  //   grip direction   = -Y (handle hangs DOWN from the receiver)
+  //   gun's right side = +Z
   //
-  // Euler XYZ: rotate -π/2 around Z first (puts default-+X-barrel onto +Y,
-  // i.e. down the fingers), then -π/2 around Y (rolls the grip from pointing
-  // along +X to pointing along -Z, i.e. into the palm).
+  // We need a rotation that maps:
+  //   GLB +X (barrel)  →  bone +Y  (down fingers)
+  //   GLB -Y (grip)    →  bone -Z  (into palm)
+  //
+  // Worked out by hand using Three.js XYZ Euler convention
+  // (M = Rx · Ry · Rz applied to column vectors):
+  //   Euler (0, π/2, π/2) sends +X → +Y and -Y → -Z. ✓
+  //
+  // Previous attempts:
+  //   (0,  π/2, -π/2) → grip perpendicular to fingers (gun side flat on palm)
+  //   (0, -π/2, -π/2) → still wrong axis (this turn's symptom)
+  // The signs matter — (0, π/2, π/2) is the correct rotation, derived
+  // analytically rather than by trial-and-error guessing.
+  //
+  // Position: slide further along the fingers (Y bone-up) so the handle is
+  // properly seated in the curl of the palm, not pinned to the wrist edge.
   _worldGun.scale.setScalar(0.22);
-  _worldGun.position.set(0.0, 0.06, -0.03); // sit gun in the palm, slid up along the fingers
-  _worldGun.rotation.set(0, -Math.PI / 2, -Math.PI / 2);
+  _worldGun.position.set(0.0, 0.11, -0.03); // grip in the palm, slid further down the fingers
+  _worldGun.rotation.set(0, Math.PI / 2, Math.PI / 2);
   wrap.add(_worldGun);
 
   // Layer 1 = visible to mirror reflection camera, hidden from FP camera.
