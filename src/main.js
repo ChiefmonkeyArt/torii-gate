@@ -7,7 +7,7 @@ import { buildArena } from './arena.js';
 import { buildMirror, tickMirror, shouldUpdateMirror } from './mirror.js';
 import { initLoop, startLoop } from './loop.js';
 import { onKeyDown, requestLock, setYaw, onPointerLockLost, keys } from './input.js';
-import { initPlayer, tickPlayer, tickDeath, playerObj, setPlayerBody, spawnPlayerBody, takeDamage, setNextSpawn } from './player.js';
+import { initPlayer, tickPlayer, tickDeath, playerObj, setPlayerBody, spawnPlayerBody, takeDamage, setNextSpawn, getPlayerCollider } from './player.js';
 import { loadPlayerModel, tickPlayerModel, triggerHit, triggerDeath, triggerReload, setCharacter } from './playerModel.js';
 import { initPhysics, stepPhysics, buildArenaColliders } from './physics.js';
 import { bots, initBots, tickBots, hitBot } from './bots.js';
@@ -27,7 +27,7 @@ initHUD();
 initPlayerStats();
 initPlayer();
 initBots(playerObj, spawnBullet);
-initWeapons(bots, takeDamage);
+initWeapons(bots, takeDamage, getPlayerCollider);
 initLoop(update);
 startLoop();
 

@@ -13,6 +13,11 @@ let world, RAPIER;
 let _controller = null;
 export let physicsReady = false;
 
+// Collider → bot map, populated by createBotBody(). Used by the bullet raycast
+// to translate a Rapier hit into a game-side bot reference. Keyed by collider
+// handle (integer), value is the bot object passed to createBotBody.
+const _colliderToBot = new Map();
+
 // Player capsule geometry — matches PLAYER_RADIUS (0.35). 1.8m total height.
 export const PLAYER_CAPSULE_HALF_H = 0.55;
 export const PLAYER_CAPSULE_RADIUS = 0.35;
@@ -69,11 +74,77 @@ export function createDynamic(x, y, z) {
   return { body, collider };
 }
 
+// Bot body — kinematic capsule. Position is teleported by bots.js each frame
+// (bots use their own AI movement, not the character controller). Capsule
+// dimensions match the bot hit cylinder (footY -0.1 to 1.95 = ~2m tall,
+// radius 0.4 lateral). halfHeight 0.6 + radius 0.4 = 2m total.
+export function createBotBody(bot, x, y, z) {
+  if (!world) return null;
+  const body = world.createRigidBody(
+    RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(x, y, z)
+  );
+  const collider = world.createCollider(
+    RAPIER.ColliderDesc.capsule(0.6, 0.4),
+    body
+  );
+  _colliderToBot.set(collider.handle, bot);
+  return { body, collider };
+}
+
+export function getBotForColliderHandle(h) {
+  return _colliderToBot.get(h) || null;
+}
+
+// Move a bot's kinematic body to a new position (teleport-style — bots don't
+// use the character controller). Y is the body CENTRE, so caller passes
+// (botFootY + 1.0) for a 2m capsule.
+export function setBotBodyPos(body, x, y, z) {
+  if (body) body.setNextKinematicTranslation({ x, y, z });
+}
+
 export function createStatic(hw, hh, hd, x, y, z) {
   if (!world) return;
   world.createCollider(
     RAPIER.ColliderDesc.cuboid(hw, hh, hd).setTranslation(x, y, z)
   );
+}
+
+// ── Raycast ──────────────────────────────────────────────────────────────────────────────────────
+// Cast a ray and return the closest hit. `excludeCollider` is optional; pass
+// the player's own collider for player bullets, or the firing bot's collider
+// for bot bullets, so the projectile never self-hits. Returns:
+//   null                                            — no hit within maxDist
+//   { toi, point:{x,y,z}, collider, bot:Bot|null }  — closest hit
+// `toi` is time-of-impact in the same units as the ray dir's length, i.e. if
+// dir is a unit vector then toi is metres along the ray.
+const _rayHitPoint = { x: 0, y: 0, z: 0 };
+let _rayCache = null;
+export function castRay(ox, oy, oz, dx, dy, dz, maxDist, excludeCollider = null) {
+  if (!world || !RAPIER) return null;
+  // Reuse the Ray object — Rapier copies the values, safe to mutate.
+  if (!_rayCache) _rayCache = new RAPIER.Ray({ x: ox, y: oy, z: oz }, { x: dx, y: dy, z: dz });
+  _rayCache.origin.x = ox; _rayCache.origin.y = oy; _rayCache.origin.z = oz;
+  _rayCache.dir.x    = dx; _rayCache.dir.y    = dy; _rayCache.dir.z    = dz;
+
+  // Signature: (ray, maxToi, solid, filterFlags?, filterGroups?,
+  //             filterExcludeCollider?, filterExcludeRigidBody?, filterPredicate?)
+  const hit = world.castRayAndGetNormal(
+    _rayCache, maxDist, true,
+    undefined, undefined,
+    excludeCollider || undefined,   // exclude the firing entity's own collider
+    undefined, undefined,
+  );
+  if (!hit) return null;
+  _rayHitPoint.x = ox + dx * hit.timeOfImpact;
+  _rayHitPoint.y = oy + dy * hit.timeOfImpact;
+  _rayHitPoint.z = oz + dz * hit.timeOfImpact;
+  return {
+    toi:      hit.timeOfImpact,
+    point:    _rayHitPoint,
+    normal:   hit.normal,
+    collider: hit.collider,
+    bot:      _colliderToBot.get(hit.collider.handle) || null,
+  };
 }
 
 // ── Character controller movement ───────────────────────────────────────────

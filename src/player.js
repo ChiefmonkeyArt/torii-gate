@@ -54,6 +54,11 @@ export function setPlayerBody(handle) {
   _collider = handle.collider;
 }
 
+// Expose player collider so the bullet raycast can exclude it (so player
+// bullets never self-hit the player's own capsule). Returns null until
+// physics is ready and setPlayerBody has been called from main.js.
+export function getPlayerCollider() { return _collider; }
+
 // Safe respawn corner — southwest (-X,-Z), opposite the torii gate (east) and furthest from bots
 const SPAWN_X = -14;
 const SPAWN_Z = -14;

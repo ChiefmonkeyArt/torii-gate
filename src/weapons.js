@@ -6,6 +6,7 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene, gunScene } from './scene.js';
 import { BULLET_SPEED, BULLET_LIFE, BOT_DAMAGE, ARENA_HALF, WALL_H, EAST_GAP_HALF, CRATES, OBSTACLES } from './config.js';
 import { spawnSpark, spawnRicochet, tickFx } from './fx.js';
+import { castRay } from './physics.js';
 
 // -- Bullet pool ----------------------------------------------------------
 const _pool   = [];
@@ -185,12 +186,20 @@ function sweepCrates(b) {
 // ── Hit callbacks — set by main.js ───────────────────────────────────────────
 let _onPlayerHit = null;
 let _bots        = null;
+// Getter (not the collider itself) — player collider is created async after
+// Rapier inits, so we resolve it lazily each shot.
+let _getPlayerCollider = () => null;
 
-export function initWeapons(bots, onPlayerHit) {
+export function initWeapons(bots, onPlayerHit, getPlayerCollider) {
   _bots = bots;
   _onPlayerHit = onPlayerHit;
+  if (getPlayerCollider) _getPlayerCollider = getPlayerCollider;
   _buildGun();
 }
+
+// Scratch for the per-bullet raycast (Rapier path, player bullets only in v0.2.63).
+const _rayDirN = new THREE.Vector3();
+const _rayHitP = new THREE.Vector3();
 
 export function tickWeapons(dt, playerPos) {
   for (let i = _active.length-1; i >= 0; i--) {
@@ -202,44 +211,60 @@ export function tickWeapons(dt, playerPos) {
     let remove = b.life <= 0 || b.mesh.position.y < 0;
 
     if (!remove) {
-      // 1. Bot hit
-      if (b.isPlayer && _bots) {
-        for (const bot of _bots) {
-          if (!bot.alive) continue;
-          const bp = bot.pos || bot.mesh?.position;
-          if (!bp) continue;
-          const bx = b.mesh.position.x - bp.x;
-          const bz = b.mesh.position.z - bp.z;
-          const by = b.mesh.position.y;
-          const xzSq = bx*bx + bz*bz;
-          if (xzSq < 0.20 && by >= -0.1 && by <= 1.95) {
-            // Body-hit burst sprays back toward the shooter.
-            _bodyBurstNrm.copy(b.vel).normalize().negate();
-            spawnSpark(b.mesh.position, _bodyBurstNrm);
-            if (window._onBotHit) window._onBotHit(bot, 3);
-            remove = true; break;
+      // ── PLAYER bullets — Rapier raycast (v0.2.63 Phase 2a) ────────────────
+      // Cast prev → curr against the unified Rapier world. One call resolves
+      // bots, walls, crates, obstacles, ground — collider→bot map translates a
+      // hit on a bot capsule back to the game-side bot reference. Excludes the
+      // player's own collider so muzzle-spawned bullets never self-hit.
+      if (b.isPlayer) {
+        _rayDirN.copy(b.vel);
+        const segLen = _rayDirN.length() * dt;          // tick distance, ~1 m
+        if (segLen > 1e-5) {
+          _rayDirN.multiplyScalar(1 / (segLen / dt));   // normalize (== /BULLET_SPEED)
+          const hit = castRay(
+            b.prev.x, b.prev.y, b.prev.z,
+            _rayDirN.x, _rayDirN.y, _rayDirN.z,
+            segLen,
+            _getPlayerCollider() || null
+          );
+          if (hit) {
+            _rayHitP.set(hit.point.x, hit.point.y, hit.point.z);
+            if (hit.bot && hit.bot.alive) {
+              // Bot body hit — spark sprays back at shooter, then damage.
+              _bodyBurstNrm.copy(b.vel).normalize().negate();
+              spawnSpark(_rayHitP, _bodyBurstNrm);
+              if (window._onBotHit) window._onBotHit(hit.bot, 3);
+            } else {
+              // Wall / crate / obstacle / ground — use Rapier-provided normal.
+              _impactNrm.set(hit.normal.x, hit.normal.y, hit.normal.z);
+              spawnSpark(_rayHitP, _impactNrm);
+              const dot = b.vel.dot(_impactNrm);
+              _reflDir.copy(b.vel).addScaledVector(_impactNrm, -2 * dot).normalize();
+              spawnRicochet(_rayHitP, _reflDir);
+            }
+            // Move bullet to impact point so the visual tracer ends there.
+            b.mesh.position.copy(_rayHitP);
+            remove = true;
           }
         }
       }
 
-      // 2. Player hit
-      if (!remove && !b.isPlayer && _onPlayerHit) {
-        if (b.mesh.position.distanceToSquared(playerPos) < 0.5) {
+      // ── BOT bullets — legacy path (deferred to v0.2.64 Phase 2b) ──────────
+      if (!remove && !b.isPlayer) {
+        // 1. Player hit
+        if (_onPlayerHit && b.mesh.position.distanceToSquared(playerPos) < 0.5) {
           _onPlayerHit(BOT_DAMAGE);
           remove = true;
         }
-      }
 
-      // 3. Wall / crate — swept segment test, applies to player AND bot bullets.
-      // Catches fast bullets that would otherwise tunnel through thin walls.
-      if (!remove && (sweepWalls(b) || sweepCrates(b))) {
-        // Burst sprays outward along the surface normal; ricochet uses the
-        // reflected vector (fx.js adds its own jitter).
-        spawnSpark(_impactPos, _impactNrm);
-        const dot = b.vel.dot(_impactNrm);
-        _reflDir.copy(b.vel).addScaledVector(_impactNrm, -2 * dot).normalize();
-        spawnRicochet(_impactPos, _reflDir);
-        remove = true;
+        // 2. Wall / crate — swept segment test (catches tunnelling).
+        if (!remove && (sweepWalls(b) || sweepCrates(b))) {
+          spawnSpark(_impactPos, _impactNrm);
+          const dot = b.vel.dot(_impactNrm);
+          _reflDir.copy(b.vel).addScaledVector(_impactNrm, -2 * dot).normalize();
+          spawnRicochet(_impactPos, _reflDir);
+          remove = true;
+        }
       }
     }
 

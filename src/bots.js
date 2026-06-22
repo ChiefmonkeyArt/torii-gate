@@ -8,6 +8,7 @@ import { playBotShoot } from './audio.js';
 import { BotModel, preloadBotModel } from './botModel.js';
 import { getLodLevel, applyLod } from './lod.js';
 import { PLAYER_SAFE_CORNER } from './player.js';
+import { createBotBody, setBotBodyPos, physicsReady } from './physics.js';
 
 export const bots = [];
 
@@ -60,7 +61,7 @@ function _spawnBot(i) {
   const model = new BotModel();
   model.init({ x, y: 0, z });
 
-  bots.push({
+  const bot = {
     model,
     // mesh ref for hit-detection compatibility (points to model root)
     get mesh() { return model.root; },
@@ -75,7 +76,16 @@ function _spawnBot(i) {
     _isDying: false,
     _deathHideTimer: 0,
     _blowVx: 0, _blowVz: 0, _blowVy: 0, _blowY: 0,
-  });
+    // Rapier hit-capsule (created lazily after physics is ready)
+    rapierBody: null,
+    rapierCollider: null,
+  };
+  bots.push(bot);
+  // Capsule centre = foot + 1.0 (half-height 0.6 + radius 0.4).
+  if (physicsReady) {
+    const h = createBotBody(bot, x, 1.0, z);
+    if (h) { bot.rapierBody = h.body; bot.rapierCollider = h.collider; }
+  }
 }
 
 // Fallback if GLB fails — original capsule bots
@@ -189,6 +199,9 @@ export function tickBots(dt) {
     bot.pos.x = nx;
     bot.pos.z = nz;
 
+    // Sync Rapier hit-capsule to the new position. Centre = foot + 1.0.
+    if (bot.rapierBody) setBotBodyPos(bot.rapierBody, nx, 1.0, nz);
+
     const rotY = Math.atan2(pp.x - nx, pp.z - nz);
 
     // Shooting — suppressed entirely when the player is in the NAP zone.
@@ -271,6 +284,10 @@ export function killBot(bot) {
     bot._isDying = false;
   }
 
+  // Park the Rapier hit-capsule far below the floor so bullets can't hit a
+  // dying/dead bot. Cheaper than removing/recreating the body each respawn.
+  if (bot.rapierBody) setBotBodyPos(bot.rapierBody, bot.pos.x, -100, bot.pos.z);
+
   state.kills++;
   state.sats += 5;
   bot.respawnTimer = 8.0;
@@ -286,6 +303,13 @@ function _reviveBot(bot) {
   bot._blowVx  = bot._blowVz = bot._blowVy = bot._blowY = 0;
   const { x: rx, z: rz } = _safeSpawnPos();
   bot.pos.set(rx, 0, rz);
+  // Lazy-create the Rapier capsule on first revive if physics wasn't ready at spawn.
+  if (!bot.rapierBody && physicsReady) {
+    const h = createBotBody(bot, rx, 1.0, rz);
+    if (h) { bot.rapierBody = h.body; bot.rapierCollider = h.collider; }
+  } else if (bot.rapierBody) {
+    setBotBodyPos(bot.rapierBody, rx, 1.0, rz);
+  }
 
   if (bot.model?.root) {
     bot.model.show();
