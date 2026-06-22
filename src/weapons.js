@@ -387,30 +387,31 @@ function _attachWorldGun() {
   //   barrel pointing along bone +Y  (down the fingers)
   //   grip   pointing along bone -Z  (into the palm)
   //
-  // GLB-local frame for gun-steampunk:
+  // GLB-local frame for gun-steampunk (corrected after upside-down result):
   //   barrel direction = +X (FP view-model yaws by -π/2 to point it down -Z)
-  //   grip direction   = -Y (handle hangs DOWN from the receiver)
+  //   grip direction   = +Y (handle points UP in GLB space — mirror-test
+  //                          revealed grip-up was actually +Y, not -Y)
   //   gun's right side = +Z
   //
   // We need a rotation that maps:
-  //   GLB +X (barrel)  →  bone +Y  (down fingers)
-  //   GLB -Y (grip)    →  bone -Z  (into palm)
+  //   GLB +X (barrel) →  bone +Y  (down fingers)
+  //   GLB +Y (grip)   →  bone -Z  (into palm)
   //
-  // Worked out by hand using Three.js XYZ Euler convention
-  // (M = Rx · Ry · Rz applied to column vectors):
-  //   Euler (0, π/2, π/2) sends +X → +Y and -Y → -Z. ✓
+  // Working through Three.js XYZ Euler (M = Rx · Ry · Rz):
+  //   (0, -π/2,  π/2): +X → (0,1,0)=+Y ✓  and  +Y → (0,0,-1)=-Z ✓
   //
-  // Previous attempts:
-  //   (0,  π/2, -π/2) → grip perpendicular to fingers (gun side flat on palm)
-  //   (0, -π/2, -π/2) → still wrong axis (this turn's symptom)
-  // The signs matter — (0, π/2, π/2) is the correct rotation, derived
-  // analytically rather than by trial-and-error guessing.
+  // Attempt log:
+  //   (0,  π/2, -π/2) v0.2.54 — side of gun on palm
+  //   (0, -π/2, -π/2) v0.2.55 — still side-on
+  //   (0,  π/2,  π/2) v0.2.56 — correct rotation axis but upside-down
+  //                                   (proves grip is +Y, not -Y in GLB)
+  //   (0, -π/2,  π/2) v0.2.57 — flip around barrel axis to right grip
   //
-  // Position: slide further along the fingers (Y bone-up) so the handle is
-  // properly seated in the curl of the palm, not pinned to the wrist edge.
+  // Position: slide further along the fingers (Y bone-up) to seat the handle
+  // deeper in the curl of the palm. 0.11 → 0.16.
   _worldGun.scale.setScalar(0.22);
-  _worldGun.position.set(0.0, 0.11, -0.03); // grip in the palm, slid further down the fingers
-  _worldGun.rotation.set(0, Math.PI / 2, Math.PI / 2);
+  _worldGun.position.set(0.0, 0.16, -0.03); // grip in palm, slid further down hand
+  _worldGun.rotation.set(0, -Math.PI / 2, Math.PI / 2);
   wrap.add(_worldGun);
 
   // Layer 1 = visible to mirror reflection camera, hidden from FP camera.
