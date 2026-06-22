@@ -405,13 +405,17 @@ function _attachWorldGun() {
   //   (0, -π/2, -π/2) v0.2.55 — still side-on
   //   (0,  π/2,  π/2) v0.2.56 — correct rotation axis but upside-down
   //                                   (proves grip is +Y, not -Y in GLB)
-  //   (0, -π/2,  π/2) v0.2.57 — flip around barrel axis to right grip
+  //   (0, -π/2,  π/2) v0.2.58 — right grip orientation, but barrel pointing
+  //                                   BACK at the player in the mirror
+  //   (π, -π/2,  π/2) v0.2.60 — add π around X (horizontal axis) so the
+  //                                   barrel flips 180° from bone +Y to bone -Y,
+  //                                   now pointing AWAY from the player
   //
   // Position: slide further along the fingers (Y bone-up) to seat the handle
-  // deeper in the curl of the palm. 0.11 → 0.16.
+  // deeper in the curl of the palm.
   _worldGun.scale.setScalar(0.22);
   _worldGun.position.set(0.0, 0.16, -0.03); // grip in palm, slid further down hand
-  _worldGun.rotation.set(0, -Math.PI / 2, Math.PI / 2);
+  _worldGun.rotation.set(Math.PI, -Math.PI / 2, Math.PI / 2);
   wrap.add(_worldGun);
 
   // Layer 1 = visible to mirror reflection camera, hidden from FP camera.
