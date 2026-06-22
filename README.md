@@ -103,7 +103,7 @@ Nostr is the social layer. Bitcoin is the economic layer. The game is the fun la
 
 ## License
 
-MIT — open source, free to fork, free to build on.
+[GNU General Public License v3.0](LICENSE) — open source, copyleft, free to fork and build on.
 
 ## Credits
 
