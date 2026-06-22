@@ -1,0 +1,204 @@
+// playerModel.js — GLB loader, AnimationMixer, animation state machine.
+// Supports multiple selectable characters. Call setCharacter() before loadPlayerModel().
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { scene } from './scene.js';
+import { keys } from './input.js';
+
+// ── Character definitions ─────────────────────────────────────────────────────
+// Each entry maps logical animation slots → actual clip names in that GLB.
+// 'null' = no clip available, fall back to IDLE or skip.
+const CHARACTERS = {
+  chiefmonkey: {
+    file: '/chiefmonkey6.glb',
+    anims: {
+      IDLE:       'Idle_03',
+      WALK:       'Walking',
+      WALK_BACK:  'Walk_Backward_inplace',
+      WALK_LEFT:  'Walk_Left_with_Gun_inplace',
+      RUN:        'Running',
+      RUN_SHOOT:  'Run_and_Shoot',
+      JUMP:       'Jump_Over_Obstacle_1',
+      RELOAD:     'Running_Reload_inplace',
+      HIT:        'Hit_Reaction_to_Waist',
+      DEATH:      'Knock_Down',
+      DANCE:      'FunnyDancing_02',
+      STYLISH:    'Stylish_Walk_inplace',
+    },
+  },
+  nostrich: {
+    file: '/nostrich3.glb',
+    anims: {
+      IDLE:       'Stylish_Walk_inplace',      // best available idle substitute
+      WALK:       'Walking',
+      WALK_BACK:  'Walking',                   // no dedicated clip — reuse walk
+      WALK_LEFT:  'Crouch_Walk_Left_with_Gun_inplace',
+      RUN:        'Running',
+      RUN_SHOOT:  'Run_and_Shoot',
+      JUMP:       'Jump_Over_Obstacle_1',
+      RELOAD:     null,                        // no reload clip
+      HIT:        'Shot_and_Blown_Back',       // best available hit sub
+      DEATH:      'Knock_Down',
+      DANCE:      'idle_to_push_up',           // fun idle animation
+      STYLISH:    'Stylish_Walk_inplace',
+    },
+  },
+};
+
+// ── Active character ──────────────────────────────────────────────────────────
+let _charKey = 'chiefmonkey'; // default
+
+export function setCharacter(key) {
+  if (CHARACTERS[key]) _charKey = key;
+}
+export function getCharacter() { return _charKey; }
+export function getCharacterList() { return Object.keys(CHARACTERS); }
+
+// ── Module state ──────────────────────────────────────────────────────────────
+let _root    = null;
+let _mixer   = null;
+let _clips   = {};
+let _actions = {};
+let _current = null;
+let _loaded  = false;
+let _anims   = {};   // resolved anim map for current character
+let _oneshotTimer  = 0;   // dt-accumulator: counts down clip duration
+let _oneshotFade   = '';  // clip to fade back to when timer expires
+
+const _BOX  = new THREE.Box3();
+const _SIZE = new THREE.Vector3();
+const TARGET_HEIGHT = 1.8;
+const FADE = 0.15;
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+export function loadPlayerModel(parentObj) {
+  // Remove previous model if switching characters mid-session
+  if (_root) { parentObj.remove(_root); _root = null; _loaded = false; }
+
+  const char = CHARACTERS[_charKey];
+  _anims = char.anims;
+
+  new GLTFLoader().load(char.file, gltf => {
+    _root = gltf.scene;
+
+    // Scale to TARGET_HEIGHT using geometry-only bounds (Box3.setFromObject includes
+    // bone hierarchy which gives wildly wrong measurements on SkinnedMesh).
+    let gMinY = Infinity, gMaxY = -Infinity;
+    _root.traverse(o => {
+      if (o.isMesh && o.geometry) {
+        o.geometry.computeBoundingBox();
+        const b = o.geometry.boundingBox;
+        if (b) { gMinY = Math.min(gMinY, b.min.y); gMaxY = Math.max(gMaxY, b.max.y); }
+      }
+    });
+    const geoH = (gMinY < gMaxY) ? (gMaxY - gMinY) : 1;
+    const s = TARGET_HEIGHT / geoH;
+    _root.scale.setScalar(s);
+
+    // Offset feet to y=0 of parentObj
+    _root.position.y = -gMinY * s;
+
+    // Face -Z (camera forward direction)
+    _root.rotation.y = Math.PI;
+
+    // Layer 1 — hidden from player's own FPS camera, visible in mirror
+    _root.traverse(o => {
+      if (o.isMesh) {
+        o.castShadow = true;
+        o.receiveShadow = true;
+        o.layers.set(1);
+      }
+    });
+
+    parentObj.add(_root);
+
+    _mixer = new THREE.AnimationMixer(_root);
+    _clips = {};
+    _actions = {};
+    gltf.animations.forEach(clip => {
+      _clips[clip.name] = clip;
+      const a = _mixer.clipAction(clip);
+      a.clampWhenFinished = true;
+      _actions[clip.name] = a;
+    });
+
+    _current = null;
+    _play(_anims.IDLE, true);
+    _loaded = true;
+
+    console.log(`[playerModel] loaded "${_charKey}". clips:`, Object.keys(_clips));
+  }, undefined, err => {
+    console.warn('[playerModel] load failed:', err);
+  });
+}
+
+// ── Playback helpers ──────────────────────────────────────────────────────────
+function _play(name, loop = true) {
+  if (!name || !_actions[name]) return;
+  if (_current === name) return;
+  const next = _actions[name];
+  next.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+  next.reset().fadeIn(FADE).play();
+  if (_current && _actions[_current]) _actions[_current].fadeOut(FADE);
+  _current = name;
+}
+
+function _playOnce(name, fadeTo) {
+  if (!name || !_actions[name] || !_loaded) return;
+  const fallback = fadeTo || _anims.IDLE;
+  const action = _actions[name];
+  action.setLoop(THREE.LoopOnce, 1);
+  action.reset().fadeIn(FADE).play();
+  if (_current && _actions[_current] && _current !== name) _actions[_current].fadeOut(FADE);
+  _current = name;
+  // dt-accumulator instead of setTimeout
+  _oneshotTimer = Math.max((_clips[name]?.duration ?? 1) - FADE, 0.1);
+  _oneshotFade  = fallback;
+}
+
+// ── Public triggers ───────────────────────────────────────────────────────────
+export function triggerHit()    { if (_loaded) _playOnce(_anims.HIT); }
+export function triggerDeath()  { if (_loaded) _playOnce(_anims.DEATH, _anims.IDLE); }
+export function triggerReload() { if (_loaded && _anims.RELOAD) _playOnce(_anims.RELOAD); }
+export function triggerDance()  { if (_loaded) _play(_anims.DANCE, true); }
+export function triggerIdle()   { if (_loaded) _play(_anims.IDLE, true); }
+export function isModelLoaded() { return _loaded; }
+
+// ── Tick ──────────────────────────────────────────────────────────────────────
+let _mirrored = false;
+
+export function tickPlayerModel(dt, isShooting, isReloading, isJumping) {
+  if (!_loaded || !_mixer) return;
+  _mixer.update(dt);
+
+  // One-shot timer — dt-accumulator, no setTimeout
+  if (_oneshotTimer > 0) {
+    _oneshotTimer -= dt;
+    if (_oneshotTimer <= 0 && _oneshotFade) { _play(_oneshotFade, true); _oneshotFade = ''; }
+    return; // don't interrupt one-shot
+  }
+
+  if (isJumping) { _play(_anims.JUMP, false); return; }
+
+  const fwd   = keys['KeyW'] || keys['ArrowUp'];
+  const back  = keys['KeyS'] || keys['ArrowDown'];
+  const left  = keys['KeyA'] || keys['ArrowLeft'];
+  const right = keys['KeyD'] || keys['ArrowRight'];
+  const run   = keys['ShiftLeft'] || keys['ShiftRight'];
+  const moving = fwd || back || left || right;
+
+  _setMirror(right && !fwd && !back); // mirror strafe-left clip for right strafe
+
+  if (!moving)                          { _play(_anims.IDLE, true);      return; }
+  if (isShooting && moving)             { _play(_anims.RUN_SHOOT, true); return; }
+  if (back)                             { _play(_anims.WALK_BACK, true); return; }
+  if ((left || right) && !fwd && !back) { _play(_anims.WALK_LEFT, true); return; }
+  if (run)                              { _play(_anims.RUN, true);       return; }
+  _play(_anims.WALK, true);
+}
+
+function _setMirror(on) {
+  if (!_root || _mirrored === on) return;
+  _mirrored = on;
+  _root.scale.x = Math.abs(_root.scale.x) * (on ? -1 : 1);
+}
