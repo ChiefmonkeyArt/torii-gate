@@ -125,20 +125,36 @@ async function _doNostrLogin() {
 }
 elNostrCentreBtn?.addEventListener('click', _doNostrLogin);
 
-// ESC — pause the instant pointer lock is lost (fires before keydown 'Escape')
-// pointerlockchange is the earliest possible signal that ESC was pressed.
-onPointerLockLost(() => {
-  if (state.phase === PHASE.PLAYING) {
-    state.phase = PHASE.PAUSED;
-    elPause?.classList.add('show');
-  }
-});
+// ESC is the universal override — toggles the pause modal in BOTH directions
+// regardless of pointer-lock state, and runs in the capture phase so nothing
+// else can swallow it first. The browser still releases pointer lock on ESC,
+// but we no longer depend on the pointerlockchange signal for the pause UI.
+function _openPause() {
+  if (state.phase !== PHASE.PLAYING) return;
+  state.phase = PHASE.PAUSED;
+  elPause?.classList.add('show');
+  document.exitPointerLock?.();
+}
 
-// Also handle ESC keydown for resume (pointer lock already gone at this point)
 document.addEventListener('keydown', e => {
   if (e.code !== 'Escape' || e.repeat) return;
-  if (state.phase === PHASE.PAUSED) _resume();
+  // Block default + stop other handlers — ESC is OURS while in-game.
+  if (state.phase === PHASE.PLAYING) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    _openPause();
+  } else if (state.phase === PHASE.PAUSED) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    _resume();
+  }
 }, true);
+
+// Browser-forced pointer-lock loss (focus change, window switch) still pauses
+// the running game so the player isn't stuck spinning in the background.
+onPointerLockLost(() => {
+  if (state.phase === PHASE.PLAYING) _openPause();
+});
 
 elResumeBtn?.addEventListener('click', _resume);
 
@@ -148,6 +164,12 @@ elHomeBtn?.addEventListener('click', () => {
   elTitle?.classList.remove('hidden');
   elHud?.classList.add('hidden');
   document.exitPointerLock?.();
+  // Re-arm the Enter button — physics is already initialized, so going back
+  // into the arena from here just needs the original label restored.
+  if (elEnterBtn) {
+    elEnterBtn.textContent = 'ENTER ARENA';
+    elEnterBtn.disabled = false;
+  }
 });
 
 function _resume() {
