@@ -2,11 +2,11 @@
 export const VERSION   = 'v0.2.54-alpha';
 export const GAME_NAME = 'Torii Quest';
 export const ARENA_HALF     = 20;
-export const WALL_H         = 3.52; // was 8 → 5.5 → 4.4 → 3.52 (another -20%)
+export const WALL_H         = 2.6;  // was 8 → 5.5 → 4.4 → 3.52 → 2.6 (reduced again, user request v0.2.57)
 // East-wall gate gap (centred on z=0). Half-width — kept wider than the
 // torii's footprint so a player can walk under the gate cleanly.
 // Used by arena.js (wall split) AND weapons.js (skip wall collision in gap).
-export const EAST_GAP_HALF  = 3.5;
+export const EAST_GAP_HALF  = 3.4;  // matches torii pillar outer face — wall touches pillar, no sliver gap
 // NAP Zone — Non-Aggression Principle area beyond the torii gate.
 // Bots will never cross east of NAP_X. The player's weapon is disabled while
 // player.x > NAP_X. Walk through the gate = peace. NAP_X sits just inside the
@@ -58,9 +58,21 @@ export const CRATES = [
 //   - Bonsai tree trunk at (NAP_X+6, 0) — the NAP-zone tree must be solid.
 //   - Torii pillars at the east gate — z=±3.0 just inside EAST_GAP_HALF (3.5)
 //     so the central walkway stays clear. Half-width 0.4 covers the GLB pillar.
+// East-wall segments as colliders. arena.js builds these as visual meshes only;
+// adding them here makes them solid from BOTH sides — the previous code only
+// blocked east-bound players via a gap-aware clamp, which leaked when a player
+// in the NAP zone tried to walk back through the wall above/below the gap.
+// midZ = (EAST_GAP_HALF + ARENA_HALF)/2 = 11.7
+// halfD = (ARENA_HALF - EAST_GAP_HALF)/2 = 8.3
+// hw = 0.25 matches the 0.5-deep wall geometry.
+const _EAST_SEG_MIDZ  = (EAST_GAP_HALF + ARENA_HALF) / 2;
+const _EAST_SEG_HALFD = (ARENA_HALF - EAST_GAP_HALF) / 2;
+
 export const OBSTACLES = [
-  // cx              cz    hw    hd    fullH
-  [ ARENA_HALF + 6,  0,    0.55, 0.55, 4.4 ], // bonsai trunk (NAP zone, taller after v0.2.55)
-  [ ARENA_HALF,     -3.0,  0.4,  0.4,  WALL_H * 1.1 ], // torii pillar (north)
-  [ ARENA_HALF,      3.0,  0.4,  0.4,  WALL_H * 1.1 ], // torii pillar (south)
+  // cx              cz                 hw    hd                 fullH
+  [ ARENA_HALF + 6,  0,                 0.55, 0.55,              4.4 ], // bonsai trunk (NAP zone)
+  [ ARENA_HALF,     -3.0,               0.4,  0.4,               WALL_H * 1.1 ], // torii pillar (north)
+  [ ARENA_HALF,      3.0,               0.4,  0.4,               WALL_H * 1.1 ], // torii pillar (south)
+  [ ARENA_HALF,     -_EAST_SEG_MIDZ,    0.25, _EAST_SEG_HALFD,   WALL_H ],       // east-north wall segment
+  [ ARENA_HALF,      _EAST_SEG_MIDZ,    0.25, _EAST_SEG_HALFD,   WALL_H ],       // east-south wall segment
 ];
