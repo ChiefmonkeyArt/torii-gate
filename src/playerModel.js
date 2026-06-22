@@ -2,9 +2,13 @@
 // Supports multiple selectable characters. Call setCharacter() before loadPlayerModel().
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { scene } from './scene.js';
+import { scene, renderer } from './scene.js';
 import { keys } from './input.js';
 import { setRightHandBone } from './weapons.js';
+
+// Enable per-material clipping planes globally (needed for the FP legs clone).
+// Cheap when no material defines clippingPlanes; only the FP body clone uses it.
+renderer.localClippingEnabled = true;
 
 // ── Character definitions ─────────────────────────────────────────────────────
 // Each entry maps logical animation slots → actual clip names in that GLB.
@@ -66,6 +70,11 @@ let _anims   = {};   // resolved anim map for current character
 let _oneshotTimer  = 0;   // dt-accumulator: counts down clip duration
 let _oneshotFade   = '';  // clip to fade back to when timer expires
 
+// FP body clone state — see loadPlayerModel for setup.
+let _fpBody       = null;
+let _fpClipPlane  = null;
+let _fpClipLocalY = 1.05;
+
 const _BOX  = new THREE.Box3();
 const _SIZE = new THREE.Vector3();
 const TARGET_HEIGHT = 1.8;
@@ -75,6 +84,7 @@ const FADE = 0.15;
 export function loadPlayerModel(parentObj) {
   // Remove previous model if switching characters mid-session
   if (_root) { parentObj.remove(_root); _root = null; _loaded = false; }
+  if (_fpBody) { parentObj.remove(_fpBody); _fpBody = null; _fpClipPlane = null; }
 
   const char = CHARACTERS[_charKey];
   _anims = char.anims;
@@ -128,6 +138,62 @@ export function loadPlayerModel(parentObj) {
     });
 
     parentObj.add(_root);
+
+    // ── FP body clone: legs-only mesh visible in the first-person camera ─────
+    // The mirror reflection shows the full player (layer 1). The FP camera (layer 0)
+    // shows ONLY this clone, with a clipping plane that culls everything above the
+    // waist. The clone shares the original skeleton, so a single AnimationMixer
+    // drives both. Cost: one extra skinned draw call per frame for legs/feet.
+    //
+    // Clipping plane: world-space plane with normal pointing DOWN, so everything
+    // ABOVE the clip y is culled. We attach the plane to a small Object3D parented
+    // to playerObj so the clip follows the player's position (camera-relative y
+    // doesn't change, but we still want the world-space plane to track playerObj).
+    const CLIP_LOCAL_Y = 1.05;          // metres above feet — waist height
+    const fpClipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+    _fpClipPlane = fpClipPlane;         // updated each frame in tickPlayerModel
+
+    const fpBody = _root.clone(true);   // deep clone preserving hierarchy
+    // Re-bind every SkinnedMesh in the clone to the ORIGINAL skeleton so the
+    // mixer animates both renders from one bone hierarchy.
+    const origSkinned = [];
+    _root.traverse(o => { if (o.isSkinnedMesh) origSkinned.push(o); });
+    let skinnedIdx = 0;
+    fpBody.traverse(o => {
+      if (o.isSkinnedMesh) {
+        const orig = origSkinned[skinnedIdx++];
+        if (orig) {
+          o.skeleton = orig.skeleton;
+          o.bindMatrix.copy(orig.bindMatrix);
+          o.bindMatrixInverse.copy(orig.bindMatrixInverse);
+          o.bind(orig.skeleton, orig.bindMatrix);
+        }
+      }
+      if (o.isMesh) {
+        o.castShadow = false;          // shadows come from the mirror model
+        o.receiveShadow = false;
+        o.layers.set(0);               // FP-visible, mirror-INvisible
+        o.frustumCulled = false;
+        if (o.material) {
+          // Clone materials so adding clippingPlanes doesn't affect the mirror copy.
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          const cloned = mats.map(m => {
+            const c = m.clone();
+            c.transparent     = false;
+            c.depthWrite      = true;
+            c.alphaTest       = 0;
+            c.clippingPlanes  = [fpClipPlane];
+            c.clipShadows     = false;
+            c.needsUpdate     = true;
+            return c;
+          });
+          o.material = Array.isArray(o.material) ? cloned : cloned[0];
+        }
+      }
+    });
+    parentObj.add(fpBody);
+    _fpBody = fpBody;
+    _fpClipLocalY = CLIP_LOCAL_Y;
 
     // Find RightHand bone for world-gun attachment (mirror visibility).
     // Mixamo-rigged GLBs use names like 'mixamorigRightHand' or 'RightHand'.
@@ -198,6 +264,14 @@ let _mirrored = false;
 export function tickPlayerModel(dt, isShooting, isReloading, isJumping) {
   if (!_loaded || !_mixer) return;
   _mixer.update(dt);
+
+  // Update the FP clipping plane each frame so it follows the player. The plane
+  // normal is (0,-1,0); constant = world-space y above which to clip. Player feet
+  // sit at (playerObj.y - 1.7), so clip y = (feet + _fpClipLocalY).
+  if (_fpClipPlane && _root && _root.parent) {
+    const footY = _root.parent.position.y - 1.7;
+    _fpClipPlane.constant = footY + _fpClipLocalY;
+  }
 
   // One-shot timer — dt-accumulator, no setTimeout
   if (_oneshotTimer > 0) {

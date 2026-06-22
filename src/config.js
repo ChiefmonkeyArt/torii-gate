@@ -62,11 +62,14 @@ export const CRATES = [
 // adding them here makes them solid from BOTH sides — the previous code only
 // blocked east-bound players via a gap-aware clamp, which leaked when a player
 // in the NAP zone tried to walk back through the wall above/below the gap.
-// midZ = (EAST_GAP_HALF + ARENA_HALF)/2 = 11.7
-// halfD = (ARENA_HALF - EAST_GAP_HALF)/2 = 8.3
-// hw = 0.25 matches the 0.5-deep wall geometry.
-const _EAST_SEG_MIDZ  = (EAST_GAP_HALF + ARENA_HALF) / 2;
-const _EAST_SEG_HALFD = (ARENA_HALF - EAST_GAP_HALF) / 2;
+// East-wall collider segments OVERLAP the torii pillars by 0.5m so there's no
+// micro-gap a capsule (radius 0.35 + Rapier offset 0.05 = 0.4) can squeeze
+// through. Pillars span z = ±[2.6, 3.4]; we start the wall at z = ±2.9 inward
+// of the pillar centre. Visual wall is unchanged — only the collider extends.
+// midZ = (2.9 + 20)/2 = 11.45,  halfD = (20 - 2.9)/2 = 8.55
+const _EAST_SEG_INNER = 2.9; // 0.5m inside EAST_GAP_HALF (3.4) for pillar overlap
+const _EAST_SEG_MIDZ  = (_EAST_SEG_INNER + ARENA_HALF) / 2;
+const _EAST_SEG_HALFD = (ARENA_HALF - _EAST_SEG_INNER) / 2;
 
 export const OBSTACLES = [
   // cx              cz                 hw    hd                 fullH
