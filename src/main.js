@@ -12,8 +12,8 @@ import { loadPlayerModel, tickPlayerModel, triggerHit, triggerDeath, triggerRelo
 import { initPhysics, stepPhysics, buildArenaColliders } from './physics.js';
 import { bots, initBots, tickBots, hitBot } from './bots.js';
 import { initWeapons, spawnBullet, tickWeapons, triggerRecoil } from './weapons.js';
-import { initHUD, tickHUD, flashCross, drawMinimap } from './hud.js';
-import { ARENA_HALF, WALL_H } from './config.js';
+import { initHUD, tickHUD, flashCross, drawMinimap, setNapMode } from './hud.js';
+import { ARENA_HALF, WALL_H, NAP_X } from './config.js';
 import { nostrLogin } from './nostr.js';
 import { playShoot, playFootstep, playJumpLand } from './audio.js';
 import { initPlayerStats } from './playerStats.js';
@@ -31,8 +31,12 @@ initWeapons(bots, takeDamage);
 initLoop(update);
 startLoop();
 
-// Shoot wire: player emits EV.SHOOT → spawn bullet + recoil + SFX
+// Shoot wire: player emits EV.SHOOT → spawn bullet + recoil + SFX.
+// Suppressed entirely in the NAP zone — weapon is disabled past the torii
+// gate (player.x > NAP_X). The recoil/SFX skip too so it reads as inert,
+// not malfunctioning. HUD shows a NAP indicator (see hud.js).
 on(EV.SHOOT, ({ origin, dir }) => {
+  if (playerObj.position.x > NAP_X) return;
   spawnBullet(origin, dir, true);
   triggerRecoil();
   playShoot();
@@ -257,6 +261,7 @@ function update(dt, frame) {
 
   tickPlayerModel(dt, _isShooting, state.reloading, _isJumping, !_isJumping);
   _isShooting = false; // reset after 1 frame
+  setNapMode(playerObj.position.x > NAP_X);
   tickHUD(dt);
   tickAtmosphere(dt);
   tickMirror(dt);

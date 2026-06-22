@@ -6,7 +6,7 @@ import { keys, getYaw, getPitch, setYaw, onKeyDown, onShoot, requestLock } from 
 import { scene, camera } from './scene.js';
 import { stepPhysics, createKinematic, physicsReady } from './physics.js';
 import { getGunBarrelWorld } from './weapons.js';
-import { PLAYER_HP, PLAYER_SPEED, MAX_AMMO, RELOAD_TIME, SHOOT_CD, RESPAWN_TIME, ARENA_HALF, CRATES, JUMP_FORCE, GRAVITY, godMode, EAST_GAP_HALF } from './config.js';
+import { PLAYER_HP, PLAYER_SPEED, MAX_AMMO, RELOAD_TIME, SHOOT_CD, RESPAWN_TIME, ARENA_HALF, CRATES, JUMP_FORCE, GRAVITY, godMode, EAST_GAP_HALF, NAP_X, NAP_FAR_X } from './config.js';
 
 
 
@@ -102,11 +102,21 @@ export function tickPlayer(dt) {
   let nz = cx.z + _move.z * dt;
 
   // Arena wall clamp XZ. East wall has a gate gap centred on z=0 — only
-  // block the east plane when the player is outside that opening.
+  // block the east plane when the player is outside that opening. Past the
+  // gate the player is in the NAP zone: x clamps to NAP_FAR_X and the z
+  // clamp loosens so they can wander a bit around the tree.
   nx = Math.max(-ARENA_HALF + PR, nx);
-  const inGap = Math.abs(nz) < EAST_GAP_HALF - PR;
-  if (!inGap) nx = Math.min(ARENA_HALF - PR, nx);
-  nz = Math.max(-ARENA_HALF + PR, Math.min(ARENA_HALF - PR, nz));
+  const inGap     = Math.abs(nz) < EAST_GAP_HALF - PR;
+  const inNap     = nx > NAP_X - PR;
+  if (!inGap && !inNap) nx = Math.min(ARENA_HALF - PR, nx);
+  if (inNap) {
+    // Past the east wall — clamp at the far edge of the NAP zone, and let z
+    // open up to roughly the arena width so the player can stroll around.
+    nx = Math.min(NAP_FAR_X - PR, nx);
+    nz = Math.max(-ARENA_HALF + PR, Math.min(ARENA_HALF - PR, nz));
+  } else {
+    nz = Math.max(-ARENA_HALF + PR, Math.min(ARENA_HALF - PR, nz));
+  }
 
   // Default ground
   _onGround = false;

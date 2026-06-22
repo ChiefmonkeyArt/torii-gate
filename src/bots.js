@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { scene } from './scene.js';
 import { state, PHASE } from './state.js';
 import { emit, EV } from './events.js';
-import { BOT_COUNT, BOT_SPEED, BOT_HP, BOT_SHOOT_CD, BOT_SIGHT, BOT_SPREAD, ARENA_HALF, CRATES, EAST_GAP_HALF } from './config.js';
+import { BOT_COUNT, BOT_SPEED, BOT_HP, BOT_SHOOT_CD, BOT_SIGHT, BOT_SPREAD, ARENA_HALF, CRATES, EAST_GAP_HALF, NAP_X } from './config.js';
 import { playBotShoot } from './audio.js';
 import { BotModel, preloadBotModel } from './botModel.js';
 import { getLodLevel, applyLod } from './lod.js';
@@ -99,12 +99,14 @@ function _spawnCapsuleBots() {
 
 export function initBotPhysics() {} // API compat
 
-// ── AABB pushout — same as player.js ─────────────────────────────────────────
+// ── AABB pushout — NAP-aware variant of the player clamp ───────────────────
 function _pushout(nx, nz) {
-  // East wall gate gap — same opening as player.js so bots can chase through.
+  // Bots are LOCKED INSIDE the arena. The torii-gate gap is one-way — the
+  // player can leave through it into the NAP zone, but bots can never cross
+  // east of ARENA_HALF. This is the NAP (Non-Aggression Principle): step
+  // through the gate and the bots stay behind.
   nx = Math.max(-ARENA_HALF + BOT_R, nx);
-  const inGap = Math.abs(nz) < EAST_GAP_HALF - BOT_R;
-  if (!inGap) nx = Math.min(ARENA_HALF - BOT_R, nx);
+  nx = Math.min(ARENA_HALF - BOT_R, nx);
   nz = Math.max(-ARENA_HALF + BOT_R, Math.min(ARENA_HALF - BOT_R, nz));
   for (const [cx, cz, hw, hd] of CRATES) {
     const dx = nx - cx, dz = nz - cz;
@@ -189,9 +191,11 @@ export function tickBots(dt) {
 
     const rotY = Math.atan2(pp.x - nx, pp.z - nz);
 
-    // Shooting
+    // Shooting — suppressed entirely when the player is in the NAP zone.
+    // Bots respect the Non-Aggression Principle past the torii gate.
     let isShooting = false;
-    if (dist < BOT_SIGHT) {
+    const playerInNap = pp.x > NAP_X;
+    if (dist < BOT_SIGHT && !playerInNap) {
       bot.shootCd -= dt;
       if (bot.shootCd <= 0) {
         bot.shootCd = BOT_SHOOT_CD + Math.random() * 0.8;

@@ -7,6 +7,12 @@ export const WALL_H         = 3.52; // was 8 → 5.5 → 4.4 → 3.52 (another -
 // torii's footprint so a player can walk under the gate cleanly.
 // Used by arena.js (wall split) AND weapons.js (skip wall collision in gap).
 export const EAST_GAP_HALF  = 3.5;
+// NAP Zone — Non-Aggression Principle area beyond the torii gate.
+// Bots will never cross east of NAP_X. The player's weapon is disabled while
+// player.x > NAP_X. Walk through the gate = peace. NAP_X sits just inside the
+// gate so crossing the threshold flips the rules immediately.
+export const NAP_X          = ARENA_HALF; // 20 — east wall plane
+export const NAP_FAR_X      = ARENA_HALF + 25; // outer edge of NAP zone floor
 export const PLAYER_HP      = 100;
 export const PLAYER_SPEED   = 8;
 export const PLAYER_RADIUS  = 0.35;

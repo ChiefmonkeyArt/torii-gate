@@ -56,6 +56,47 @@ export function tickHUD(dt) {
   if (_crossTimer>0) { _crossTimer=Math.max(0,_crossTimer-dt); if(_crossTimer<=0) elCross.classList.remove('hit'); }
 }
 
+// ── NAP Zone indicator ──────────────────────────────────────────
+// Created lazily on first call so we don't need to edit index.html. Soft
+// purple/teal pill at the top of the screen reading "☮ NAP ZONE — PEACE".
+// Crossfades in/out via CSS opacity transition.
+let _napEl = null;
+let _napOn = false;
+function _napDom() {
+  if (_napEl) return _napEl;
+  _napEl = document.createElement('div');
+  _napEl.id = 'nap-indicator';
+  _napEl.textContent = '☮  NAP ZONE — PEACE  ☮';
+  Object.assign(_napEl.style, {
+    position:      'fixed',
+    top:           '14px',
+    left:          '50%',
+    transform:     'translateX(-50%)',
+    padding:       '8px 22px',
+    background:    'linear-gradient(90deg, rgba(139,92,246,0.35), rgba(76,201,240,0.35))',
+    border:        '1px solid rgba(200,232,255,0.5)',
+    borderRadius:  '999px',
+    color:         '#e8f4ff',
+    fontFamily:    'monospace',
+    fontSize:      '13px',
+    letterSpacing: '2px',
+    fontWeight:    'bold',
+    textShadow:    '0 0 8px rgba(200,232,255,0.7)',
+    boxShadow:     '0 0 22px rgba(139,92,246,0.4)',
+    pointerEvents: 'none',
+    opacity:       '0',
+    transition:    'opacity 0.4s ease',
+    zIndex:        '50',
+  });
+  document.body.appendChild(_napEl);
+  return _napEl;
+}
+export function setNapMode(on) {
+  if (on === _napOn) return;
+  _napOn = on;
+  _napDom().style.opacity = on ? '1' : '0';
+}
+
 // Minimap
 const _mm = $('minimap')?.getContext('2d');
 const MM  = 110;

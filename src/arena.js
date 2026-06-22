@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene } from './scene.js';
-import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF } from './config.js';
+import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X } from './config.js';
 import { buildFoliage } from './arena-foliage.js';
 
 // ── Colours ───────────────────────────────────────────────────────────────────
@@ -36,6 +36,7 @@ export function buildArena() {
   _buildWalls();
   _buildCrates();
   _buildToriiGate();
+  _buildNapZone();     // floor extension + tree past the torii gate
   buildFoliage();      // grass + wildflowers — arena-foliage.js
   _loadWallTexture();  // async, deferred 1 rAF
 }
@@ -221,6 +222,91 @@ function _loadWallTexture() {
       });
     });
   });
+}
+
+// ── NAP Zone — peaceful area past the torii gate ─────────────────────────
+function _buildNapZone() {
+  // Floor extension past the east wall. Slightly cooler tint than the main
+  // arena floor so it reads as a distinct space.
+  const NAP_W = NAP_FAR_X - NAP_X;
+  const napFloorMat = new THREE.MeshStandardMaterial({
+    color: 0x162a1c, roughness: 0.9,
+  });
+  const napFloor = new THREE.Mesh(
+    new THREE.PlaneGeometry(NAP_W, ARENA_HALF * 2),
+    napFloorMat,
+  );
+  napFloor.rotation.x = -Math.PI / 2;
+  napFloor.position.set(NAP_X + NAP_W / 2, 0, 0);
+  napFloor.receiveShadow = true;
+  scene.add(napFloor);
+
+  // Soft teal accent light to mark the peace zone
+  const napLight = new THREE.PointLight(0x6ad9d0, 2.0, 22);
+  napLight.position.set(NAP_X + NAP_W * 0.55, 5, 0);
+  scene.add(napLight);
+
+  _buildNapTree(NAP_X + 6, 0); // ~x=26 just past the gate, centred on z=0
+}
+
+// One chunky low-poly stylised tree. Cylinder trunk + three icosahedron canopy
+// blobs in graduated greens with a faint emissive lift, so it reads at night.
+function _buildNapTree(x, z) {
+  const group = new THREE.Group();
+
+  // Trunk — tapered cylinder, dark warm brown
+  const trunkMat = new THREE.MeshStandardMaterial({
+    color: 0x3a2418, roughness: 0.85,
+  });
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.28, 0.42, 3.0, 8),
+    trunkMat,
+  );
+  trunk.position.y = 1.5;
+  trunk.castShadow = trunk.receiveShadow = true;
+  group.add(trunk);
+
+  // Canopy — three offset icosahedrons in slightly different greens. Detail=1
+  // keeps the chunky low-poly read. Faint emissive so it doesn't go black at
+  // night under the arena's dim ambient.
+  const canopyDefs = [
+    { y: 3.6, r: 1.5, c: 0x2d6a3a, e: 0x0a2614, ox: 0,    oz: 0    },
+    { y: 4.4, r: 1.2, c: 0x3a8a4a, e: 0x0e2a18, ox: 0.6,  oz: 0.3  },
+    { y: 4.2, r: 1.1, c: 0x256b35, e: 0x081e10, ox: -0.7, oz: -0.4 },
+  ];
+  for (const d of canopyDefs) {
+    const m = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(d.r, 1),
+      new THREE.MeshStandardMaterial({
+        color: d.c, emissive: d.e, emissiveIntensity: 0.6, roughness: 0.8, flatShading: true,
+      }),
+    );
+    m.position.set(d.ox, d.y, d.oz);
+    m.castShadow = m.receiveShadow = true;
+    group.add(m);
+  }
+
+  // A few small offshoot leaves for asymmetric silhouette
+  const leafMat = new THREE.MeshStandardMaterial({
+    color: 0x4a9a55, emissive: 0x102e18, emissiveIntensity: 0.5,
+    roughness: 0.8, flatShading: true,
+  });
+  const leafDefs = [
+    { y: 2.8, r: 0.42, ox:  1.0, oz: 0.2 },
+    { y: 3.1, r: 0.36, ox: -0.9, oz: 0.5 },
+    { y: 2.6, r: 0.32, ox:  0.1, oz: 1.0 },
+  ];
+  for (const d of leafDefs) {
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(d.r, 0), leafMat);
+    m.position.set(d.ox, d.y, d.oz);
+    m.castShadow = m.receiveShadow = true;
+    group.add(m);
+  }
+
+  group.position.set(x, 0, z);
+  // Gentle random-looking yaw so it doesn't read as machine-placed
+  group.rotation.y = 0.4;
+  scene.add(group);
 }
 
 export function getArenaBounds() { return ARENA_HALF; }
