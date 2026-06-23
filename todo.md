@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.113-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.114-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Mission: get to fast, safe feature delivery on solid foundations.
@@ -33,7 +33,7 @@
 
 | # | Codebase | Category | Task |
 |---|----------|----------|------|
-| A1-next | TQ/NA | ARCH | **Extract player boundary** — movement tick, velocity, WASD+dash, zoom, iFrames, spectator/death/respawn shape. For Torii Quest this becomes `engine/entities/player.js`; for Nostr Arena this absorbs the old v0.6 player extraction intent without preserving old version clutter. |
+| A1-next | TQ/NA | ARCH | **Extract player boundary — IN PROGRESS (v0.2.114, first slice done).** `src/engine/entities/player.js` now owns the pure player geometry (`EYE`, `BODY_FROM_EYE`), spawn shape (`SPAWN_X/Y/Z`, `SPAWN_YAW`, `PLAYER_SAFE_CORNER`), and allocation-free look-down POV math (`lookDownEyeY`/`lookDownEyeZ`); `src/player.js` consumes them and re-exports `PLAYER_SAFE_CORNER`. **Remaining:** lift the stateful movement/kinematic tick, combat (shoot/reload/recoil), lifecycle (damage/death/respawn) and body-state (`setPlayerBody`/`getPlayerCollider`/`spawnPlayerBody`) behind the boundary, then add WASD+dash, zoom, iFrames, spectator shape. Nostr Arena absorbs the old v0.6 player extraction intent without old version clutter. |
 | 8 | TQ/NA | ARCH | **State machine** — replace ad-hoc booleans with explicit FSM in `src/state.js`. Include the old A2 circular-dependency/ecash-wallet warning here rather than as a separate duplicate task. |
 | 9 | TQ/NA | ARCH | **Event bus** — decouple modules via `src/events.js`. Required before Nostr, wallet, multiplayer, and NAP features scale. |
 | B2-TQ | TQ | SDK | **Extract BotAgent interface** — formalise `engine/entities/bot-agent.js`, `BotAgent.tick(worldState) -> BotAction[]`, actions: move, shoot, idle, interact, speak. This is the useful Torii Quest part of the old bot refactor. |

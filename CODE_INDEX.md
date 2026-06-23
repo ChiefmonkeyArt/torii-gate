@@ -3,7 +3,7 @@
 > Lightweight developer/agent index. Keep this practical and update it as systems are touched.
 > Purpose: help future debugging, SDK extraction, FOSS contribution, and AI handoff speed.
 
-Current version: `v0.2.113-alpha`  
+Current version: `v0.2.114-alpha`  
 Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app)
 
 ---
@@ -27,7 +27,7 @@ Do not abstract imaginary systems. Index proven systems and extract boundaries f
 |---|---|---|
 | Version/config | `src/config.js`, `index.html`, `tools/regression-check.mjs` | Version must bump every deploy. `godMode` must remain false. |
 | Scene/rendering | `src/scene.js`, mirror modules, Three.js renderer | Mirror and first-person camera regressions should be checked manually. |
-| Player | `src/player.js`, `src/firstPersonBody.js`, `playerObj` | Next extraction target: `engine/entities/player.js`. |
+| Player | `src/engine/entities/player.js` (boundary), `src/player.js` (runtime), `src/firstPersonBody.js`, `playerObj` | v0.2.114 began the boundary: geometry, spawn shape, and look-down POV math now live in `engine/entities/player.js`. Movement tick, combat, lifecycle, and body-state still in `src/player.js` (next slice). |
 | Weapons/combat | `src/weapons.js`, `src/targetReticle.js`, `src/hud.js` | v0.2.113 introduced shared classifier for bullets and HUD preview. |
 | Physics | `src/engine/physics/raycast.js`, `src/engine/physics/bodies.js` | Rapier-backed truth layer for LOS, bullets, crates, bodies. |
 | Bots/NPCs | bot runtime modules, future `engine/entities/bot-agent.js` | Next extraction target: BotAgent SDK interface. |
@@ -44,11 +44,12 @@ Do not abstract imaginary systems. Index proven systems and extract boundaries f
 - **Physics raycast**: `castRay`, `castRayStatic`, `hasLineOfSight`.
 - **Physics bodies**: dynamic/static/kinematic/body factory direction; crate collider mapping now supports bullet impulses.
 - **Combat targeting**: shared headshot classifier used by both bullet hit result and target reticle preview.
+- **Player boundary (started v0.2.114)**: `engine/entities/player.js` — pure geometry (`EYE`, `BODY_FROM_EYE`), spawn shape (`SPAWN_X/Y/Z`, `SPAWN_YAW`, `PLAYER_SAFE_CORNER`), and allocation-free look-down POV math (`lookDownEyeY`, `lookDownEyeZ`). Stateful tick/combat/lifecycle/body-state still in `src/player.js`.
 - **Debug namespace**: `window.ToriiDebug` is the alpha inspection surface.
 
 ### Next to extract
 
-- **Player boundary**: movement, dash, zoom, death/respawn, camera/body sync.
+- **Player boundary (continue)**: lift the stateful movement/kinematic tick, combat (shoot/reload/recoil), lifecycle (damage/death/respawn), and body-state (`setPlayerBody`/`getPlayerCollider`/`spawnPlayerBody`) behind the boundary; then add dash/zoom shape.
 - **State machine**: replace scattered booleans with explicit game states.
 - **Event bus**: decouple gameplay, UI, identity, world, and economy modules.
 - **BotAgent**: `BotAgent.tick(worldState) -> BotAction[]`.
@@ -115,3 +116,4 @@ Run on real hardware after publish:
 - `torii-v0.2.111-regression-repair-report.md` — v0.2.111 repair history.
 - `torii-v0.2.112-tuning-report.md` — v0.2.112 collision/POV tuning history.
 - `torii-v0.2.113-foundation-tuning-report.md` — v0.2.113 combat/HUD/crate/reload tuning history.
+- `torii-v0.2.114-player-boundary-report.md` — v0.2.114 player boundary first-slice extraction.

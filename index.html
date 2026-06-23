@@ -10,7 +10,7 @@
        header (so it can roll out in Report-Only first) — meta CSP has no
        report-only mode and would risk breaking the Draco blob-worker + gstatic
        fetch + Rapier WASM before a live smoke test confirms it. -->
-  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' blob: 'sha256-riXb2rw9XLAWUTw1DAr1oCa+0WTCQdAoXHRbOlIDoNc='; worker-src 'self' blob:; connect-src 'self' wss://relay.damus.io wss://nos.lol wss://relay.nostr.band https://www.gstatic.com"/>
+  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' blob: 'sha256-riXb2rw9XLAWUTw1DAr1oCa+0WTCQdAoXHRbOlIDoNc='; worker-src 'self' blob:; connect-src 'self' blob: wss://relay.damus.io wss://nos.lol wss://relay.nostr.band https://www.gstatic.com"/>
   <meta name="description" content="Torii Quest — an open-world arena shooter built on Nostr and Bitcoin. Sats. Shots. Sovereignty."/>
   <meta property="og:title" content="Torii Quest"/>
   <meta property="og:description" content="An open-world arena shooter built on Nostr and Bitcoin. Sats. Shots. Sovereignty."/>
@@ -404,7 +404,7 @@
         <div><span class="ctrl-key">SPACE</span> &nbsp;Jump &nbsp;&nbsp; <span class="ctrl-key">R</span> &nbsp;Reload &nbsp;&nbsp; <span class="ctrl-key">ESC</span> &nbsp;Pause</div>
       </div>
 
-      <div id="version-label">v0.2.113-alpha</div>
+      <div id="version-label">v0.2.114-alpha</div>
     </div>
 
     <!-- RIGHT: Live chat (orange) -->
@@ -534,7 +534,7 @@
   <canvas id="minimap" width="110" height="110" style="display:block"></canvas>
   <div id="minimap-wrap"></div>
 
-  <div id="ver">v0.2.113-alpha · torii quest</div>
+  <div id="ver">v0.2.114-alpha · torii quest</div>
 </div>
 
 <!-- Crosshair -->

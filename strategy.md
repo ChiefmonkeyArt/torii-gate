@@ -3,8 +3,8 @@
 Living document. This will change as we learn.
 
 Current live game: `https://torii-quest.pplx.app`  
-Current live version: `v0.2.113-alpha`  
-Clean source version: `v0.2.113-alpha` — **source reconciliation COMPLETE (2026-06-23)**, **foundation sprint COMPLETE (2026-06-23)**, **regression repair pass COMPLETE (2026-06-23)**, **collision/POV tuning COMPLETE (2026-06-23)**, and **foundation tuning COMPLETE (2026-06-23)**. The clean source contains all live fixes v0.2.100→v0.2.108, the first SDK boundaries (physics raycast + bodies), `window.ToriiDebug`, hardening, inert NAP/handoff/presence skeletons, the v0.2.111 repair batch, the v0.2.112 hit-detection/look-down POV tuning pass, and the v0.2.113 shared combat classifier/reticle, crate impulse, and snappy reload pass. Builds green; all static regression checks pass (`npm run check`). See `torii-source-reconciliation-report.md`, `torii-foundation-sprint-report.md`, `torii-v0.2.111-regression-repair-report.md`, `torii-v0.2.112-tuning-report.md`, and `torii-v0.2.113-foundation-tuning-report.md`.  
+Current live version: `v0.2.113-alpha` (clean source at `v0.2.114-alpha`, not yet published)  
+Clean source version: `v0.2.114-alpha` — **source reconciliation COMPLETE (2026-06-23)**, **foundation sprint COMPLETE (2026-06-23)**, **regression repair pass COMPLETE (2026-06-23)**, **collision/POV tuning COMPLETE (2026-06-23)**, **foundation tuning COMPLETE (2026-06-23)**, and **player boundary first slice STARTED (2026-06-23)**. The clean source contains all live fixes v0.2.100→v0.2.108, the first SDK boundaries (physics raycast + bodies), `window.ToriiDebug`, hardening, inert NAP/handoff/presence skeletons, the v0.2.111 repair batch, the v0.2.112 hit-detection/look-down POV tuning pass, the v0.2.113 shared combat classifier/reticle, crate impulse, and snappy reload pass, and the v0.2.114 player boundary first slice (pure player geometry + spawn + look-down POV math extracted to `engine/entities/player.js`). Builds green; all static regression checks pass (`npm run check`). See `torii-source-reconciliation-report.md`, `torii-foundation-sprint-report.md`, `torii-v0.2.111-regression-repair-report.md`, `torii-v0.2.112-tuning-report.md`, `torii-v0.2.113-foundation-tuning-report.md`, and `torii-v0.2.114-player-boundary-report.md`.  
 Project direction: Torii Quest is an extension of Plebeian.Market, exploring a self-sovereign, federated, decentralised metaverse built on Nostr, Bitcoin, open protocols, free markets, and FOSS developer participation.
 
 ## Vision
@@ -143,7 +143,8 @@ Recommendation:
 - **Regression repair**: ✅ DONE (2026-06-23) — v0.2.111-alpha fixed FP neck clipping, footstep cadence, reflected gun roll, headshot classification, NAP NPC placement/materials, and reload viewmodel animation. See `torii-v0.2.111-regression-repair-report.md`.
 - **Collision/POV tuning**: ✅ DONE (2026-06-23) — v0.2.112-alpha tightened head/body detection and refined look-down camera/body arc. See `torii-v0.2.112-tuning-report.md`.
 - **Foundation tuning**: ✅ DONE (2026-06-23) — v0.2.113-alpha tightened headshot classification, restored target feedback, added crate bullet nudges, and made reload faster/snappier. See `torii-v0.2.113-foundation-tuning-report.md`.
-- **Manual smoke test**: manually verify v0.2.113-alpha on real hardware, especially head/body classification via `ToriiDebug.combat.lastHit`, reticle states (orange close, green body, green + 👌 headshot), crate nudges, reload clunk-click timing, chest/feet view, no neck interior, NAP NPC pose/materials, mirror, and footsteps.
+- **Player boundary (first slice)**: ✅ DONE (2026-06-23) — v0.2.114-alpha extracted pure player geometry, spawn shape, and look-down POV math into `engine/entities/player.js`; `src/player.js` consumes the seam with no behaviour change. Stateful tick/combat/lifecycle/body-state remain to be lifted in a later slice. See `torii-v0.2.114-player-boundary-report.md`.
+- **Manual smoke test**: manually verify v0.2.113/v0.2.114-alpha on real hardware, especially head/body classification via `ToriiDebug.combat.lastHit`, reticle states (orange close, green body, green + 👌 headshot), crate nudges, reload clunk-click timing, chest/feet view, no neck interior, NAP NPC pose/materials, mirror, footsteps, and (post-boundary) movement/jump/respawn feel and look-down POV.
 - **Freeze dist architecture changes**: only emergency hotfixes should go directly into dist after the freeze.
 - **Agent/Developer Efficiency Index**: start and maintain a lightweight project index so future agents can locate modules, SDK seams, debug hooks, and regression checks quickly.
 - **FP body integration**: ✅ DONE — implemented via the dedicated `chiefmonkey-headless.glb` (layer-2 FP body), superseding the planned `chiefmonkey17-fp.glb` clip-plane approach.
@@ -519,7 +520,7 @@ Use these rules to avoid repeated AI-created bugs:
 6. ✅ Added first combat targeting seam via shared classifier + reticle preview.
 7. Manually smoke test live `v0.2.113-alpha`.
 8. Create the lightweight Agent/Developer Efficiency Index.
-9. Extract the player boundary.
+9. 🚧 Extract the player boundary — first slice done in v0.2.114 (geometry + spawn + look-down POV in `engine/entities/player.js`); next, lift the stateful movement tick, combat, lifecycle, and body-state behind the seam.
 10. Implement explicit state machine.
 11. Implement event bus.
 12. Extract BotAgent interface.

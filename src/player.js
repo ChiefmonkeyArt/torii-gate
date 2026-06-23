@@ -4,11 +4,21 @@ import { state, PHASE, resetRun } from './state.js';
 import { emit, EV } from './events.js';
 import { keys, getYaw, getPitch, setYaw, onKeyDown, onShoot, requestLock } from './input.js';
 import { scene, camera } from './scene.js';
-import { stepPhysics, createKinematic, movePlayer, physicsReady, PLAYER_BODY_CENTRE_OFFSET } from './physics.js';
+import { stepPhysics, createKinematic, movePlayer, physicsReady } from './physics.js';
 import { getGunBarrelWorld } from './weapons.js';
 import { playReload } from './audio.js';
 import { PLAYER_HP, PLAYER_SPEED, MAX_AMMO, RELOAD_TIME, SHOOT_CD, RESPAWN_TIME, ARENA_HALF, JUMP_FORCE, GRAVITY, godMode, NAP_X, NAP_FAR_X } from './config.js';
+// Player entity boundary (v0.2.114): geometry, spawn shape, and look-down POV
+// math live here now. PLAYER_SAFE_CORNER is re-exported below so bots.js can keep
+// importing it from player.js.
+import {
+  EYE, BODY_FROM_EYE,
+  SPAWN_X, SPAWN_Y, SPAWN_Z, SPAWN_YAW,
+  PLAYER_SAFE_CORNER,
+  lookDownEyeY, lookDownEyeZ,
+} from './engine/entities/player.js';
 
+export { PLAYER_SAFE_CORNER };
 
 
 export const playerObj = new THREE.Object3D();
@@ -26,25 +36,6 @@ let _vy = 0;          // vertical velocity (m/s)
 let _onGround = false;
 let _recoilTimer = 0;
 const RECOIL_DUR = 0.08;
-
-// Eye sits 1.7m above the foot. Capsule centre sits PLAYER_BODY_CENTRE_OFFSET
-// (0.9m) above the foot. So body.y = playerObj.y - EYE + BODY_CENTRE_OFFSET.
-const EYE = 1.7;
-const BODY_FROM_EYE = PLAYER_BODY_CENTRE_OFFSET - EYE; // -0.8
-
-// v0.2.112 look-down POV. The camera is a child of playerObj at the eye, so
-// these offsets move the eye WITHIN the head without touching gameplay height
-// (playerObj.y stays at EYE — bots still aim at the true eye).
-//   CAM_BASE_Y   — lower the resting eye a touch (user: "lower the camera a bit
-//                  more") so the chin/neck stops intruding when looking down.
-//   CAM_FWD_ARC  — peak forward lean mid-look-down: a sin bump that arcs the eye
-//                  OUT over the chest then back INWARD toward the feet, like a
-//                  head rotating on the neck pivot.
-//   CAM_DOWN_DROP— extra eye drop eased in as the pitch tips fully down, pulling
-//                  the view onto the chest → feet.
-const CAM_BASE_Y    = -0.06;
-const CAM_FWD_ARC   = 0.10;
-const CAM_DOWN_DROP = 0.12;
 
 export function initPlayer() {
   playerObj.position.set(0, 1.7, 0);
@@ -74,22 +65,11 @@ export function setPlayerBody(handle) {
 // physics is ready and setPlayerBody has been called from main.js.
 export function getPlayerCollider() { return _collider; }
 
-// Safe respawn corner — southwest (-X,-Z), opposite the torii gate (east) and furthest from bots
-const SPAWN_X = -14;
-const SPAWN_Z = -14;
-const SPAWN_Y =  1.7;
-export const PLAYER_SAFE_CORNER = { x: SPAWN_X, z: SPAWN_Z, radius: 6 }; // bots stay out
-
 export function spawnPlayerBody() {
   // Body is placed at capsule CENTRE, not eye. visual eye y = SPAWN_Y (1.7);
   // body centre y = SPAWN_Y + BODY_FROM_EYE = 0.9.
   return createKinematic(SPAWN_X, SPAWN_Y + BODY_FROM_EYE, SPAWN_Z);
 }
-
-// Spawn yaw: face NE into arena from SW corner (-14,-14) toward centre (0,0).
-// Three.js fwd = (-sin(yaw), 0, -cos(yaw)). Need fwd=(+0.707,0,+0.707).
-// => sin(yaw)=-0.707, cos(yaw)=-0.707 => yaw = -3*PI/4
-const SPAWN_YAW = -3 * Math.PI / 4;
 
 // Dynamic spawn — overridden by main.js before respawn if a better spot is found
 let _spawnX = SPAWN_X, _spawnZ = SPAWN_Z, _spawnYaw = SPAWN_YAW;
@@ -114,12 +94,10 @@ export function tickPlayer(dt) {
   const pitch = getPitch();             // 0 level, → -PI/2 looking straight down
   camera.rotation.x   = pitch;
 
-  // Neck-pivot look-down arc (v0.2.112). down: 0 level → 1 straight down.
-  // Forward lean is a sin BUMP (out then back in); the drop eases in toward the
-  // feet. Camera local -Z is forward, so the forward lean is a negative z.
-  const down = Math.max(0, Math.min(1, -pitch / (Math.PI / 2)));
-  camera.position.y = CAM_BASE_Y - CAM_DOWN_DROP * Math.sin(down * (Math.PI / 2));
-  camera.position.z = -CAM_FWD_ARC * Math.sin(down * Math.PI);
+  // Neck-pivot look-down arc (v0.2.112), now sourced from the player boundary
+  // (engine/entities/player.js). Allocation-free scalar helpers; same formula.
+  camera.position.y = lookDownEyeY(pitch);
+  camera.position.z = lookDownEyeZ(pitch);
 
   // Movement
   _fwd.set(-Math.sin(getYaw()), 0, -Math.cos(getYaw()));
