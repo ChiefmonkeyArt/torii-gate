@@ -5,6 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene, gunScene } from './scene.js';
 import { state } from './state.js';
+import { emit, EV } from './events.js';
 import { BULLET_SPEED, BULLET_LIFE, BOT_DAMAGE, ARENA_HALF, WALL_H, RELOAD_TIME } from './config.js';
 import { spawnSpark, spawnRicochet, tickFx } from './fx.js';
 import { castRay, castRayStatic,
@@ -217,7 +218,10 @@ export function tickWeapons(dt, playerPos) {
               _lastHit.inHeadSphere = inHeadSphere; _lastHit.dmg = dmg;
               // Second spark on headshots so the hit reads as more impactful.
               if (isHead) spawnSpark(_rayHitP, _bodyBurstNrm);
-              if (window._onBotHit) window._onBotHit(hit.bot, dmg);
+              // Player bullet struck a bot — publish on the bus (v0.2.117). The
+              // subscriber in main.js applies damage + crosshair flash. Replaces
+              // the old `window._onBotHit` global bridge; per-shot, not per-frame.
+              emit(EV.BOT_HIT_BY_PLAYER, { bot: hit.bot, dmg });
             } else {
               // Wall / crate / obstacle / ground — use Rapier-provided normal.
               _impactNrm.set(hit.normal.x, hit.normal.y, hit.normal.z);

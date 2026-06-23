@@ -1,4 +1,4 @@
-// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.116).
+// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.117).
 // No external deps. Run with: node tools/regression-check.mjs  (or: npm run check)
 //
 // Catches the regressions the Strategy doc calls out, without needing a browser:
@@ -10,6 +10,7 @@
 //   6. dist marker check (only if dist/ exists) — key behaviours present
 //   7. state.phase writes confined to state.js (FSM seam, v0.2.115)
 //   8. every EV.<NAME> reference is defined in the events.js registry (v0.2.116)
+//   9. no internal call to window._onBotHit() — use the bus event instead (v0.2.117)
 //
 // Exit code 0 = all green; non-zero = at least one FAIL.
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
@@ -17,7 +18,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.116-alpha';
+const EXPECTED_VERSION = 'v0.2.117-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -101,7 +102,7 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   const count = (html.match(new RegExp(EXPECTED_VERSION.replace(/\./g, '\\.'), 'g')) || []).length;
   if (count < 2) fail(`index.html has ${count} ${EXPECTED_VERSION} markers (expected >=2)`);
   else pass(`index.html has ${count} version markers`);
-  if (/v0\.2\.115-alpha/.test(html)) fail('index.html still references v0.2.115-alpha');
+  if (/v0\.2\.116-alpha/.test(html)) fail('index.html still references v0.2.116-alpha');
 }
 
 // 6. dist markers (only if built)
@@ -156,6 +157,25 @@ console.log('[8] EV.<NAME> references defined in events.js registry');
     }
   }
   if (!bad) pass(`${defined.size} events defined; all EV.* references valid`);
+}
+
+// 9. no internal window._onBotHit() CALL — the bot-hit bridge runs over the bus
+// (EV.BOT_HIT_BY_PLAYER) since v0.2.117. The deprecated global may still be
+// DEFINED in main.js as a debug-tap alias (`window._onBotHit = ...`), but nothing
+// in src/ should CALL it (`window._onBotHit(...)`).
+console.log('[9] no internal window._onBotHit() call');
+{
+  let bad = false;
+  for (const f of srcFiles) {
+    // Strip comments first — a CALL lives in code, not in prose that merely
+    // mentions `window._onBotHit()`. The alias definition (`window._onBotHit =`)
+    // is not a call and never matches.
+    const code = readFileSync(join(ROOT, f), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/[^\n]*/g, '');
+    if (/window\._onBotHit\s*\(/.test(code)) { fail(`internal window._onBotHit() call in ${f} (use EV.BOT_HIT_BY_PLAYER)`); bad = true; }
+  }
+  if (!bad) pass('bot-hit bridge runs over the event bus, not the global');
 }
 
 console.log(fails === 0 ? '\nALL GREEN' : `\n${fails} FAILURE(S)`);

@@ -14,6 +14,7 @@ export const EV = Object.freeze({
   PLAYER_KILLED:  'player:killed',
   PLAYER_RESPAWN: 'player:respawn',
   BOT_HIT:        'bot:hit',
+  BOT_HIT_BY_PLAYER: 'bot:hitByPlayer', // weapon bullet struck a bot; payload {bot,dmg}
   BOT_KILLED:     'bot:killed',
   SHOOT:          'player:shoot',
   NOSTR_LOGIN:    'nostr:login',

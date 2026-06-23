@@ -49,8 +49,15 @@ on(EV.SHOOT, ({ origin, dir }) => {
   playShoot();
 });
 
-// Bot-hit bridge
-window._onBotHit = (bot, dmg) => { hitBot(bot, dmg); flashCross(); };
+// Bot-hit bridge — now an event-bus subscriber (v0.2.117). weapons.js emits
+// EV.BOT_HIT_BY_PLAYER when a player bullet strikes a bot; we apply the damage
+// and flash the crosshair, exactly as the old window._onBotHit global did.
+on(EV.BOT_HIT_BY_PLAYER, ({ bot, dmg }) => { hitBot(bot, dmg); flashCross(); });
+// Deprecated legacy alias — kept ONLY as a documented debug tap (see
+// toriiDebug.js) so console/tester calls still work. Internal code must NOT call
+// this; it just forwards onto the bus. Regression check [9] forbids re-adding an
+// internal call to window._onBotHit().
+window._onBotHit = (bot, dmg) => emit(EV.BOT_HIT_BY_PLAYER, { bot, dmg });
 
 // Deliberate debug namespace (ships unconditionally in alpha). Consolidates
 // inspection under window.ToriiDebug; legacy functional globals are preserved.

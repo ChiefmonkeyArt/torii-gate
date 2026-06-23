@@ -6,7 +6,12 @@
 //
 // Backwards compatibility: the pre-existing functional globals are LEFT IN
 // PLACE because they are load-bearing wiring, not just debug taps:
-//   • window._onBotHit   — weapons.js → main.js bot-hit bridge (gameplay path)
+//   • window._onBotHit   — DEPRECATED (v0.2.117). The internal weapons.js → main.js
+//                          bot-hit bridge now runs over the event bus
+//                          (EV.BOT_HIT_BY_PLAYER). This global remains ONLY as a
+//                          documented debug tap that forwards onto the bus, so
+//                          console/tester calls keep working. Internal code must
+//                          not call it (regression check [9]).
 //   • window._grassMat    — arena-foliage.js shader, ticked by main.js each frame
 //   • window._flowerMat   — arena-foliage.js shader, ticked by main.js each frame
 //   • window._mirrorMesh  — mirror.js Reflector handle
