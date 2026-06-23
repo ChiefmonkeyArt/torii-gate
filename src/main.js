@@ -11,7 +11,7 @@ import { initPlayer, tickPlayer, tickDeath, playerObj, setPlayerBody, spawnPlaye
 import { loadPlayerModel, tickPlayerModel, triggerHit, triggerDeath, triggerReload, setCharacter } from './playerModel.js';
 import { initPhysics, stepPhysics, buildArenaColliders, getWorld, castRay, castRayStatic, hasLineOfSight } from './physics.js';
 import { bots, initBots, tickBots, hitBot } from './bots.js';
-import { initWeapons, spawnBullet, tickWeapons, triggerRecoil } from './weapons.js';
+import { initWeapons, spawnBullet, tickWeapons, triggerRecoil, getLastHit } from './weapons.js';
 import { buildDynamicCrates, tickDynamicCrates } from './dynamicCrates.js';
 import { buildNapNpc, tickNapNpc } from './napNpc.js';
 import { loadFirstPersonBody, tickFirstPersonBody } from './firstPersonBody.js';
@@ -54,7 +54,7 @@ window._onBotHit = (bot, dmg) => { hitBot(bot, dmg); flashCross(); };
 // inspection under window.ToriiDebug; legacy functional globals are preserved.
 installToriiDebug({
   version: VERSION, bots, hitBot, playerObj, resetPlayerPos,
-  castRay, castRayStatic, hasLineOfSight, getWorld,
+  castRay, castRayStatic, hasLineOfSight, getWorld, getLastHit,
 });
 
 
@@ -253,10 +253,16 @@ const FOOT_MIN_SPEED = 1.5; // m/s — below this the player isn't really moving
 on(EV.SHOOT, () => { _isShooting = true; });
 
 function update(dt, frame) {
-  if (state.phase === PHASE.PLAYING) { stepPhysics(); tickDynamicCrates(); }
+  // v0.2.112: step AFTER tickPlayer/tickBots set their kinematic targets but
+  // BEFORE tickWeapons raycasts. Previously the step ran first, so the bot
+  // body/head colliders (and Rapier's query pipeline) lagged one frame behind
+  // the visual model — a clear shot at a moving bot could miss the stale
+  // collider. Stepping here syncs the query pipeline to THIS frame's positions
+  // so the bullet raycast hits exactly what the player sees.
   tickPlayer(dt);
   tickDeath(dt, renderer);
   tickBots(dt);
+  if (state.phase === PHASE.PLAYING) { stepPhysics(); tickDynamicCrates(); }
   tickWeapons(dt, playerObj.position);
   // Detect jump / ground state from world Y (eye at EYE when on floor).
   // Hysteresis on the airborne threshold: snap-to-ground micro-jitter sits a few

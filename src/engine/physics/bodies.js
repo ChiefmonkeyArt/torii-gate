@@ -29,15 +29,20 @@ export const PLAYER_CAPSULE_RADIUS = 0.35;
 // Body centre sits this far above the foot.
 export const PLAYER_BODY_CENTRE_OFFSET = PLAYER_CAPSULE_HALF_H + PLAYER_CAPSULE_RADIUS; // 0.9
 
-// Bot body — kinematic SLIM capsule that hugs the Banker GLB silhouette.
-// halfHeight 0.5 + radius 0.22 → 1.44m total height (hips to shoulders),
-// 0.44m wide. Centre sits at footY + 0.72 (radius + halfHeight). Head sits
-// in a SEPARATE sphere collider so headshots are detectable independently.
+// Bot body — kinematic capsule that hugs the Banker GLB silhouette.
+// v0.2.112: widened to cut body-shot misses and RAISED the cap so it meets the
+// head sphere (the old 3cm dead-band between body top 1.44 and head bottom 1.47
+// swallowed clear shots). halfHeight 0.5 + radius 0.26 → 1.52m total, 0.52m
+// wide. Centre sits at footY + 0.76 (radius + halfHeight). Head sits in a
+// SEPARATE sphere collider so headshots are detectable independently.
 export const BOT_BODY_HALF_H = 0.5;
-export const BOT_BODY_RADIUS = 0.22;
-export const BOT_BODY_CENTRE_Y_OFFSET = BOT_BODY_HALF_H + BOT_BODY_RADIUS; // 0.72
-export const BOT_HEAD_RADIUS = 0.18;
-// Head centre sits this far above the foot — just above the body capsule cap.
+export const BOT_BODY_RADIUS = 0.26;
+export const BOT_BODY_CENTRE_Y_OFFSET = BOT_BODY_HALF_H + BOT_BODY_RADIUS; // 0.76 → body spans [0,1.52]
+// v0.2.112: head sphere enlarged 0.18 → 0.22 so clear headshots can't slip past
+// the small ball. Centre 1.65 → spans [1.43,1.87], OVERLAPPING the body cap
+// (1.52) so there is no gap a bullet can thread between head and torso.
+export const BOT_HEAD_RADIUS = 0.22;
+// Head centre sits this far above the foot — overlaps the body capsule cap.
 export const BOT_HEAD_CENTRE_Y_OFFSET = 1.65;
 
 // ── Player bodies ────────────────────────────────────────────────────────────

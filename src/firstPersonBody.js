@@ -6,12 +6,12 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { keys } from './input.js';
+import { camera } from './scene.js';
 
 let _root  = null;
 let _mixer = null;
 let _actions = {};
 let _current = null;
-let _parent = null;
 
 const EYE = 1.7;
 const FADE = 0.15;
@@ -19,8 +19,11 @@ const FADE = 0.15;
 // Horizontal plane (normal points DOWN) that clips everything above it. We keep
 // it just below the eye each frame so the neck stump never enters the FP view —
 // looking down now reveals chest → feet instead of the inside of the headless
-// body. Constant is updated in tickFirstPersonBody from the parent's world Y.
-const NECK_CLIP_DROP = 0.28; // metres below the eye where the body is sliced
+// body. v0.2.112: the constant tracks the live CAMERA world Y (not the parent),
+// so the slice follows the lowered base eye AND the look-down arc — the user
+// could still see a little inside the neck when the slice was pinned to the
+// parent eye, which didn't move as the camera tipped/lowered.
+const NECK_CLIP_DROP = 0.32; // metres below the eye where the body is sliced
 const _clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), EYE - NECK_CLIP_DROP);
 const _wp = new THREE.Vector3();
 
@@ -68,7 +71,6 @@ export function loadFirstPersonBody(parentObj) {
       }
     });
 
-    _parent = parentObj;
     parentObj.add(_root);
     window._fpBody = _root; // smoke-test + live-tuning handle
 
@@ -96,12 +98,11 @@ export function tickFirstPersonBody(dt) {
   if (!_mixer) return;
   _mixer.update(dt);
 
-  // Keep the neck clip just below the live eye height (parent world Y) so the
-  // slice tracks jumps/crouches without re-reading per-vertex bounds.
-  if (_parent) {
-    _parent.getWorldPosition(_wp);
-    _clipPlane.constant = _wp.y - NECK_CLIP_DROP;
-  }
+  // Keep the neck clip just below the live eye height (CAMERA world Y, which
+  // includes the look-down arc + lowered base eye) so the slice tracks jumps,
+  // crouches and the pitch-coupled eye drop without re-reading per-vertex bounds.
+  camera.getWorldPosition(_wp);
+  _clipPlane.constant = _wp.y - NECK_CLIP_DROP;
 
   const fwd   = keys['KeyW'] || keys['ArrowUp'];
   const back  = keys['KeyS'] || keys['ArrowDown'];

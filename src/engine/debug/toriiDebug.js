@@ -26,7 +26,7 @@ import * as presence from '../../identity/presence.js';
 export function installToriiDebug(refs) {
   const {
     version, bots, hitBot, playerObj, resetPlayerPos,
-    castRay, castRayStatic, hasLineOfSight, getWorld,
+    castRay, castRayStatic, hasLineOfSight, getWorld, getLastHit,
   } = refs;
 
   const api = {
@@ -68,6 +68,13 @@ export function installToriiDebug(refs) {
     fx: {
       get grass()  { return window._grassMat  || null; },
       get flower() { return window._flowerMat || null; },
+    },
+
+    // Combat — last bot-hit classification (impact Y, foot Y, neck-line, head
+    // sphere proximity, resolved part vs final class, damage). For tuning the
+    // headshot/body thresholds live from the console after a shot.
+    combat: {
+      get lastHit() { return getLastHit ? getLastHit() : null; },
     },
   };
 

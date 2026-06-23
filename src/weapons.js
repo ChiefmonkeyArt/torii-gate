@@ -8,12 +8,26 @@ import { state } from './state.js';
 import { BULLET_SPEED, BULLET_LIFE, BOT_DAMAGE, ARENA_HALF, WALL_H, RELOAD_TIME } from './config.js';
 import { spawnSpark, spawnRicochet, tickFx } from './fx.js';
 import { castRay, castRayStatic,
-         BOT_BODY_CENTRE_Y_OFFSET, BOT_BODY_HALF_H, BOT_BODY_RADIUS } from './physics.js';
+         BOT_HEAD_CENTRE_Y_OFFSET, BOT_HEAD_RADIUS } from './physics.js';
 
-// Top of the bot body capsule above its foot (centre + halfHeight + radius).
-// Any bullet impact at or above this height is the head region, even on the
-// frame the head sphere and body capsule overlap — see headshot test below.
-const BOT_BODY_TOP = BOT_BODY_CENTRE_Y_OFFSET + BOT_BODY_HALF_H + BOT_BODY_RADIUS;
+// Headshot region, derived from the head sphere geometry (single source of
+// truth in bodies.js). The sphere spans [HEAD_BOTTOM, HEAD_TOP] above the bot
+// foot; HEAD_BOTTOM doubles as the neck-line for the height fallback.
+const HEAD_BOTTOM   = BOT_HEAD_CENTRE_Y_OFFSET - BOT_HEAD_RADIUS; // 1.43
+// Proximity backstop: impacts within (head radius + 5cm) of the head centre
+// count as headshots even if the ray resolved the body collider on an
+// overlap frame. Squared to avoid a sqrt in the hot path.
+const HEAD_PROX     = BOT_HEAD_RADIUS + 0.05;
+const HEAD_PROX_SQ  = HEAD_PROX * HEAD_PROX;
+
+// Last bot-hit classification, surfaced through ToriiDebug.combat.lastHit for
+// in-arena tuning. Mutated in place — never reallocated in the hot path.
+const _lastHit = {
+  part: null, classified: null, impactY: 0, footY: 0, relY: 0,
+  neckLine: HEAD_BOTTOM, headCentreY: BOT_HEAD_CENTRE_Y_OFFSET,
+  headRadius: BOT_HEAD_RADIUS, inHeadSphere: false, dmg: 0,
+};
+export function getLastHit() { return _lastHit; }
 
 // -- Bullet pool ----------------------------------------------------------
 const _pool   = [];
@@ -150,14 +164,28 @@ export function tickWeapons(dt, playerPos) {
               // hit.bodyPart === 'head' for the sphere, 'body' for the capsule.
               _bodyBurstNrm.copy(b.vel).normalize().negate();
               spawnSpark(_rayHitP, _bodyBurstNrm);
-              // Headshot if the raycast resolved the head sphere OR the impact
-              // landed at/above the body-capsule top. The dual test makes counting
-              // reliable: when the head sphere and body capsule overlap, the
-              // closest-collider pick could resolve 'body' for a clear head hit —
-              // the height check catches it. Bot foot sits at pos.y (0 when alive).
+              // Deterministic, geometry-consistent head classification (v0.2.112).
+              // Layered priority so clear headshots count and body shots don't get
+              // mis-promoted (bot foot sits at pos.y, 0 when alive):
+              //   1) the ray resolved the head sphere collider outright; else
+              //   2) the impact lies inside the head sphere — proximity backstop
+              //      for the overlap frame where Rapier's closest pick says 'body'
+              //      for a true head hit; else
+              //   3) the impact is at/above the neck-line (head-sphere bottom).
+              const botX   = hit.bot.pos ? hit.bot.pos.x : 0;
+              const botZ   = hit.bot.pos ? hit.bot.pos.z : 0;
               const footY  = hit.bot.pos ? hit.bot.pos.y : 0;
-              const isHead = hit.bodyPart === 'head' || _rayHitP.y >= footY + BOT_BODY_TOP;
+              const relY   = _rayHitP.y - footY;
+              const _hdx   = _rayHitP.x - botX;
+              const _hdy   = relY - BOT_HEAD_CENTRE_Y_OFFSET;
+              const _hdz   = _rayHitP.z - botZ;
+              const inHeadSphere = (_hdx*_hdx + _hdy*_hdy + _hdz*_hdz) <= HEAD_PROX_SQ;
+              const isHead = hit.bodyPart === 'head' || inHeadSphere || relY >= HEAD_BOTTOM;
               const dmg    = isHead ? 9 : 3;
+              // Debug snapshot for ToriiDebug.combat.lastHit (no alloc).
+              _lastHit.part = hit.bodyPart; _lastHit.classified = isHead ? 'head' : 'body';
+              _lastHit.impactY = _rayHitP.y; _lastHit.footY = footY; _lastHit.relY = relY;
+              _lastHit.inHeadSphere = inHeadSphere; _lastHit.dmg = dmg;
               // Second spark on headshots so the hit reads as more impactful.
               if (isHead) spawnSpark(_rayHitP, _bodyBurstNrm);
               if (window._onBotHit) window._onBotHit(hit.bot, dmg);

@@ -31,6 +31,20 @@ const RECOIL_DUR = 0.08;
 const EYE = 1.7;
 const BODY_FROM_EYE = PLAYER_BODY_CENTRE_OFFSET - EYE; // -0.8
 
+// v0.2.112 look-down POV. The camera is a child of playerObj at the eye, so
+// these offsets move the eye WITHIN the head without touching gameplay height
+// (playerObj.y stays at EYE — bots still aim at the true eye).
+//   CAM_BASE_Y   — lower the resting eye a touch (user: "lower the camera a bit
+//                  more") so the chin/neck stops intruding when looking down.
+//   CAM_FWD_ARC  — peak forward lean mid-look-down: a sin bump that arcs the eye
+//                  OUT over the chest then back INWARD toward the feet, like a
+//                  head rotating on the neck pivot.
+//   CAM_DOWN_DROP— extra eye drop eased in as the pitch tips fully down, pulling
+//                  the view onto the chest → feet.
+const CAM_BASE_Y    = -0.06;
+const CAM_FWD_ARC   = 0.10;
+const CAM_DOWN_DROP = 0.12;
+
 export function initPlayer() {
   playerObj.position.set(0, 1.7, 0);
 
@@ -96,7 +110,15 @@ export function tickPlayer(dt) {
 
   // Rotation from input
   playerObj.rotation.y = getYaw();
-  camera.rotation.x   = getPitch();
+  const pitch = getPitch();             // 0 level, → -PI/2 looking straight down
+  camera.rotation.x   = pitch;
+
+  // Neck-pivot look-down arc (v0.2.112). down: 0 level → 1 straight down.
+  // Forward lean is a sin BUMP (out then back in); the drop eases in toward the
+  // feet. Camera local -Z is forward, so the forward lean is a negative z.
+  const down = Math.max(0, Math.min(1, -pitch / (Math.PI / 2)));
+  camera.position.y = CAM_BASE_Y - CAM_DOWN_DROP * Math.sin(down * (Math.PI / 2));
+  camera.position.z = -CAM_FWD_ARC * Math.sin(down * Math.PI);
 
   // Movement
   _fwd.set(-Math.sin(getYaw()), 0, -Math.cos(getYaw()));
