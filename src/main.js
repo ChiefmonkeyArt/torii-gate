@@ -1,5 +1,5 @@
 // main.js — wiring only. No game logic here.
-import { state, PHASE } from './state.js';
+import { state, isTitle, isPlaying, isPaused, isLive, transition, GAME_EVENT } from './state.js';
 import { emit, on, EV } from './events.js';
 import { renderer, renderFrame } from './scene.js';
 import { initAtmosphere, tickAtmosphere } from './atmosphere.js';
@@ -99,14 +99,14 @@ const elNostrTxt = document.getElementById('nostr-status');
 
 // Canvas click → re-engage pointer lock when playing
 renderer.domElement.addEventListener('click', () => {
-  if (state.phase === PHASE.PLAYING && !state.pointerLocked) {
+  if (isPlaying() && !state.pointerLocked) {
     requestLock(renderer.domElement);
   }
 });
 
 // Enter Arena — lazy-load Rapier then start
 elEnterBtn?.addEventListener('click', async () => {
-  if (state.phase !== PHASE.TITLE) return;
+  if (!isTitle()) return;
   elEnterBtn.textContent = 'LOADING PHYSICS…';
   elEnterBtn.disabled = true;
 
@@ -134,7 +134,7 @@ elEnterBtn?.addEventListener('click', async () => {
 
   elTitle?.classList.add('hidden');
   elHud?.classList.remove('hidden');
-  state.phase = PHASE.PLAYING;
+  transition(GAME_EVENT.ENTER); // TITLE → PLAYING
   requestLock(renderer.domElement);
   emit(EV.HUD_UPDATE);
 });
@@ -151,8 +151,8 @@ elNostrCentreBtn?.addEventListener('click', _doNostrLogin);
 // else can swallow it first. The browser still releases pointer lock on ESC,
 // but we no longer depend on the pointerlockchange signal for the pause UI.
 function _openPause() {
-  if (state.phase !== PHASE.PLAYING) return;
-  state.phase = PHASE.PAUSED;
+  // PLAYING → PAUSED; no-op from any other phase (same as the old guard).
+  if (!transition(GAME_EVENT.PAUSE)) return;
   elPause?.classList.add('show');
   document.exitPointerLock?.();
 }
@@ -160,11 +160,11 @@ function _openPause() {
 document.addEventListener('keydown', e => {
   if (e.code !== 'Escape' || e.repeat) return;
   // Block default + stop other handlers — ESC is OURS while in-game.
-  if (state.phase === PHASE.PLAYING) {
+  if (isPlaying()) {
     e.preventDefault();
     e.stopImmediatePropagation();
     _openPause();
-  } else if (state.phase === PHASE.PAUSED) {
+  } else if (isPaused()) {
     e.preventDefault();
     e.stopImmediatePropagation();
     _resume();
@@ -174,13 +174,13 @@ document.addEventListener('keydown', e => {
 // Browser-forced pointer-lock loss (focus change, window switch) still pauses
 // the running game so the player isn't stuck spinning in the background.
 onPointerLockLost(() => {
-  if (state.phase === PHASE.PLAYING) _openPause();
+  if (isPlaying()) _openPause();
 });
 
 elResumeBtn?.addEventListener('click', _resume);
 
 elHomeBtn?.addEventListener('click', () => {
-  state.phase = PHASE.TITLE;
+  transition(GAME_EVENT.HOME); // PAUSED → TITLE (Home is only reachable from the pause modal)
   elPause?.classList.remove('show');
   elTitle?.classList.remove('hidden');
   elHud?.classList.add('hidden');
@@ -194,8 +194,8 @@ elHomeBtn?.addEventListener('click', () => {
 });
 
 function _resume() {
-  if (state.phase !== PHASE.PAUSED) return;
-  state.phase = PHASE.PLAYING;
+  // PAUSED → PLAYING; no-op from any other phase (same as the old guard).
+  if (!transition(GAME_EVENT.RESUME)) return;
   elPause?.classList.remove('show');
   requestLock(renderer.domElement); // works from button click; canvas click re-locks if from ESC
 }
@@ -264,7 +264,7 @@ function update(dt, frame) {
   tickPlayer(dt);
   tickDeath(dt, renderer);
   tickBots(dt);
-  if (state.phase === PHASE.PLAYING) { stepPhysics(); tickDynamicCrates(); }
+  if (isPlaying()) { stepPhysics(); tickDynamicCrates(); }
   tickWeapons(dt, playerObj.position);
   // v0.2.113: aim preview — after the physics step + bullet pass so bot
   // colliders reflect THIS frame's positions, matching what a shot would hit.
@@ -288,7 +288,7 @@ function update(dt, frame) {
   const pdz = playerObj.position.z - _prevFootZ;
   const horizSpeed = _footInit && dt > 0 ? Math.sqrt(pdx*pdx + pdz*pdz) / dt : 0;
   _prevFootX = playerObj.position.x; _prevFootZ = playerObj.position.z; _footInit = true;
-  if (state.phase === PHASE.PLAYING && onGround && keyHeld && horizSpeed > FOOT_MIN_SPEED) {
+  if (isPlaying() && onGround && keyHeld && horizSpeed > FOOT_MIN_SPEED) {
     const running = keys['ShiftLeft'] || keys['ShiftRight'];
     const interval = running ? FOOT_RUN_INTERVAL : FOOT_WALK_INTERVAL;
     _footAccum += dt;
@@ -312,7 +312,7 @@ function update(dt, frame) {
   if (++_minimapTick >= 4) { _minimapTick = 0; drawMinimap(playerObj.position, bots); }
   // Wrap render in try/catch — a Three.js crash must not kill the rAF loop
   try {
-    renderFrame(state.phase === PHASE.PLAYING || state.phase === PHASE.DEAD);
+    renderFrame(isLive());
   } catch (e) {
     console.warn('[render] frame skipped:', e.message);
   }

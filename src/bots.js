@@ -1,7 +1,7 @@
 // bots.js — spawn, AI tick, collision, kill, revive. Banker GLB via BotModel.
 import * as THREE from 'three';
 import { scene } from './scene.js';
-import { state, PHASE } from './state.js';
+import { state, isPlaying } from './state.js';
 import { emit, EV } from './events.js';
 import { BOT_COUNT, BOT_SPEED, BOT_HP, BOT_SHOOT_CD, BOT_SIGHT, BOT_SPREAD, ARENA_HALF, CRATES, EAST_GAP_HALF, NAP_X } from './config.js';
 import { playBotShoot } from './audio.js';
@@ -153,7 +153,7 @@ function _pushout(nx, nz) {
 
 // ── Tick ──────────────────────────────────────────────────────────────────────
 export function tickBots(dt) {
-  if (state.phase !== PHASE.PLAYING) return;
+  if (!isPlaying()) return;
 
   bots.forEach(bot => {
     // Dead — tick blowback physics + death anim, then wait for respawn

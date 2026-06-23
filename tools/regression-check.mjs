@@ -1,4 +1,4 @@
-// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.114).
+// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.115).
 // No external deps. Run with: node tools/regression-check.mjs  (or: npm run check)
 //
 // Catches the regressions the Strategy doc calls out, without needing a browser:
@@ -15,7 +15,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.114-alpha';
+const EXPECTED_VERSION = 'v0.2.115-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -99,7 +99,7 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   const count = (html.match(new RegExp(EXPECTED_VERSION.replace(/\./g, '\\.'), 'g')) || []).length;
   if (count < 2) fail(`index.html has ${count} ${EXPECTED_VERSION} markers (expected >=2)`);
   else pass(`index.html has ${count} version markers`);
-  if (/v0\.2\.113-alpha/.test(html)) fail('index.html still references v0.2.113-alpha');
+  if (/v0\.2\.114-alpha/.test(html)) fail('index.html still references v0.2.114-alpha');
 }
 
 // 6. dist markers (only if built)
@@ -123,6 +123,18 @@ console.log('[6] dist markers (skipped if no dist/)');
     if (existsSync(distHtml) && readFileSync(distHtml, 'utf8').includes(EXPECTED_VERSION)) pass('dist index.html version ok');
     else if (existsSync(distHtml)) fail('dist index.html missing version');
   }
+}
+
+// 7. state-machine encapsulation — phase writes only via transition() in state.js
+console.log('[7] state.phase writes confined to state.js');
+{
+  let bad = false;
+  for (const f of srcFiles) {
+    if (f === 'src/state.js') continue;
+    const txt = readFileSync(join(ROOT, f), 'utf8');
+    if (/state\.phase\s*=/.test(txt)) { fail(`direct state.phase write in ${f} (use transition())`); bad = true; }
+  }
+  if (!bad) pass('no direct state.phase writes outside state.js');
 }
 
 console.log(fails === 0 ? '\nALL GREEN' : `\n${fails} FAILURE(S)`);

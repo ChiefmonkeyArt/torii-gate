@@ -1,5 +1,5 @@
 // input.js — keyboard + mouse. Pure input, zero game logic.
-import { state } from './state.js';
+import { state, isPlaying } from './state.js';
 
 export const keys = {};
 const _downCbs = [], _upCbs = [];
@@ -39,7 +39,7 @@ export function setYaw(y)  { _yaw = y;      }
 const _clickCbs = [];
 export function onShoot(fn) { _clickCbs.push(fn); }
 document.addEventListener('mousedown', e => {
-  if (e.button === 0 && state.phase === 'playing') {
+  if (e.button === 0 && isPlaying()) {
     _clickCbs.forEach(fn => fn());
   }
 });

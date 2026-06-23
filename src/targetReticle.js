@@ -15,7 +15,7 @@ import { camera } from './scene.js';
 import { castRay, BOT_BODY_CENTRE_Y_OFFSET } from './physics.js';
 import { classifyHeadshot } from './weapons.js';
 import { setReticleState } from './hud.js';
-import { state, PHASE } from './state.js';
+import { state, isPlaying } from './state.js';
 import { NAP_X } from './config.js';
 
 const RANGE          = 60;   // m — matches effective bullet reach
@@ -39,7 +39,7 @@ export function initTargetReticle({ bots, playerObj, getPlayerCollider }) {
 
 export function tickTargetReticle() {
   // Only meaningful while actively playing AND armed.
-  if (!_bots || state.phase !== PHASE.PLAYING || state.reloading ||
+  if (!_bots || !isPlaying() || state.reloading ||
       (_playerObj && _playerObj.position.x > NAP_X)) {
     setReticleState('none');
     return;

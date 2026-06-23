@@ -1,5 +1,5 @@
 // hud.js — ALL DOM updates live here. Nothing else touches the DOM.
-import { state, PHASE } from './state.js';
+import { state } from './state.js';
 import { on, EV } from './events.js';
 
 // DOM refs — cached once

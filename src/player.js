@@ -1,6 +1,6 @@
 // player.js — movement, shoot, reload, death/respawn
 import * as THREE from 'three';
-import { state, PHASE, resetRun } from './state.js';
+import { state, isPlaying, isDead, transition, GAME_EVENT } from './state.js';
 import { emit, EV } from './events.js';
 import { keys, getYaw, getPitch, setYaw, onKeyDown, onShoot, requestLock } from './input.js';
 import { scene, camera } from './scene.js';
@@ -41,7 +41,7 @@ export function initPlayer() {
   playerObj.position.set(0, 1.7, 0);
 
   onKeyDown(code => {
-    if (state.phase !== PHASE.PLAYING) return;
+    if (!isPlaying()) return;
     if (code === 'KeyR') startReload();
     if ((code === 'Space' || code === 'KeyE') && _onGround) {
       _vy = JUMP_FORCE;
@@ -50,7 +50,7 @@ export function initPlayer() {
   });
 
   onShoot(() => {
-    if (state.phase === PHASE.PLAYING) shoot();
+    if (isPlaying()) shoot();
   });
 }
 
@@ -87,7 +87,7 @@ export function resetPlayerPos() {
 }
 
 export function tickPlayer(dt) {
-  if (state.phase !== PHASE.PLAYING) return;
+  if (!isPlaying()) return;
 
   // Rotation from input
   playerObj.rotation.y = getYaw();
@@ -250,22 +250,23 @@ export function takeDamage(dmg) {
 }
 
 export function killPlayer() {
-  if (state.phase !== PHASE.PLAYING) return;
-  state.phase = PHASE.DEAD;
+  // PLAYING → DEAD; no-op (early return) from any other phase, exactly as the
+  // old `if (phase !== PLAYING) return;` guard did.
+  if (!transition(GAME_EVENT.DIE)) return;
   state.deaths++;
   state.respawnTimer = RESPAWN_TIME;
   emit(EV.PLAYER_KILLED);
 }
 
 export function tickDeath(dt, renderer) {
-  if (state.phase !== PHASE.DEAD) return;
+  if (!isDead()) return;
   state.respawnTimer -= dt;
   if (state.respawnTimer <= 0) {
     state.hp = PLAYER_HP;
     state.ammo = MAX_AMMO;
     state.reloading = false;
     resetPlayerPos();
-    state.phase = PHASE.PLAYING;
+    transition(GAME_EVENT.RESPAWN); // DEAD → PLAYING
     emit(EV.PLAYER_RESPAWN);
     emit(EV.HUD_UPDATE);
     requestLock(renderer.domElement);

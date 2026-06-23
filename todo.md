@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.114-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.115-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Mission: get to fast, safe feature delivery on solid foundations.
@@ -34,7 +34,7 @@
 | # | Codebase | Category | Task |
 |---|----------|----------|------|
 | A1-next | TQ/NA | ARCH | **Extract player boundary — IN PROGRESS (v0.2.114, first slice done).** `src/engine/entities/player.js` now owns the pure player geometry (`EYE`, `BODY_FROM_EYE`), spawn shape (`SPAWN_X/Y/Z`, `SPAWN_YAW`, `PLAYER_SAFE_CORNER`), and allocation-free look-down POV math (`lookDownEyeY`/`lookDownEyeZ`); `src/player.js` consumes them and re-exports `PLAYER_SAFE_CORNER`. **Remaining:** lift the stateful movement/kinematic tick, combat (shoot/reload/recoil), lifecycle (damage/death/respawn) and body-state (`setPlayerBody`/`getPlayerCollider`/`spawnPlayerBody`) behind the boundary, then add WASD+dash, zoom, iFrames, spectator shape. Nostr Arena absorbs the old v0.6 player extraction intent without old version clutter. |
-| 8 | TQ/NA | ARCH | **State machine** — replace ad-hoc booleans with explicit FSM in `src/state.js`. Include the old A2 circular-dependency/ecash-wallet warning here rather than as a separate duplicate task. |
+| 8 | TQ/NA | ARCH | **State machine — IN PROGRESS (v0.2.115, first slice done).** `src/state.js` now defines the explicit FSM: `GAME_EVENT`, a frozen `TRANSITIONS` table mirroring the prior phase guards exactly, `transition()`/`canTransition()`/`nextPhase()`, and predicates (`isTitle/isPlaying/isPaused/isDead/isGameover/isLive`). All 6 call sites (main, player, input, bots, targetReticle, hud) read via predicates and write via `transition()`; regression check 7 guards against direct `state.phase =` writes outside `state.js`. **Remaining:** fold secondary booleans (`reloading`, `pointerLocked`) into guarded state, wire a real `GAMEOVER` edge if/when an end-of-run screen lands, add transition-table unit tests, and keep the old A2 circular-dependency/ecash-wallet warning in scope. |
 | 9 | TQ/NA | ARCH | **Event bus** — decouple modules via `src/events.js`. Required before Nostr, wallet, multiplayer, and NAP features scale. |
 | B2-TQ | TQ | SDK | **Extract BotAgent interface** — formalise `engine/entities/bot-agent.js`, `BotAgent.tick(worldState) -> BotAction[]`, actions: move, shoot, idle, interact, speak. This is the useful Torii Quest part of the old bot refactor. |
 | 14 | TQ/NA | TESTING | **Start Vitest unit suite** — one test per extracted SDK boundary: raycast, dynamic body creation, BotAgent, FSM transitions, and later kind:0 profile fetch. |
