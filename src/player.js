@@ -16,6 +16,7 @@ import {
   SPAWN_X, SPAWN_Y, SPAWN_Z, SPAWN_YAW,
   PLAYER_SAFE_CORNER,
   lookDownEyeY, lookDownEyeZ,
+  forwardX, forwardZ, rightX, rightZ,
 } from './engine/entities/player.js';
 
 export { PLAYER_SAFE_CORNER };
@@ -99,9 +100,11 @@ export function tickPlayer(dt) {
   camera.position.y = lookDownEyeY(pitch);
   camera.position.z = lookDownEyeZ(pitch);
 
-  // Movement
-  _fwd.set(-Math.sin(getYaw()), 0, -Math.cos(getYaw()));
-  _right.set(Math.cos(getYaw()), 0, -Math.sin(getYaw()));
+  // Movement — heading basis sourced from the player boundary
+  // (engine/entities/player.js). Allocation-free scalars; same formula.
+  const yaw = getYaw();
+  _fwd.set(forwardX(yaw), 0, forwardZ(yaw));
+  _right.set(rightX(yaw), 0, rightZ(yaw));
   _move.set(0, 0, 0);
 
   if (keys['KeyW'] || keys['ArrowUp'])    _move.addScaledVector(_fwd,   1);
