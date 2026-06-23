@@ -41,6 +41,7 @@ export function installToriiDebug(refs) {
   const {
     version, bots, hitBot, playerObj, resetPlayerPos,
     castRay, castRayStatic, hasLineOfSight, getWorld, getLastHit,
+    getLastShot, getLastMiss,
     getGrassMat, getFlowerMat, getMirror,
   } = refs;
 
@@ -88,8 +89,18 @@ export function installToriiDebug(refs) {
     // Combat — last bot-hit classification (impact Y, foot Y, neck-line, head
     // sphere proximity, resolved part vs final class, damage). For tuning the
     // headshot/body thresholds live from the console after a shot.
+    //
+    // Target-practice diagnostics (v0.2.124):
+    //   lastShot — most recent FIRED shot: {origin, dir, aim, pred, outcome,
+    //              predicted:{reason,label}, reason, label, resolved, flightTime}.
+    //              `aim` is the crosshair (camera) ray; `pred` is the bullet line
+    //              at fire; `outcome` is what the bullet actually hit. Compare
+    //              aim vs outcome to see WHY a shot landed or missed.
+    //   lastMiss — most recent shot that did NOT hit a live bot (same shape).
     combat: {
-      get lastHit() { return getLastHit ? getLastHit() : null; },
+      get lastHit()  { return getLastHit  ? getLastHit()  : null; },
+      get lastShot() { return getLastShot ? getLastShot() : null; },
+      get lastMiss() { return getLastMiss ? getLastMiss() : null; },
     },
   };
 

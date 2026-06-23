@@ -231,7 +231,13 @@ export function shoot() {
   // reticle. Now bullets actually travel toward what the crosshair is on.
   _shootDir.copy(_convergePoint).sub(_shootOrigin).normalize();
 
-  emit(EV.SHOOT, { origin: _shootOrigin.clone(), dir: _shootDir.clone() });
+  // aimOrigin/aimDir = the CAMERA crosshair line (what the reticle is on);
+  // origin/dir = the muzzle bullet line. Both travel on EV.SHOOT so the shot
+  // diagnostics (v0.2.124) can compare intent vs the bullet's actual path.
+  emit(EV.SHOOT, {
+    origin: _shootOrigin.clone(), dir: _shootDir.clone(),
+    aimOrigin: _camPos.clone(), aimDir: _camFwd.clone(),
+  });
   emit(EV.HUD_UPDATE);
   if (state.ammo === 0) startReload();
 }

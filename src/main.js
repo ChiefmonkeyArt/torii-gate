@@ -12,7 +12,7 @@ import { initPlayer, tickPlayer, tickDeath, playerObj, setPlayerBody, spawnPlaye
 import { loadPlayerModel, tickPlayerModel, triggerHit, triggerDeath, triggerReload, setCharacter } from './playerModel.js';
 import { initPhysics, stepPhysics, buildArenaColliders, getWorld, castRay, castRayStatic, hasLineOfSight } from './physics.js';
 import { bots, initBots, tickBots, hitBot } from './bots.js';
-import { initWeapons, spawnBullet, tickWeapons, triggerRecoil, getLastHit } from './weapons.js';
+import { initWeapons, spawnBullet, tickWeapons, triggerRecoil, getLastHit, recordPlayerShot, getLastShot, getLastMiss } from './weapons.js';
 import { buildDynamicCrates, tickDynamicCrates } from './dynamicCrates.js';
 import { buildNapNpc, tickNapNpc } from './napNpc.js';
 import { loadFirstPersonBody, tickFirstPersonBody } from './firstPersonBody.js';
@@ -44,9 +44,14 @@ startLoop();
 // Suppressed entirely in the NAP zone — weapon is disabled past the torii
 // gate (player.x > NAP_X). The recoil/SFX skip too so it reads as inert,
 // not malfunctioning. HUD shows a NAP indicator (see hud.js).
-on(EV.SHOOT, ({ origin, dir }) => {
+on(EV.SHOOT, ({ origin, dir, aimOrigin, aimDir }) => {
   if (playerObj.position.x > NAP_X) return;
-  spawnBullet(origin, dir, true);
+  const b = spawnBullet(origin, dir, true);
+  // v0.2.124 — capture per-shot diagnostics (aim line vs bullet line) so misses
+  // are explainable via ToriiDebug.combat.lastShot/lastMiss.
+  if (aimOrigin && aimDir) {
+    recordPlayerShot(b, aimOrigin.x, aimOrigin.y, aimOrigin.z, aimDir.x, aimDir.y, aimDir.z);
+  }
   triggerRecoil();
   playShoot();
 });
@@ -66,6 +71,7 @@ window._onBotHit = (bot, dmg) => emit(EV.BOT_HIT_BY_PLAYER, { bot, dmg });
 installToriiDebug({
   version: VERSION, bots, hitBot, playerObj, resetPlayerPos,
   castRay, castRayStatic, hasLineOfSight, getWorld, getLastHit,
+  getLastShot, getLastMiss,
   getGrassMat, getFlowerMat, getMirror,
 });
 

@@ -15,6 +15,9 @@ import { castRay, castRayStatic,
 // every existing `from './weapons.js'` import site keeps working.
 import { isInHeadSphere, classifyHeadshot, HEAD_BOTTOM } from './engine/combat/classifier.js';
 export { isInHeadSphere, classifyHeadshot };
+// v0.2.124 — target-practice diagnostics. Pure aim-vs-outcome miss classifier
+// (no Three/Rapier) so "why did my shot miss?" is explainable from the console.
+import { classifyShotOutcome } from './engine/combat/shotDiagnostics.js';
 
 // Last bot-hit classification, surfaced through ToriiDebug.combat.lastHit for
 // in-arena tuning. Mutated in place — never reallocated in the hot path.
@@ -22,8 +25,48 @@ const _lastHit = {
   part: null, classified: null, impactY: 0, footY: 0, relY: 0,
   neckLine: HEAD_BOTTOM, headCentreY: BOT_HEAD_CENTRE_Y_OFFSET,
   headRadius: BOT_HEAD_RADIUS, inHeadSphere: false, dmg: 0,
+  botName: null, dist: 0,
 };
 export function getLastHit() { return _lastHit; }
+
+// v0.2.124 — per-shot diagnostics (target practice). At fire time we record what
+// the player's AIM line (camera/crosshair ray) was on AND what the bullet line
+// would hit if nothing moved; at resolution we record what the bullet ACTUALLY
+// connected with and derive a miss reason. Per-shot objects (one alloc per
+// trigger pull, NOT per frame) — surfaced via ToriiDebug.combat.lastShot/lastMiss.
+const DIAG_RANGE = 80; // m — diagnostic ray reach (≈ crosshair convergence dist)
+let _lastShot = null;  // most recent fired player shot (predicted + resolved)
+let _lastMiss = null;  // most recent player shot that did NOT hit a live bot
+export function getLastShot() { return _lastShot; }
+export function getLastMiss() { return _lastMiss; }
+
+function _mkTarget() { return { kind: 'none', isHead: false, botName: null, dist: Infinity }; }
+function _mkDiag() {
+  return {
+    origin: { x: 0, y: 0, z: 0 }, dir: { x: 0, y: 0, z: 0 },
+    aim: _mkTarget(),      // camera/crosshair ray at fire time
+    pred: _mkTarget(),     // bullet line at fire time (if nothing moved)
+    outcome: _mkTarget(),  // what the bullet actually resolved to
+    predicted: null,       // {reason,label} aim-vs-pred, computed at fire
+    reason: null, label: null, // {reason,label} aim-vs-outcome, set at resolution
+    resolved: false, flightTime: 0,
+  };
+}
+// Translate a castRay() hit into the plain diagnostic target shape. Reads the
+// shared hit.point scratch immediately, before the next cast overwrites it.
+function _describeInto(t, hit) {
+  if (!hit) { t.kind = 'none'; t.isHead = false; t.botName = null; t.dist = Infinity; return; }
+  t.dist = hit.toi;
+  if (hit.bot && hit.bot.alive) {
+    t.kind = 'bot';
+    t.isHead = classifyHeadshot(hit.point.x, hit.point.y, hit.point.z, hit.bodyPart, hit.bot);
+    t.botName = hit.bot.name || null;
+  } else if (hit.crate) {
+    t.kind = 'crate'; t.isHead = false; t.botName = null;
+  } else {
+    t.kind = 'wall'; t.isHead = false; t.botName = null;
+  }
+}
 
 // -- Bullet pool ----------------------------------------------------------
 const _pool   = [];
@@ -137,6 +180,55 @@ export function initWeapons(bots, onPlayerHit, getPlayerCollider) {
 const _rayDirN = new THREE.Vector3();
 const _rayHitP = new THREE.Vector3();
 
+// Scratch for the diagnostic bullet-line predictive ray (fire time only — runs
+// during the player update, never inside the per-frame bullet loop).
+const _diagDir = new THREE.Vector3();
+
+// v0.2.124 — record a player shot's intent at fire time. `b` is the freshly
+// spawned bullet (b.prev = muzzle origin, b.vel = velocity along the bullet
+// line). (ax,ay,az)/(adx,ady,adz) is the CAMERA crosshair ray (the reticle's
+// aim line). We cast both the aim line and the bullet line once and stash the
+// snapshot on the bullet so resolution can finalise the miss reason. Per-shot.
+export function recordPlayerShot(b, ax, ay, az, adx, ady, adz) {
+  if (!b) return null;
+  const d = _mkDiag();
+  d.origin.x = b.prev.x; d.origin.y = b.prev.y; d.origin.z = b.prev.z;
+  _diagDir.copy(b.vel);
+  const L = _diagDir.length();
+  if (L > 1e-5) _diagDir.multiplyScalar(1 / L);
+  d.dir.x = _diagDir.x; d.dir.y = _diagDir.y; d.dir.z = _diagDir.z;
+
+  const excl = _getPlayerCollider() || null;
+  // Aim line (camera/crosshair) — what the reticle is on.
+  const aimHit = castRay(ax, ay, az, adx, ady, adz, DIAG_RANGE, excl);
+  _describeInto(d.aim, aimHit);
+  // Bullet line (muzzle → convergence) — what the projectile would hit if static.
+  const predHit = castRay(d.origin.x, d.origin.y, d.origin.z, d.dir.x, d.dir.y, d.dir.z, DIAG_RANGE, excl);
+  _describeInto(d.pred, predHit);
+
+  d.predicted = classifyShotOutcome(d.aim, d.pred);
+  b._diag = d;
+  _lastShot = d;
+  return d;
+}
+
+// Finalise the resolved outcome of a player shot and derive the miss reason
+// (aim intent vs what the bullet actually hit). Called once per player bullet
+// when it resolves (bot/geometry hit) or expires.
+function _finalizeShot(b, kind, isHead, bot, dist) {
+  const d = b && b._diag;
+  if (!d || d.resolved) return;
+  d.outcome.kind = kind;
+  d.outcome.isHead = isHead;
+  d.outcome.botName = bot ? (bot.name || null) : null;
+  d.outcome.dist = dist;
+  d.resolved = true;
+  d.flightTime = BULLET_LIFE - b.life;
+  const r = classifyShotOutcome(d.aim, d.outcome);
+  d.reason = r.reason; d.label = r.label;
+  if (kind !== 'bot') _lastMiss = d;
+}
+
 export function tickWeapons(dt, playerPos) {
   for (let i = _active.length-1; i >= 0; i--) {
     const b = _active[i];
@@ -186,6 +278,9 @@ export function tickWeapons(dt, playerPos) {
               _lastHit.part = hit.bodyPart; _lastHit.classified = isHead ? 'head' : 'body';
               _lastHit.impactY = _rayHitP.y; _lastHit.footY = footY; _lastHit.relY = relY;
               _lastHit.inHeadSphere = inHeadSphere; _lastHit.dmg = dmg;
+              _lastHit.botName = hit.bot.name || null; _lastHit.dist = hit.toi;
+              // v0.2.124 — resolve the per-shot diagnostic as a bot hit.
+              _finalizeShot(b, 'bot', isHead, hit.bot, hit.toi);
               // Second spark on headshots so the hit reads as more impactful.
               if (isHead) spawnSpark(_rayHitP, _bodyBurstNrm);
               // Player bullet struck a bot — publish on the bus (v0.2.117). The
@@ -207,6 +302,8 @@ export function tickWeapons(dt, playerPos) {
                 _cratePt.x = _rayHitP.x; _cratePt.y = _rayHitP.y; _cratePt.z = _rayHitP.z;
                 hit.crate.applyImpulseAtPoint(_crateImp, _cratePt, true);
               }
+              // v0.2.124 — resolve the per-shot diagnostic as a geometry miss.
+              _finalizeShot(b, hit.crate ? 'crate' : 'wall', false, null, hit.toi);
             }
             // Move bullet to impact point so the visual tracer ends there.
             b.mesh.position.copy(_rayHitP);
@@ -261,6 +358,11 @@ export function tickWeapons(dt, playerPos) {
     }
 
     if (remove) {
+      // v0.2.124 — a player bullet removed without ever resolving a hit (life
+      // expiry, dropped below ground, out of bounds) is a clean miss; finalise
+      // its diagnostic so ToriiDebug.combat.lastMiss explains it.
+      if (b.isPlayer && b._diag && !b._diag.resolved) _finalizeShot(b, 'none', false, null, Infinity);
+      b._diag = null;
       scene.remove(b.mesh);
       b.mesh.visible = false;
       _pool.push(b);
