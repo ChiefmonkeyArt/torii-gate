@@ -1,5 +1,5 @@
 // main.js — wiring only. No game logic here.
-import { state, isTitle, isPlaying, isPaused, isLive, transition, GAME_EVENT } from './state.js';
+import { state, isTitle, isPlaying, isPaused, isLive, transition, GAME_EVENT, resetRun } from './state.js';
 import { emit, on, EV } from './events.js';
 import { renderer, renderFrame } from './scene.js';
 import { initAtmosphere, tickAtmosphere } from './atmosphere.js';
@@ -8,7 +8,7 @@ import { tickFoliage, getGrassMat, getFlowerMat } from './arena-foliage.js';
 import { buildMirror, tickMirror, shouldUpdateMirror, getMirror } from './mirror.js';
 import { initLoop, startLoop } from './loop.js';
 import { onKeyDown, requestLock, setYaw, onPointerLockLost, keys } from './input.js';
-import { initPlayer, tickPlayer, tickDeath, playerObj, setPlayerBody, spawnPlayerBody, takeDamage, setNextSpawn, getPlayerCollider, resetPlayerPos } from './player.js';
+import { initPlayer, tickPlayer, tickDeath, playerObj, setPlayerBody, spawnPlayerBody, takeDamage, setNextSpawn, getPlayerCollider, resetPlayerPos, SPAWN_X, SPAWN_Z, SPAWN_YAW } from './player.js';
 import { loadPlayerModel, tickPlayerModel, triggerHit, triggerDeath, triggerReload, setCharacter } from './playerModel.js';
 import { initPhysics, stepPhysics, buildArenaColliders, getWorld, castRay, castRayStatic, hasLineOfSight } from './physics.js';
 import { bots, initBots, tickBots, hitBot } from './bots.js';
@@ -128,33 +128,55 @@ renderer.domElement.addEventListener('click', () => {
   }
 });
 
-// Enter Arena — lazy-load Rapier then start
+// Enter Arena — lazy-load Rapier then start.
+// v0.2.128: the world/arena/player-body/model bootstrap is now ONE-TIME. The
+// old handler re-ran initPhysics() on every ENTER, and initPhysics() builds a
+// BRAND-NEW Rapier world each call — so a second entry (HOME → TITLE → ENTER)
+// orphaned every bot collider in the discarded world (they're created once at
+// load and bound to that world), leaving the live world with no bot colliders.
+// Result: "hardly any body or head shots connect" on re-entry. We now bootstrap
+// physics + colliders + player body + viewmodels exactly once and keep the
+// single persistent world across HOME/ENTER (HOME already intends physics to
+// persist); subsequent entries just reset the player to spawn and re-arm.
+let _arenaBootstrapped = false;
 elEnterBtn?.addEventListener('click', async () => {
   if (!isTitle()) return;
-  elEnterBtn.textContent = 'LOADING PHYSICS…';
-  elEnterBtn.disabled = true;
 
-  try {
-    await initPhysics();
-    buildArenaColliders();
-    buildDynamicCrates();
-    const handle = spawnPlayerBody();
-    setPlayerBody(handle);
-  } catch (e) {
-    console.error('Physics init failed:', e);
-    elEnterBtn.textContent = 'ENTER ARENA';
-    elEnterBtn.disabled = false;
-    return;
+  if (!_arenaBootstrapped) {
+    elEnterBtn.textContent = 'LOADING PHYSICS…';
+    elEnterBtn.disabled = true;
+    try {
+      await initPhysics();
+      buildArenaColliders();
+      buildDynamicCrates();
+      const handle = spawnPlayerBody();
+      setPlayerBody(handle);
+    } catch (e) {
+      console.error('Physics init failed:', e);
+      elEnterBtn.textContent = 'ENTER ARENA';
+      elEnterBtn.disabled = false;
+      return;
+    }
+    // Load Chiefmonkey player model — attaches to playerObj (camera parent).
+    // Once only: re-attaching on every entry would stack duplicate viewmodels.
+    loadPlayerModel(playerObj);
+    loadFirstPersonBody(playerObj);
+    buildNapNpc();
+    _arenaBootstrapped = true;
   }
+
+  // Fresh run on EVERY entry: reset HP/ammo/score/reload state (resetRun) and
+  // move the player back to the canonical SW spawn corner (the world/colliders
+  // persist across HOME/ENTER; only the player's run-state + pose reset). Restore
+  // the spawn to the original corner first, in case a prior session's
+  // death-respawn moved it elsewhere.
+  resetRun();
+  setNextSpawn(SPAWN_X, SPAWN_Z, SPAWN_YAW);
+  resetPlayerPos();
 
   // Face NE into arena from SW spawn corner (-14,-14) toward centre
   // yaw = atan2(-(-14), -(-14)) = atan2(14,14)... wait, formula: dx=-cx=14,dz=-cz=14, yaw=atan2(-dx,-dz)=atan2(-14,-14)=-3PI/4
-  setYaw(-3 * Math.PI / 4); // -2.356 rad, confirmed correct
-
-  // Load Chiefmonkey player model — attaches to playerObj (camera parent)
-  loadPlayerModel(playerObj);
-  loadFirstPersonBody(playerObj);
-  buildNapNpc();
+  setYaw(SPAWN_YAW); // -2.356 rad (-3π/4), confirmed correct
 
   transition(GAME_EVENT.ENTER); // TITLE → PLAYING (PHASE_CHANGE subscriber shows HUD, hides title)
   requestLock(renderer.domElement);

@@ -43,11 +43,19 @@ export const BOT_BODY_HALF_H = 0.5;
 export const BOT_BODY_RADIUS = 0.26;
 export const BOT_BODY_CENTRE_Y_OFFSET = BOT_BODY_HALF_H + BOT_BODY_RADIUS; // 0.76 → body spans [0,1.52]
 // v0.2.112: head sphere enlarged 0.18 → 0.22 so clear headshots can't slip past
-// the small ball. Centre 1.65 → spans [1.43,1.87], OVERLAPPING the body cap
+// the small ball.
+// v0.2.128: head zone was sitting TOO HIGH. The Banker GLB tops out at y≈1.70
+// (crown), but centre 1.65 + radius 0.22 spanned [1.43,1.87] — the sphere's top
+// floated 0.17 m ABOVE the visible head, so players had to aim OVER the model to
+// score a headshot while crosshairs on the actual face resolved the body cap.
+// Lowered the centre to 1.55 (face/eye line, where players aim) and tightened
+// the radius 0.22 → 0.20, so the sphere now spans [1.35,1.75]: its top hugs the
+// model crown (only ~0.05 m over) and its bottom still OVERLAPS the body cap
 // (1.52) so there is no gap a bullet can thread between head and torso.
-export const BOT_HEAD_RADIUS = 0.22;
-// Head centre sits this far above the foot — overlaps the body capsule cap.
-export const BOT_HEAD_CENTRE_Y_OFFSET = 1.65;
+export const BOT_HEAD_RADIUS = 0.20;
+// Head centre sits this far above the foot — at the visible face/eye line,
+// overlapping the body capsule cap below it.
+export const BOT_HEAD_CENTRE_Y_OFFSET = 1.55;
 
 // ── Player bodies ────────────────────────────────────────────────────────────
 // Kinematic = position-based, driven by setNextKinematicTranslation each

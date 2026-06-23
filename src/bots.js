@@ -92,8 +92,8 @@ function _spawnBot(i) {
 }
 
 // Create (or re-position) both the body capsule AND head sphere for a bot.
-// Body centre  = foot + BOT_BODY_CENTRE_Y_OFFSET (0.72)
-// Head  centre = foot + BOT_HEAD_CENTRE_Y_OFFSET (1.65)
+// Body centre  = foot + BOT_BODY_CENTRE_Y_OFFSET (0.76)
+// Head  centre = foot + BOT_HEAD_CENTRE_Y_OFFSET (1.55, v0.2.128 — was 1.65)
 function _ensureBotColliders(bot, x, z) {
   if (!physicsReady) return;
   if (!bot.rapierBody) {

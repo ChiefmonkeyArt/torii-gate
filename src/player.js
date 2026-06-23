@@ -20,7 +20,7 @@ import {
   forwardX, forwardZ, rightX, rightZ,
 } from './engine/entities/player.js';
 
-export { PLAYER_SAFE_CORNER };
+export { PLAYER_SAFE_CORNER, SPAWN_X, SPAWN_Z, SPAWN_YAW };
 
 
 export const playerObj = new THREE.Object3D();

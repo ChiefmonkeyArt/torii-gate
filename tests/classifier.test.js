@@ -12,7 +12,7 @@ import {
 
 // A bot stood at the origin, foot on the floor (y=0 alive).
 const bot = { pos: { x: 0, y: 0, z: 0 } };
-const HEAD_Y = BOT_HEAD_CENTRE_Y_OFFSET; // 1.65 — head centre above the foot
+const HEAD_Y = BOT_HEAD_CENTRE_Y_OFFSET; // 1.55 (v0.2.128) — head centre above the foot
 
 describe('head-sphere geometry constants', () => {
   it('derives the proximity backstop from the head radius', () => {
@@ -71,5 +71,42 @@ describe('classifyHeadshot', () => {
   it('does not promote an upper-torso/shoulder shot to a headshot', () => {
     // just below the neck line, outside the sphere → stays a body shot
     expect(classifyHeadshot(0, HEAD_BOTTOM - 0.1, 0, 'body', bot)).toBe(false);
+  });
+});
+
+// v0.2.128 — head zone was sitting TOO HIGH (old centre 1.65 + r0.22 → top 1.87,
+// floating 0.17 m above the visible crown ≈1.70). Players had to aim OVER the
+// model to score a headshot. Lowered centre 1.65→1.55, tightened radius 0.22→0.20
+// so the sphere now spans [1.35,1.75], hugging the face/crown. These tests lock
+// that down: a face shot scores, an above-crown shot does NOT, and shoulder/torso
+// shots are never mis-promoted.
+describe('v0.2.128 head-zone realignment', () => {
+  it('scores a clear headshot on the face/eye line (new centre 1.55)', () => {
+    expect(isInHeadSphere(0, BOT_HEAD_CENTRE_Y_OFFSET, 0, bot)).toBe(true);
+    expect(classifyHeadshot(0, BOT_HEAD_CENTRE_Y_OFFSET, 0, 'body', bot)).toBe(true);
+  });
+  it('still scores at the visible crown (~1.70, inside top 1.75)', () => {
+    expect(isInHeadSphere(0, 1.70, 0, bot)).toBe(true);
+  });
+  it('does NOT score above the crown — the old over-the-head zone is gone', () => {
+    // y=1.85 was INSIDE the old [1.43,1.87] sphere but is OUTSIDE the new [1.35,1.75].
+    expect(isInHeadSphere(0, 1.85, 0, bot)).toBe(false);
+    expect(classifyHeadshot(0, 1.85, 0, 'body', bot)).toBe(false);
+  });
+  it('does NOT score well above the head (1.95)', () => {
+    expect(classifyHeadshot(0, 1.95, 0, 'body', bot)).toBe(false);
+  });
+  it('keeps a centre-mass torso impact as a body shot', () => {
+    expect(classifyHeadshot(0, 0.9, 0, 'body', bot)).toBe(false);
+  });
+  it('does not promote a lateral shoulder shot at the neck line', () => {
+    // shoulder out to the side at the sphere's bottom edge: dx≈0.30 at y≈1.35.
+    // dist² = 0.30² + (1.35-1.55)² = 0.09+0.04 = 0.13 > HEAD_PROX_SQ(0.0625).
+    expect(isInHeadSphere(0.30, HEAD_BOTTOM, 0, bot)).toBe(false);
+    expect(classifyHeadshot(0.30, HEAD_BOTTOM, 0, 'body', bot)).toBe(false);
+  });
+  it('an outright head-collider resolve still wins regardless of point', () => {
+    // bodyPart==='head' short-circuits even for an above-crown point.
+    expect(classifyHeadshot(0, 1.95, 0, 'head', bot)).toBe(true);
   });
 });

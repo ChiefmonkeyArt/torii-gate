@@ -12,7 +12,7 @@ import { BOT_HEAD_CENTRE_Y_OFFSET, BOT_HEAD_RADIUS } from '../physics/bodies.js'
 // Headshot region, derived from the head sphere geometry (single source of
 // truth in bodies.js). The sphere spans [HEAD_BOTTOM, HEAD_TOP] above the bot
 // foot; HEAD_BOTTOM is retained purely as a debug/inspection reference.
-export const HEAD_BOTTOM   = BOT_HEAD_CENTRE_Y_OFFSET - BOT_HEAD_RADIUS; // 1.43
+export const HEAD_BOTTOM   = BOT_HEAD_CENTRE_Y_OFFSET - BOT_HEAD_RADIUS; // 1.35 (v0.2.128)
 // Proximity backstop: impacts within (head radius + 5cm) of the head centre
 // count as headshots even if the ray resolved the body collider on an
 // overlap frame. Squared to avoid a sqrt in the hot path.
