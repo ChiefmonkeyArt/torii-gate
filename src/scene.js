@@ -8,6 +8,9 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap; // PCFSoftShadowMap deprecated in r168+
 renderer.toneMappingExposure = 1.8;
 renderer.autoClear = false;
+// Local clipping lets firstPersonBody.js slice the neck stump off just below the
+// camera so looking down never reveals the inside of the headless body.
+renderer.localClippingEnabled = true;
 document.body.appendChild(renderer.domElement);
 
 export const scene  = new THREE.Scene();

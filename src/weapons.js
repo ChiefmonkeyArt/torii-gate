@@ -4,9 +4,16 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene, gunScene } from './scene.js';
-import { BULLET_SPEED, BULLET_LIFE, BOT_DAMAGE, ARENA_HALF, WALL_H } from './config.js';
+import { state } from './state.js';
+import { BULLET_SPEED, BULLET_LIFE, BOT_DAMAGE, ARENA_HALF, WALL_H, RELOAD_TIME } from './config.js';
 import { spawnSpark, spawnRicochet, tickFx } from './fx.js';
-import { castRay, castRayStatic } from './physics.js';
+import { castRay, castRayStatic,
+         BOT_BODY_CENTRE_Y_OFFSET, BOT_BODY_HALF_H, BOT_BODY_RADIUS } from './physics.js';
+
+// Top of the bot body capsule above its foot (centre + halfHeight + radius).
+// Any bullet impact at or above this height is the head region, even on the
+// frame the head sphere and body capsule overlap — see headshot test below.
+const BOT_BODY_TOP = BOT_BODY_CENTRE_Y_OFFSET + BOT_BODY_HALF_H + BOT_BODY_RADIUS;
 
 // -- Bullet pool ----------------------------------------------------------
 const _pool   = [];
@@ -143,7 +150,13 @@ export function tickWeapons(dt, playerPos) {
               // hit.bodyPart === 'head' for the sphere, 'body' for the capsule.
               _bodyBurstNrm.copy(b.vel).normalize().negate();
               spawnSpark(_rayHitP, _bodyBurstNrm);
-              const isHead = hit.bodyPart === 'head';
+              // Headshot if the raycast resolved the head sphere OR the impact
+              // landed at/above the body-capsule top. The dual test makes counting
+              // reliable: when the head sphere and body capsule overlap, the
+              // closest-collider pick could resolve 'body' for a clear head hit —
+              // the height check catches it. Bot foot sits at pos.y (0 when alive).
+              const footY  = hit.bot.pos ? hit.bot.pos.y : 0;
+              const isHead = hit.bodyPart === 'head' || _rayHitP.y >= footY + BOT_BODY_TOP;
               const dmg    = isHead ? 9 : 3;
               // Second spark on headshots so the hit reads as more impactful.
               if (isHead) spawnSpark(_rayHitP, _bodyBurstNrm);
@@ -281,11 +294,31 @@ export function getGunBarrelWorld(mainCamera) {
 }
 
 function _tickGun(dt) {
-  if (_recoilTimer <= 0) return;
-  _recoilTimer = Math.max(0, _recoilTimer - dt);
-  const kick = (_recoilTimer / 0.08) * 0.05;
   const mesh = _gunMesh || _gunPlaceholder;
-  if (mesh) mesh.position.z = FP_REST_Z + kick;
+  if (!mesh) return;
+
+  // Recoil — short z-kick toward the camera on each shot.
+  let z = FP_REST_Z;
+  if (_recoilTimer > 0) {
+    _recoilTimer = Math.max(0, _recoilTimer - dt);
+    z = FP_REST_Z + (_recoilTimer / 0.08) * 0.05;
+  }
+  mesh.position.z = z;
+
+  // v0.2.111: visible reload feedback. The 3rd-person model plays a reload clip
+  // (mirror-only), but the FP viewmodel showed nothing, so reload "looked broken".
+  // Drop + roll the gun out of view and back over the reload window — purely a
+  // dt/state-driven viewmodel pose, no timers. progress 0→1 across RELOAD_TIME.
+  if (state.reloading) {
+    const progress = 1 - Math.max(0, Math.min(1, state.reloadTimer / RELOAD_TIME));
+    const dip = Math.sin(progress * Math.PI); // 0 at start/end, 1 mid-reload
+    mesh.position.y = FP_REST_Y - 0.22 * dip;
+    mesh.position.z = z - 0.10 * dip;
+    mesh.rotation.z = -0.6 * dip;
+  } else if (mesh.rotation.z !== 0 || mesh.position.y !== FP_REST_Y) {
+    mesh.position.y = FP_REST_Y;
+    mesh.rotation.z = 0;
+  }
 }
 
 // ── World gun — clone attached to RightHand bone for mirror visibility ───────
@@ -374,6 +407,11 @@ function _attachWorldGun() {
   _worldGun.scale.setScalar(0.22);
   _worldGun.position.set(0.0, 0.16, -0.03); // grip in palm, slid further down hand
   _worldGun.rotation.set(Math.PI, -Math.PI / 2, Math.PI / 2);
+  // v0.2.111: the gun reappeared upside-down in the mirror (handle pointing up).
+  // Roll 180° about the gun's OWN length (local barrel axis) so the handle drops
+  // back down without disturbing the barrel's aim direction. rotateX spins about
+  // the object-local X, which is the GLB barrel axis after the Euler above.
+  _worldGun.rotateX(Math.PI);
   wrap.add(_worldGun);
 
   // Layer 1 = visible to mirror reflection camera, hidden from FP camera.

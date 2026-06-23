@@ -8,8 +8,11 @@ import { scene } from './scene.js';
 let _root  = null;
 let _mixer = null;
 
-const NPC_X = 28;   // mid-NAP corridor
-const NPC_Z = 3;
+// Placed clear of the bonsai trunk (which sits at x=NAP_X+6=26, z=0) so the NPC
+// no longer reads as walking into the tree. Off the central walkway, facing the
+// gate to greet the incoming player.
+const NPC_X = 30;
+const NPC_Z = 5;
 
 export function buildNapNpc() {
   if (_root) return; // already built
@@ -17,7 +20,8 @@ export function buildNapNpc() {
   new GLTFLoader().load('/chiefmonkey6.glb', gltf => {
     _root = gltf.scene;
 
-    // Metre-scale GLB — render at 1.0 like the player model.
+    // Metre-scale GLB — render at 1.0 like the player model. Measure geometry-only
+    // minY (Box3.setFromObject is wrong for SkinnedMesh) to seat the feet exactly.
     let minY = Infinity;
     _root.traverse(o => {
       if (o.isMesh && o.geometry) {
@@ -26,6 +30,17 @@ export function buildNapNpc() {
         if (b) minY = Math.min(minY, b.min.y);
         o.castShadow = true;
         o.frustumCulled = false;
+        // v0.2.111: same opaque material patch the player/FP body use. Without it
+        // the GLB's alphaMode:BLEND made the skinned mesh split/tear at distance.
+        if (o.material) {
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          for (const m of mats) {
+            m.transparent = false;
+            m.depthWrite  = true;
+            m.alphaTest   = 0;
+            m.needsUpdate = true;
+          }
+        }
       }
     });
     if (!Number.isFinite(minY)) minY = 0;
@@ -38,7 +53,11 @@ export function buildNapNpc() {
     _mixer = new THREE.AnimationMixer(_root);
     const byName = {};
     gltf.animations.forEach(c => { byName[c.name] = c; });
-    const clip = byName['Stylish_Walk_inplace'] || byName['Idle_03'] || gltf.animations[0];
+    // Prefer a standing idle so the peaceful NPC is no longer churning its legs
+    // (which read as "walking into the tree"). Fall back to the in-place walk,
+    // then any clip, so it's never frozen in a T-pose.
+    const clip = byName['Idle_03'] || byName['Idle_11'] || byName['Idle'] ||
+                 byName['Stylish_Walk_inplace'] || gltf.animations[0];
     if (clip) {
       const a = _mixer.clipAction(clip);
       a.setLoop(THREE.LoopRepeat, Infinity);

@@ -244,6 +244,11 @@ let _footAccum  = 0;
 const FOOT_WALK_INTERVAL = 0.45;
 const FOOT_RUN_INTERVAL  = 0.30;
 const EYE = 1.7;
+// Footsteps only fire when the capsule is ACTUALLY translating, not merely when
+// a key is held. Walking into a wall (keys down, zero displacement) used to keep
+// the beat going like a drum roll; gating on measured horizontal speed kills it.
+let _prevFootX = 0, _prevFootZ = 0, _footInit = false;
+const FOOT_MIN_SPEED = 1.5; // m/s — below this the player isn't really moving
 
 on(EV.SHOOT, () => { _isShooting = true; });
 
@@ -254,18 +259,25 @@ function update(dt, frame) {
   tickBots(dt);
   tickWeapons(dt, playerObj.position);
   // Detect jump / ground state from world Y (eye at EYE when on floor).
-  _isJumping = playerObj.position.y > EYE + 0.05;
+  // Hysteresis on the airborne threshold: snap-to-ground micro-jitter sits a few
+  // cm above EYE, so a tight 0.05 band re-triggered the land thump every frame.
+  _isJumping = playerObj.position.y > EYE + 0.12;
   const onGround = !_isJumping;
 
   // Jump land — one-shot thump on transition from airborne to grounded.
   if (onGround && !_prevOnGround) playJumpLand();
   _prevOnGround = onGround;
 
-  // Footsteps — only while moving on the ground in PLAYING phase.
-  const moving =
+  // Footsteps — only while genuinely translating on the ground in PLAYING phase.
+  const keyHeld =
     keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] ||
     keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
-  if (state.phase === PHASE.PLAYING && onGround && moving) {
+  // Measured horizontal speed this frame (guards against wall-blocked key holds).
+  const pdx = playerObj.position.x - _prevFootX;
+  const pdz = playerObj.position.z - _prevFootZ;
+  const horizSpeed = _footInit && dt > 0 ? Math.sqrt(pdx*pdx + pdz*pdz) / dt : 0;
+  _prevFootX = playerObj.position.x; _prevFootZ = playerObj.position.z; _footInit = true;
+  if (state.phase === PHASE.PLAYING && onGround && keyHeld && horizSpeed > FOOT_MIN_SPEED) {
     const running = keys['ShiftLeft'] || keys['ShiftRight'];
     const interval = running ? FOOT_RUN_INTERVAL : FOOT_WALK_INTERVAL;
     _footAccum += dt;

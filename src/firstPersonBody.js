@@ -11,9 +11,18 @@ let _root  = null;
 let _mixer = null;
 let _actions = {};
 let _current = null;
+let _parent = null;
 
 const EYE = 1.7;
 const FADE = 0.15;
+
+// Horizontal plane (normal points DOWN) that clips everything above it. We keep
+// it just below the eye each frame so the neck stump never enters the FP view —
+// looking down now reveals chest → feet instead of the inside of the headless
+// body. Constant is updated in tickFirstPersonBody from the parent's world Y.
+const NECK_CLIP_DROP = 0.28; // metres below the eye where the body is sliced
+const _clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), EYE - NECK_CLIP_DROP);
+const _wp = new THREE.Vector3();
 
 export function loadFirstPersonBody(parentObj) {
   if (_root) { parentObj.remove(_root); _root = null; _mixer = null; _actions = {}; _current = null; }
@@ -33,9 +42,11 @@ export function loadFirstPersonBody(parentObj) {
 
     _root.scale.setScalar(1.0);
     // Feet at the player's foot: parent eye sits at EYE above foot, so shift the
-    // body down by (minY + EYE). Nudge forward (+Z local) so the chest/arms sit
-    // just ahead in the lower view. Model faces local -Z; rotate PI to face fwd.
-    _root.position.set(0, -minY - EYE, 0.3);
+    // body down by (minY + EYE). Push further forward (+Z local) so the chest
+    // sits ahead in the lower view as if the neck is rolled forward; the neck
+    // clip plane (below) removes the stump so we read the chest, not its inside.
+    // Model faces local -Z; rotate PI to face fwd.
+    _root.position.set(0, -minY - EYE, 0.42);
     _root.rotation.y = Math.PI;
 
     _root.traverse(o => {
@@ -50,13 +61,16 @@ export function loadFirstPersonBody(parentObj) {
             m.transparent = false;
             m.depthWrite  = true;
             m.alphaTest   = 0;
+            m.clippingPlanes = [_clipPlane]; // slice the neck stump below the eye
             m.needsUpdate = true;
           }
         }
       }
     });
 
+    _parent = parentObj;
     parentObj.add(_root);
+    window._fpBody = _root; // smoke-test + live-tuning handle
 
     _mixer = new THREE.AnimationMixer(_root);
     gltf.animations.forEach(c => {
@@ -81,6 +95,13 @@ function _play(name) {
 export function tickFirstPersonBody(dt) {
   if (!_mixer) return;
   _mixer.update(dt);
+
+  // Keep the neck clip just below the live eye height (parent world Y) so the
+  // slice tracks jumps/crouches without re-reading per-vertex bounds.
+  if (_parent) {
+    _parent.getWorldPosition(_wp);
+    _clipPlane.constant = _wp.y - NECK_CLIP_DROP;
+  }
 
   const fwd   = keys['KeyW'] || keys['ArrowUp'];
   const back  = keys['KeyS'] || keys['ArrowDown'];
