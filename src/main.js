@@ -15,6 +15,7 @@ import { initWeapons, spawnBullet, tickWeapons, triggerRecoil, getLastHit } from
 import { buildDynamicCrates, tickDynamicCrates } from './dynamicCrates.js';
 import { buildNapNpc, tickNapNpc } from './napNpc.js';
 import { loadFirstPersonBody, tickFirstPersonBody } from './firstPersonBody.js';
+import { initTargetReticle, tickTargetReticle } from './targetReticle.js';
 import { initHUD, tickHUD, flashCross, drawMinimap, setNapMode } from './hud.js';
 import { ARENA_HALF, WALL_H, NAP_X } from './config.js';
 import { nostrLogin } from './nostr.js';
@@ -33,6 +34,7 @@ initPlayerStats();
 initPlayer();
 initBots(playerObj, spawnBullet);
 initWeapons(bots, takeDamage, getPlayerCollider);
+initTargetReticle({ bots, playerObj, getPlayerCollider });
 initLoop(update);
 startLoop();
 
@@ -264,6 +266,9 @@ function update(dt, frame) {
   tickBots(dt);
   if (state.phase === PHASE.PLAYING) { stepPhysics(); tickDynamicCrates(); }
   tickWeapons(dt, playerObj.position);
+  // v0.2.113: aim preview — after the physics step + bullet pass so bot
+  // colliders reflect THIS frame's positions, matching what a shot would hit.
+  tickTargetReticle();
   // Detect jump / ground state from world Y (eye at EYE when on floor).
   // Hysteresis on the airborne threshold: snap-to-ground micro-jitter sits a few
   // cm above EYE, so a tight 0.05 band re-triggered the land thump every frame.

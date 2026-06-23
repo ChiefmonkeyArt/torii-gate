@@ -3,8 +3,8 @@
 Living document. This will change as we learn.
 
 Current live game: `https://torii-quest.pplx.app`  
-Current live version: `v0.2.112-alpha`  
-Clean source version: `v0.2.112-alpha` — **source reconciliation COMPLETE (2026-06-23)**, **foundation sprint COMPLETE (2026-06-23)**, **regression repair pass COMPLETE (2026-06-23)**, and **collision/POV tuning COMPLETE (2026-06-23)**. The clean source contains all live fixes v0.2.100→v0.2.108, the first SDK boundaries (physics raycast + bodies), `window.ToriiDebug`, hardening, inert NAP/handoff/presence skeletons, the v0.2.111 repair batch, and the v0.2.112 hit-detection/look-down POV tuning pass. Builds green; all static regression checks pass (`npm run check`). See `torii-source-reconciliation-report.md`, `torii-foundation-sprint-report.md`, `torii-v0.2.111-regression-repair-report.md`, and `torii-v0.2.112-tuning-report.md`.  
+Current live version: `v0.2.113-alpha`  
+Clean source version: `v0.2.113-alpha` — **source reconciliation COMPLETE (2026-06-23)**, **foundation sprint COMPLETE (2026-06-23)**, **regression repair pass COMPLETE (2026-06-23)**, **collision/POV tuning COMPLETE (2026-06-23)**, and **foundation tuning COMPLETE (2026-06-23)**. The clean source contains all live fixes v0.2.100→v0.2.108, the first SDK boundaries (physics raycast + bodies), `window.ToriiDebug`, hardening, inert NAP/handoff/presence skeletons, the v0.2.111 repair batch, the v0.2.112 hit-detection/look-down POV tuning pass, and the v0.2.113 shared combat classifier/reticle, crate impulse, and snappy reload pass. Builds green; all static regression checks pass (`npm run check`). See `torii-source-reconciliation-report.md`, `torii-foundation-sprint-report.md`, `torii-v0.2.111-regression-repair-report.md`, `torii-v0.2.112-tuning-report.md`, and `torii-v0.2.113-foundation-tuning-report.md`.  
 Project direction: Torii Quest is an extension of Plebeian.Market, exploring a self-sovereign, federated, decentralised metaverse built on Nostr, Bitcoin, open protocols, free markets, and FOSS developer participation.
 
 ## Vision
@@ -24,6 +24,8 @@ Torii Quest should become the playful, explorable, spatial layer of the Plebeian
 - **Progressive fixes that work**: ship small, testable improvements. Avoid broad speculative rewrites that create repeated bug cycles.
 - **FOSS developer growth**: structure the code so other developers can build bots, NAP zones, shops, objects, and game modes without needing permission.
 - **Trade-offs over fake certainty**: every path has cost. We should choose the path that maximises freedom, interoperability, playability, and maintainability.
+- **SDK evolves with bug fixing**: every meaningful bug fix should either strengthen an SDK/API seam, add a debug hook, add a smoke check, or improve the code index when useful.
+- **Index the project as we go**: maintain a lightweight developer/agent index of modules, boundaries, debug hooks, smoke checks, and common fault locations so future work is faster and less repetitive.
 
 ## What We Shipped Today
 
@@ -42,6 +44,7 @@ These are now live on `torii-quest.pplx.app`:
 - **v0.2.110-alpha**: foundation sprint build with physics SDK seams, `window.ToriiDebug`, hardening, NAP metadata, handoff, presence skeletons, and regression tooling.
 - **v0.2.111-alpha**: regression repair build: FP neck clipping/POV, footstep drumroll, reflected gun orientation, headshot counting, NAP NPC tree/skin issues, and reload viewmodel animation.
 - **v0.2.112-alpha**: collision and POV tuning build: widened bot head/body colliders, removed head/body dead-band, fixed one-frame raycast lag, added layered headshot classification and `ToriiDebug.combat.lastHit`, lowered/arched look-down camera, and made the FP neck clip track camera height.
+- **v0.2.113-alpha**: foundation tuning build: shared headshot classifier used by bullets and HUD preview, restored orange/green/👌 target reticle, visible bullet nudges on Rapier crates, and faster clunk-click reload.
 
 The important pattern is that Rapier is now becoming the physical truth layer. Bot bullets, LOS, boundaries, and dynamic crates all move the game toward a real simulation instead of disconnected visual tricks.
 
@@ -139,8 +142,10 @@ Recommendation:
 - **Foundation sprint**: ✅ DONE (2026-06-23) — SDK boundaries, ToriiDebug, hardening batch, and world/identity skeletons landed at v0.2.110-alpha. See `torii-foundation-sprint-report.md`.
 - **Regression repair**: ✅ DONE (2026-06-23) — v0.2.111-alpha fixed FP neck clipping, footstep cadence, reflected gun roll, headshot classification, NAP NPC placement/materials, and reload viewmodel animation. See `torii-v0.2.111-regression-repair-report.md`.
 - **Collision/POV tuning**: ✅ DONE (2026-06-23) — v0.2.112-alpha tightened head/body detection and refined look-down camera/body arc. See `torii-v0.2.112-tuning-report.md`.
-- **Manual smoke test**: manually verify v0.2.112-alpha on real hardware, especially chest/feet view, no neck interior, head/body shot classification via `ToriiDebug.combat.lastHit`, movement feel after physics-step reorder, reload dip, NAP NPC pose/materials, mirror, and crates.
+- **Foundation tuning**: ✅ DONE (2026-06-23) — v0.2.113-alpha tightened headshot classification, restored target feedback, added crate bullet nudges, and made reload faster/snappier. See `torii-v0.2.113-foundation-tuning-report.md`.
+- **Manual smoke test**: manually verify v0.2.113-alpha on real hardware, especially head/body classification via `ToriiDebug.combat.lastHit`, reticle states (orange close, green body, green + 👌 headshot), crate nudges, reload clunk-click timing, chest/feet view, no neck interior, NAP NPC pose/materials, mirror, and footsteps.
 - **Freeze dist architecture changes**: only emergency hotfixes should go directly into dist after the freeze.
+- **Agent/Developer Efficiency Index**: start and maintain a lightweight project index so future agents can locate modules, SDK seams, debug hooks, and regression checks quickly.
 - **FP body integration**: ✅ DONE — implemented via the dedicated `chiefmonkey-headless.glb` (layer-2 FP body), superseding the planned `chiefmonkey17-fp.glb` clip-plane approach.
 - **Debug API cleanup**: ✅ DONE — `window.ToriiDebug` namespace (`engine/debug/toriiDebug.js`); legacy functional globals (`_onBotHit`, `_grassMat`, `_flowerMat`, `_mirrorMesh`) preserved and mirrored under the namespace.
 - **Safety hardening batch**: ✅ DONE — Nostr avatar URL validation (https-only), kill-feed `innerHTML` replaced with safe DOM, avatar placeholder empty `src` removed, and a conservative enforced CSP subset shipped with the full header policy documented for Report-Only rollout.
@@ -148,7 +153,9 @@ Recommendation:
 ### Next
 
 - **Rapier SDK boundary**: ✅ DONE — `engine/physics/raycast.js` (`castRay`/`castRayStatic`/`hasLineOfSight`); `physics.js` re-exports so behaviour is identical.
-- **Bodies SDK boundary**: ✅ DONE — `engine/physics/bodies.js` (kinematic/dynamic/bot/static/crate factories + collider→bot maps); `physics.js` re-exports.
+- **Bodies SDK boundary**: ✅ DONE — `engine/physics/bodies.js` (kinematic/dynamic/bot/static/crate factories + collider maps); `physics.js` re-exports.
+- **Combat targeting seam**: ✅ STARTED — bullet classification and HUD target preview now share the same headshot classifier. This should evolve into a small combat targeting API instead of duplicated aim logic.
+- **Agent/Developer Efficiency Index**: start `CODE_INDEX.md` or equivalent. Include module map, common debug flows, `window.ToriiDebug` paths, smoke checks, and SDK boundaries.
 - **BotAgent interface**: formalise NPC/bot behaviour so Chiefmonkey, bankers, and future community bots can be plugged in. (Not started — next real boundary to extract.)
 - **NAP zone module**: ⏳ SKELETON — `world/napZone.js` defines the metadata format (NIP-78 kind 30078) + pure builders/validators. Decoration persistence + federation still to do.
 - **World handoff stub**: ⏳ SKELETON — `world/handoff.js` defines the handoff event shape + serialize/verify/resolve (local only, no transport). Presence/discovery skeleton is `identity/presence.js` (disabled by default).
@@ -264,9 +271,20 @@ src/
 
 This map should not be built all at once. It is the direction of travel. Extract modules only when the working game has proven the need.
 
-## SDK and API Strategy
+## SDK, API, and Index Strategy
 
 The SDK should grow from stable internal systems.
+
+The rule going forward is: **every bug fix and feature pass should leave the code easier to extend than it found it**. That does not mean abstract everything. It means that when a system becomes reliable, reused, or important for debugging, we either expose a small API seam, add a debug hook, add a smoke check, or add an index entry.
+
+The first index should be lightweight:
+
+- `CODE_INDEX.md` or equivalent: current module map, ownership by concern, public/semi-public APIs, and common fault locations.
+- Debug registry: `window.ToriiDebug` paths for player, bots, combat, physics, world, NPCs, and version.
+- Smoke/regression map: what `npm run check` verifies and what still needs manual hardware testing.
+- SDK boundary notes: what is stable enough for contributors and what remains internal.
+
+This gives future agents and FOSS contributors faster fault-finding without building a heavy abstract framework too early.
 
 First SDK layer:
 
@@ -278,6 +296,11 @@ First SDK layer:
   - `createDynamicBody(shape, position, options)`
   - `createStaticBody(shape, position, options)`
   - `createSensor(shape, position, handlers)`
+
+- Combat targeting / HUD preview
+  - shared headshot/body classifier
+  - camera-forward target preview
+  - one source of truth for bullet result and HUD state
 
 - `engine/entities/bot-agent.js`
   - `BotAgent.tick(worldState) -> BotAction[]`
@@ -426,7 +449,7 @@ Commerce direction:
 - A creator can host people in their zone.
 - Payment should remain non-custodial and Bitcoin/Cashu-native.
 
-## Debug API
+## Debug API and Agent Index
 
 Alpha debug tools should ship, but they should become deliberate.
 
@@ -453,6 +476,15 @@ window.ToriiDebug = {
 ```
 
 This is both cleaner for developers and safer for public alpha. It also becomes documentation for future SDK boundaries.
+
+The debug API should now be paired with a living index:
+
+- **Module index**: where each system lives and which files are safe extension points.
+- **Fault index**: mirror issues, headshot classification, reload, footstep cadence, NAP NPC, Rapier crates, and service worker/version problems.
+- **Debug index**: exact `ToriiDebug` paths and what they prove.
+- **Regression index**: which checks are automated, which require manual playtesting, and which markers must exist in `dist`.
+
+This is the practical “indexer” path: build a useful map now, then automate more of it later if it proves valuable.
 
 ## Hardening Backlog
 
@@ -482,13 +514,18 @@ Use these rules to avoid repeated AI-created bugs:
 1. ✅ FP body integrated via `chiefmonkey-headless.glb` (layer-2 FP body).
 2. ✅ Source reconciliation for v0.2.100 through v0.2.108 completed.
 3. ✅ Reverse-ported live fixes by concern (clean source modules, not minified diff).
-4. Manual browser smoke test of live `v0.2.112-alpha`, then begin the next fun-feature sprint if the tuning pass feels good.
-5. Extract `engine/physics/raycast.js` (now backed by the new `castRay`/`castRayStatic`/`hasLineOfSight` in `src/physics.js`).
-6. Extract `engine/physics/bodies.js`.
-7. Create `window.ToriiDebug`.
-8. Define the first NAP zone metadata and handoff event draft.
-9. Add Nostr presence/discovery prototype.
-10. Build a local NAP-to-NAP handoff demo.
+4. ✅ Extracted Rapier raycast and bodies seams.
+5. ✅ Created `window.ToriiDebug`.
+6. ✅ Added first combat targeting seam via shared classifier + reticle preview.
+7. Manually smoke test live `v0.2.113-alpha`.
+8. Create the lightweight Agent/Developer Efficiency Index.
+9. Extract the player boundary.
+10. Implement explicit state machine.
+11. Implement event bus.
+12. Extract BotAgent interface.
+13. Start Vitest with one test per extracted boundary.
+14. Formalise NAP zone metadata/decor hooks.
+15. Build a local NAP-to-NAP handoff demo.
 
 ## Open Questions
 

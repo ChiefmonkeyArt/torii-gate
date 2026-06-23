@@ -50,6 +50,22 @@ export function flashHit(dmg=25) {
 
 export function flashCross() { elCross.classList.add('hit'); _crossTimer = 0.12; }
 
+// v0.2.113 — live aim/target reticle state, driven each frame by
+// targetReticle.js. One of: 'none' | 'close' | 'on' | 'headshot'.
+//   close    → orange crosshair (a bot is near the line of fire)
+//   on       → green crosshair (a body shot would land)
+//   headshot → green crosshair + 👌 OK hand (a head shot would land)
+// Diff-guarded so we only touch classes on a state change. The 'hit' flash and
+// 'reloading' fade are independent classes and compose on top of these.
+let _reticleState = 'none';
+export function setReticleState(s) {
+  if (s === _reticleState) return;
+  _reticleState = s;
+  elCross.classList.toggle('aim-close', s === 'close');
+  elCross.classList.toggle('aim-on',    s === 'on');
+  elCross.classList.toggle('aim-head',  s === 'headshot');
+}
+
 // Build the kill-feed entry with safe DOM construction (textContent, not
 // innerHTML) so feed text can never be parsed as markup.
 export function addKill(text, color = '#f7931a') {

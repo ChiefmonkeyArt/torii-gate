@@ -1,5 +1,5 @@
 // config.js — ALL constants. Never scatter magic numbers.
-export const VERSION   = 'v0.2.112-alpha';
+export const VERSION   = 'v0.2.113-alpha';
 export const GAME_NAME = 'Torii Quest';
 export const ARENA_HALF     = 20;
 export const WALL_H         = 2.6;  // was 8 → 5.5 → 4.4 → 3.52 → 2.6 (reduced again, user request v0.2.57)
@@ -26,7 +26,7 @@ export const BOT_SIGHT      = 14;
 export const BOT_DAMAGE     = 6;   // was 12 — player now dies in ~16 hits, not 9
 export const BOT_SPREAD     = 0.22; // was 0.08 — per-axis rad jitter, ~±6.3° cone
 export const MAX_AMMO       = 30;
-export const RELOAD_TIME    = 2.0;
+export const RELOAD_TIME    = 1.1;  // was 2.0 — felt dead-slow; snappier reload (v0.2.113)
 export const SHOOT_CD       = 0.06;
 export const BULLET_SPEED   = 60;
 export const BULLET_LIFE    = 2.5;

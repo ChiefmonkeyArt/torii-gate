@@ -112,6 +112,66 @@ export function playFootstep() {
   osc.stop(t + 0.07);
 }
 
+// ── Reload — snappy clunk-clunk-click (v0.2.113) ───────────────────────────
+// User feedback: reload "felt dead" with no audio and a 2.0s window. We dropped
+// the window to 1.1s AND give it a mechanical voice: two low "clunk"s (mag out,
+// mag in) then a bright "click" (slide/charging handle). All scheduled off
+// ctx.currentTime — NO setTimeout. Front-loaded so the action reads as snappy.
+function _clunk(ctx, t, freq) {
+  // Body — short lowpassed noise burst (the mechanical thud).
+  const dur = 0.06;
+  const sr  = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(sr * dur), sr);
+  const ch  = buf.getChannelData(0);
+  for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+  const src   = ctx.createBufferSource();
+  const ngain = ctx.createGain();
+  const lp    = ctx.createBiquadFilter();
+  src.buffer = buf;
+  lp.type = 'lowpass';
+  lp.frequency.value = 380;
+  ngain.gain.setValueAtTime(0.09, t);
+  ngain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(lp); lp.connect(ngain); ngain.connect(ctx.destination);
+  src.start(t);
+  // Pitch drop — low sine pluck gives the clunk its weight.
+  const osc  = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(freq, t);
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.5, t + 0.05);
+  gain.gain.setValueAtTime(0.05, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(t); osc.stop(t + 0.07);
+}
+function _click(ctx, t) {
+  // Bright, brief highpassed noise tick (the slide snapping home).
+  const dur = 0.03;
+  const sr  = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(sr * dur), sr);
+  const ch  = buf.getChannelData(0);
+  for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+  const src   = ctx.createBufferSource();
+  const ngain = ctx.createGain();
+  const hp    = ctx.createBiquadFilter();
+  src.buffer = buf;
+  hp.type = 'highpass';
+  hp.frequency.value = 2600;
+  ngain.gain.setValueAtTime(0.06, t);
+  ngain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(hp); hp.connect(ngain); ngain.connect(ctx.destination);
+  src.start(t);
+}
+export function playReload() {
+  const ctx = _audioCtx();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  _clunk(ctx, t,        150); // mag out
+  _clunk(ctx, t + 0.13, 190); // mag seats
+  _click(ctx, t + 0.26);      // slide home
+}
+
 // ── Bot shoot — raspy higher zap, clearly different from player's pow ──────
 // Player uses a deep sine sweep 440→90Hz. Bots get a thinner, brighter sawtooth
 // sweep 1100→380Hz with a crackle band, so you can tell incoming fire by ear.

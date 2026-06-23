@@ -10,7 +10,7 @@
        header (so it can roll out in Report-Only first) — meta CSP has no
        report-only mode and would risk breaking the Draco blob-worker + gstatic
        fetch + Rapier WASM before a live smoke test confirms it. -->
-  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'"/>
+  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' blob: 'sha256-riXb2rw9XLAWUTw1DAr1oCa+0WTCQdAoXHRbOlIDoNc='; worker-src 'self' blob:; connect-src 'self' wss://relay.damus.io wss://nos.lol wss://relay.nostr.band https://www.gstatic.com"/>
   <meta name="description" content="Torii Quest — an open-world arena shooter built on Nostr and Bitcoin. Sats. Shots. Sovereignty."/>
   <meta property="og:title" content="Torii Quest"/>
   <meta property="og:description" content="An open-world arena shooter built on Nostr and Bitcoin. Sats. Shots. Sovereignty."/>
@@ -281,6 +281,14 @@
     #crosshair .ch-h, #crosshair .ch-v { position: absolute; background: rgba(255,255,255,0.9); border-radius: 1px; }
     #crosshair .ch-h { width: 18px; height: 2px; top: 50%; left: 50%; transform: translate(-50%,-50%); }
     #crosshair .ch-v { width: 2px; height: 18px; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+    /* v0.2.113: live aim/target reticle states (set by targetReticle.js via
+       hud.setReticleState). close=orange (bot near line of fire), on=green
+       (body shot lands), headshot=green + 👌 OK hand. */
+    #crosshair.aim-close .ch-h, #crosshair.aim-close .ch-v { background: #ff9a3c; box-shadow: 0 0 6px rgba(255,154,60,0.8); }
+    #crosshair.aim-on    .ch-h, #crosshair.aim-on    .ch-v { background: #3dff7a; box-shadow: 0 0 6px rgba(61,255,122,0.8); }
+    #crosshair.aim-head  .ch-h, #crosshair.aim-head  .ch-v { background: #3dff7a; box-shadow: 0 0 12px rgba(61,255,122,1); }
+    #crosshair .ch-ok { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 18px; line-height: 1; opacity: 0; transition: opacity 0.1s ease; pointer-events: none; filter: drop-shadow(0 0 4px rgba(61,255,122,0.9)); }
+    #crosshair.aim-head .ch-ok { opacity: 1; }
     #crosshair.hit .ch-h, #crosshair.hit .ch-v { background: #f7931a; }
     /* v0.2.101: reload feedback — pulse ammo, fade crosshair while disarmed */
     #ammo-display.reloading { color: #f7931a; animation: reloadPulse 0.5s ease-in-out infinite; }
@@ -396,7 +404,7 @@
         <div><span class="ctrl-key">SPACE</span> &nbsp;Jump &nbsp;&nbsp; <span class="ctrl-key">R</span> &nbsp;Reload &nbsp;&nbsp; <span class="ctrl-key">ESC</span> &nbsp;Pause</div>
       </div>
 
-      <div id="version-label">v0.2.112-alpha</div>
+      <div id="version-label">v0.2.113-alpha</div>
     </div>
 
     <!-- RIGHT: Live chat (orange) -->
@@ -526,11 +534,11 @@
   <canvas id="minimap" width="110" height="110" style="display:block"></canvas>
   <div id="minimap-wrap"></div>
 
-  <div id="ver">v0.2.112-alpha · torii quest</div>
+  <div id="ver">v0.2.113-alpha · torii quest</div>
 </div>
 
 <!-- Crosshair -->
-<div id="crosshair"><div class="ch-h"></div><div class="ch-v"></div></div>
+<div id="crosshair"><div class="ch-h"></div><div class="ch-v"></div><div class="ch-ok">👌</div></div>
 
 <div id="hit-flash"></div>
 <div id="death-msg"><span>YOU DIED</span><p>Respawning...</p></div>

@@ -146,10 +146,10 @@ FP body stays on layer 2 (main camera only, hidden from the mirror).
   collider coverage changed.
 
 ## Recommended TODO / strategy-doc updates (Space files NOT modified by me)
-- In `NOSTR_ARENA_MASTER_TODO.md`, mark the v0.2.112 tuning pass (hit-detection
+- In `todo.md`, mark the v0.2.112 tuning pass (hit-detection
   tightening + look-down POV) and note the new `ToriiDebug.combat.lastHit`
   inspector.
-- In `Strategy-&-Next-Steps.md`, bump the "source-built" line to v0.2.112-alpha
+- In `strategy.md`, bump the "source-built" line to v0.2.112-alpha
   and add a manual-smoke item: verify look-down POV (no neck interior, chest→feet
   sweep) and headshot/body counting (via `ToriiDebug.combat.lastHit`) on real
   hardware before publish.

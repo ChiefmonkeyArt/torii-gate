@@ -6,7 +6,7 @@
 // World + RAPIER are injected by physics.js via initRaycast(). The collider→bot
 // lookup maps live in bodies.js (the factories that populate them); we read
 // them here to translate a Rapier hit into a game-side bot reference.
-import { colliderToBot, colliderToPart } from './bodies.js';
+import { colliderToBot, colliderToPart, colliderToCrate } from './bodies.js';
 
 let _world = null;
 let _RAPIER = null;
@@ -51,6 +51,7 @@ export function castRay(ox, oy, oz, dx, dy, dz, maxDist, excludeCollider = null,
     collider: hit.collider,
     bot:      colliderToBot.get(hit.collider.handle) || null,
     bodyPart: colliderToPart.get(hit.collider.handle) || null,
+    crate:    colliderToCrate.get(hit.collider.handle) || null,
   };
 }
 

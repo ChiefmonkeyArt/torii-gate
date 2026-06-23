@@ -55,7 +55,7 @@ spelling preserved.
 8. **Regression tooling** — `tools/regression-check.mjs` + `npm run check`:
    syntax, godMode, setTimeout allowlist, no-alloc, version markers, dist markers.
 
-9+10. Updated `Strategy-&-Next-Steps.md`; wrote
+9+10. Updated `strategy.md` (formerly `Strategy-&-Next-Steps.md`); wrote
    `torii-foundation-sprint-report.md`.
 
 ## Files changed

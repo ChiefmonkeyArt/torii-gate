@@ -22,6 +22,10 @@ export const colliderToBot = new Map();
 // Collider → body-part map ('body' or 'head'). Lets the bullet raycast apply
 // headshot damage multipliers without inspecting collider geometry.
 export const colliderToPart = new Map();
+// Collider → dynamic-crate rigid body map (v0.2.113). Lets the bullet raycast
+// translate a crate-collider hit into the Rapier body so weapons.js can apply a
+// nudge impulse. Keyed by collider handle; value is the dynamic RigidBody.
+export const colliderToCrate = new Map();
 
 // Player capsule geometry — matches PLAYER_RADIUS (0.35). 1.8m total height.
 export const PLAYER_CAPSULE_HALF_H = 0.55;
@@ -133,5 +137,6 @@ export function createDynamicCrate(x, y, z, half) {
   const collider = _world.createCollider(
     _RAPIER.ColliderDesc.cuboid(half, half, half), body
   );
+  colliderToCrate.set(collider.handle, body);
   return { body, collider };
 }

@@ -125,7 +125,7 @@
 
 ## Recommended TODO / strategy-doc updates (Space files NOT modified by me)
 - Mark the v0.2.111 regression batch (#1, #2, #3, #4, #6, #7, #8) as fixed in
-  `NOSTR_ARENA_MASTER_TODO.md`; note #5 (pushable crates) intentionally deferred.
-- In `Strategy-&-Next-Steps.md`, bump the "source-built" line from v0.2.110-alpha to
+  `todo.md`; note #5 (pushable crates) intentionally deferred.
+- In `strategy.md`, bump the "source-built" line from v0.2.110-alpha to
   v0.2.111-alpha and add a manual-smoke item: verify neck clip, mirror gun orientation,
   reload viewmodel dip, headshot counting, and NAP NPC pose on real hardware before publish.

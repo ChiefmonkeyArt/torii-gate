@@ -12,13 +12,38 @@ import { castRay, castRayStatic,
 
 // Headshot region, derived from the head sphere geometry (single source of
 // truth in bodies.js). The sphere spans [HEAD_BOTTOM, HEAD_TOP] above the bot
-// foot; HEAD_BOTTOM doubles as the neck-line for the height fallback.
+// foot; HEAD_BOTTOM is retained purely as a debug/inspection reference.
 const HEAD_BOTTOM   = BOT_HEAD_CENTRE_Y_OFFSET - BOT_HEAD_RADIUS; // 1.43
 // Proximity backstop: impacts within (head radius + 5cm) of the head centre
 // count as headshots even if the ray resolved the body collider on an
 // overlap frame. Squared to avoid a sqrt in the hot path.
 const HEAD_PROX     = BOT_HEAD_RADIUS + 0.05;
 const HEAD_PROX_SQ  = HEAD_PROX * HEAD_PROX;
+
+// v0.2.113 — single shared headshot classifier, used by BOTH the bullet hit
+// path (weapons) AND the on-screen target reticle preview (targetReticle.js)
+// so what the player SEES before firing matches what the shot actually scores.
+//
+// Rule (predictable, two-tier — the loose height fallback from v0.2.112 was
+// dropped to stop shoulder/upper-torso shots being mis-promoted to headshots):
+//   1) the ray resolved the head sphere collider outright (bodyPart==='head'); or
+//   2) the impact lies inside the head sphere (proximity backstop for the
+//      one frame where the head/body colliders overlap and Rapier's closest
+//      pick returns 'body' for a genuine head hit).
+// (px,py,pz) is the world-space impact; bot.pos is the bot foot (y≈0 alive).
+export function isInHeadSphere(px, py, pz, bot) {
+  const bx = bot.pos ? bot.pos.x : 0;
+  const bz = bot.pos ? bot.pos.z : 0;
+  const fy = bot.pos ? bot.pos.y : 0;
+  const dx = px - bx;
+  const dy = (py - fy) - BOT_HEAD_CENTRE_Y_OFFSET;
+  const dz = pz - bz;
+  return (dx * dx + dy * dy + dz * dz) <= HEAD_PROX_SQ;
+}
+
+export function classifyHeadshot(px, py, pz, bodyPart, bot) {
+  return bodyPart === 'head' || isInHeadSphere(px, py, pz, bot);
+}
 
 // Last bot-hit classification, surfaced through ToriiDebug.combat.lastHit for
 // in-arena tuning. Mutated in place — never reallocated in the hot path.
@@ -112,6 +137,17 @@ const _impactNrm     = new THREE.Vector3();
 const _reflDir       = new THREE.Vector3();
 const _bodyBurstNrm  = new THREE.Vector3();
 
+// v0.2.113 — crate nudge. When a player bullet resolves a dynamic crate body
+// (hit.crate, set by raycast.js via colliderToCrate), apply a small impulse at
+// the impact point along the bullet's travel direction with a slight upward
+// kick so the crate visibly shifts/tips without launching. Plain reused {x,y,z}
+// objects — Rapier accepts bare vector-likes, so no THREE allocation in the hot
+// path. Tuned low: BULLET_SPEED-normalized dir × CRATE_IMPULSE.
+const CRATE_IMPULSE  = 2.2;  // N·s along bullet dir
+const CRATE_LIFT     = 0.6;  // N·s upward component
+const _crateImp      = { x: 0, y: 0, z: 0 };
+const _cratePt       = { x: 0, y: 0, z: 0 };
+
 // ── Hit callbacks — set by main.js ───────────────────────────────────────────
 let _onPlayerHit = null;
 let _bots        = null;
@@ -164,23 +200,16 @@ export function tickWeapons(dt, playerPos) {
               // hit.bodyPart === 'head' for the sphere, 'body' for the capsule.
               _bodyBurstNrm.copy(b.vel).normalize().negate();
               spawnSpark(_rayHitP, _bodyBurstNrm);
-              // Deterministic, geometry-consistent head classification (v0.2.112).
-              // Layered priority so clear headshots count and body shots don't get
-              // mis-promoted (bot foot sits at pos.y, 0 when alive):
+              // Deterministic, geometry-consistent head classification (v0.2.113).
+              // Shared classifier (isInHeadSphere/classifyHeadshot) — same rule the
+              // on-screen target reticle uses, so preview matches outcome. Two-tier:
               //   1) the ray resolved the head sphere collider outright; else
-              //   2) the impact lies inside the head sphere — proximity backstop
-              //      for the overlap frame where Rapier's closest pick says 'body'
-              //      for a true head hit; else
-              //   3) the impact is at/above the neck-line (head-sphere bottom).
-              const botX   = hit.bot.pos ? hit.bot.pos.x : 0;
-              const botZ   = hit.bot.pos ? hit.bot.pos.z : 0;
+              //   2) the impact lies inside the head sphere — proximity backstop for
+              //      the overlap frame where Rapier's closest pick says 'body'.
               const footY  = hit.bot.pos ? hit.bot.pos.y : 0;
               const relY   = _rayHitP.y - footY;
-              const _hdx   = _rayHitP.x - botX;
-              const _hdy   = relY - BOT_HEAD_CENTRE_Y_OFFSET;
-              const _hdz   = _rayHitP.z - botZ;
-              const inHeadSphere = (_hdx*_hdx + _hdy*_hdy + _hdz*_hdz) <= HEAD_PROX_SQ;
-              const isHead = hit.bodyPart === 'head' || inHeadSphere || relY >= HEAD_BOTTOM;
+              const inHeadSphere = isInHeadSphere(_rayHitP.x, _rayHitP.y, _rayHitP.z, hit.bot);
+              const isHead = classifyHeadshot(_rayHitP.x, _rayHitP.y, _rayHitP.z, hit.bodyPart, hit.bot);
               const dmg    = isHead ? 9 : 3;
               // Debug snapshot for ToriiDebug.combat.lastHit (no alloc).
               _lastHit.part = hit.bodyPart; _lastHit.classified = isHead ? 'head' : 'body';
@@ -196,6 +225,14 @@ export function tickWeapons(dt, playerPos) {
               const dot = b.vel.dot(_impactNrm);
               _reflDir.copy(b.vel).addScaledVector(_impactNrm, -2 * dot).normalize();
               spawnRicochet(_rayHitP, _reflDir);
+              // v0.2.113 — dynamic crate? nudge it along the bullet direction.
+              if (hit.crate) {
+                _crateImp.x = _rayDirN.x * CRATE_IMPULSE;
+                _crateImp.y = _rayDirN.y * CRATE_IMPULSE + CRATE_LIFT;
+                _crateImp.z = _rayDirN.z * CRATE_IMPULSE;
+                _cratePt.x = _rayHitP.x; _cratePt.y = _rayHitP.y; _cratePt.z = _rayHitP.z;
+                hit.crate.applyImpulseAtPoint(_crateImp, _cratePt, true);
+              }
             }
             // Move bullet to impact point so the visual tracer ends there.
             b.mesh.position.copy(_rayHitP);

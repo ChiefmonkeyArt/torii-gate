@@ -1,4 +1,4 @@
-// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.112).
+// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.113).
 // No external deps. Run with: node tools/regression-check.mjs  (or: npm run check)
 //
 // Catches the regressions the Strategy doc calls out, without needing a browser:
@@ -15,7 +15,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.112-alpha';
+const EXPECTED_VERSION = 'v0.2.113-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -98,7 +98,7 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   const count = (html.match(new RegExp(EXPECTED_VERSION.replace(/\./g, '\\.'), 'g')) || []).length;
   if (count < 2) fail(`index.html has ${count} ${EXPECTED_VERSION} markers (expected >=2)`);
   else pass(`index.html has ${count} version markers`);
-  if (/v0\.2\.111-alpha/.test(html)) fail('index.html still references v0.2.111-alpha');
+  if (/v0\.2\.112-alpha/.test(html)) fail('index.html still references v0.2.112-alpha');
 }
 
 // 6. dist markers (only if built)
@@ -112,7 +112,7 @@ console.log('[6] dist markers (skipped if no dist/)');
     if (!jsName) fail('no dist/assets/index-*.js');
     else {
       const js = readFileSync(join(distDir, 'assets', jsName), 'utf8');
-      const markers = ['chiefmonkey-headless.glb', 'triangle', 'Idle_11', 'Stylish_Walk_inplace', 'ToriiDebug'];
+      const markers = ['chiefmonkey-headless.glb', 'triangle', 'Idle_11', 'Stylish_Walk_inplace', 'ToriiDebug', 'aim-head', 'applyImpulseAtPoint'];
       for (const m of markers) {
         if (js.includes(m)) pass(`dist marker present: ${m}`);
         else fail(`dist marker MISSING: ${m}`);

@@ -6,6 +6,7 @@ import { keys, getYaw, getPitch, setYaw, onKeyDown, onShoot, requestLock } from 
 import { scene, camera } from './scene.js';
 import { stepPhysics, createKinematic, movePlayer, physicsReady, PLAYER_BODY_CENTRE_OFFSET } from './physics.js';
 import { getGunBarrelWorld } from './weapons.js';
+import { playReload } from './audio.js';
 import { PLAYER_HP, PLAYER_SPEED, MAX_AMMO, RELOAD_TIME, SHOOT_CD, RESPAWN_TIME, ARENA_HALF, JUMP_FORCE, GRAVITY, godMode, NAP_X, NAP_FAR_X } from './config.js';
 
 
@@ -258,6 +259,7 @@ export function startReload() {
   if (state.reloading || state.ammo === MAX_AMMO) return;
   state.reloading   = true;
   state.reloadTimer = RELOAD_TIME;
+  playReload();
   emit(EV.HUD_UPDATE);
 }
 
