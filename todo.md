@@ -5,16 +5,37 @@
 
 > Strategy source of truth: `strategy.md`.
 > Mission: get to fast, safe feature delivery on solid foundations.
+> Project purpose: we are building an open world builder on open protocols, FOSS, Bitcoin, and Nostr. The shoot'em up is a proof-of-work/game layer. The strategic goal is a self-sovereign, FOSS, Nostr/Bitcoin-powered open world builder and decentralised metaverse layer for Plebeian/Plebeian.Market.
 
 ---
 
 ## Working Rules
 
 - **Every fix should improve the foundation when useful**: add or strengthen an SDK/API seam, debug hook, smoke check, or code index entry.
+- **No big rewrites**: every task must leave one system cleaner, more testable, or more agent-readable than it found it. Incremental slices only; broad speculative rewrites create bug cycles and waste handoff context.
 - **SDK evolves from working code**: extract boundaries around systems we touch and prove, not speculative framework layers.
 - **Agent/dev efficiency matters**: keep `CODE_INDEX.md`, `ENGINE.md`, `window.ToriiDebug`, regression checks, and handoff reports current enough that future agents can find faults quickly.
+- **Agent handoff design**: maintain a clear engine/game split, public APIs per system, `CODE_INDEX.md`, debug snapshots via `ToriiDebug`, tests for every extracted seam, explicit constraints in comments/docs, source-of-truth doc references, and small focused modules. A new agent or developer should be able to locate any fault using repo docs and tests alone, without reading every source file.
+- **Cross-agent portability**: structure the repo so another AI or developer can pick up work using docs and tests. DeepSeek, perplexica, routstr, and other operators are plausible future contributors; we do not guarantee any specific agent, but we design so handoff is possible without source archaeology.
 - **Rapier is the physical truth layer**: combat, LOS, bot bullets, crates, boundaries, and future interactable objects should converge on reusable Rapier-backed APIs.
 - **Cut dead structure**: remove duplicate, stale, or completed structural tasks unless they directly support new features on solid foundations.
+- **Prefer FOSS and open protocols**: do not design toward Google, Cloudflare, Microsoft, or Babylon.js dependencies.
+
+---
+
+## Near-Term — Agent-Readable Structure
+
+These tasks build the structural layer that makes the project legible to any agent, contributor, or auditor without source archaeology. Work through them in order; each one enables the next. The goal is not abstraction for its own sake — it is making the codebase handoff-safe so FOSS contributors, future AI operators, and the project itself are not locked into any single session's context.
+
+| # | Category | Task |
+|---|----------|------|
+| ARS-1 | DEBUG | **Debug dump / handoff snapshot** — extend `window.ToriiDebug` to expose a `ToriiDebug.snapshot()` call that serialises the current game state (phase, player position, bot states, last hit, last shot, version) to a JSON-serialisable object. This gives any incoming agent an instant read on the runtime state without tracing globals. Document the snapshot shape in `CODE_INDEX.md`. |
+| ARS-2 | PHYSICS | **Physics interaction API** — define the public surface of the Rapier physics layer: what callers can ask (`castRay`, `hasLineOfSight`, `createDynamicBody`, `createStaticBody`, `createSensor`) and what they must not reach past. Add JSDoc `@public` / `@internal` markers to `engine/physics/raycast.js` and `engine/physics/bodies.js`. Write one test that exercises the public surface with a mock world. |
+| ARS-3 | PHYSICS | **Rapier raycast service** — extract a `RaycastService` facade that wraps `castRay`/`hasLineOfSight` behind a single injectable interface. Callers (bots, bullets, LOS) receive the service; they do not import Rapier directly. Reduces coupling and allows the test suite to inject a mock implementation. |
+| ARS-4 | ARCH | **Player state machine cleanup** — fold `reloading` and `pointerLocked` into the guarded FSM in `src/state.js`. Add tests for the new edges. Remove any remaining direct `state.phase =` writes outside `state.js`. A single auditable player lifecycle is easier for any new agent to read without tracing scattered flags. |
+| ARS-5 | SDK | **SDK/API skeleton** — add a top-level `src/sdk/index.js` that re-exports the stable public APIs from physics, combat, entities, and identity layers. This is the single import point for external contributors and future community modules. Document each export's stability tier (`stable` / `experimental` / `internal`) in `CODE_INDEX.md`. |
+| ARS-6 | INDEX | **CODE_INDEX.md upkeep** — after each ARS task, update `CODE_INDEX.md` to reflect the new module boundary, public API, debug hook, test file, and any known constraints or open edges. The index is the primary agent-handoff document; it must stay current or it becomes misleading. |
+| ARS-7 | ARCH | **Handoff template** — write a `HANDOFF.md` template (or add a `## Handoff` section to `CODE_INDEX.md`) that any agent or developer fills in at the end of a session: version changed, what was tested, open edges, next recommended task, and constraints discovered. Makes the next session's context window useful immediately, regardless of which AI or developer picks up. |
 
 ---
 

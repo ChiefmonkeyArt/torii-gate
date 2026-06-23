@@ -7,6 +7,22 @@ Current live version: `v0.2.113-alpha` (clean source at `v0.2.129-alpha`, not ye
 Clean source version: `v0.2.129-alpha` — **source reconciliation COMPLETE (2026-06-23)**, **foundation sprint COMPLETE (2026-06-23)**, **regression repair pass COMPLETE (2026-06-23)**, **collision/POV tuning COMPLETE (2026-06-23)**, **foundation tuning COMPLETE (2026-06-23)**, **player boundary first slice STARTED (2026-06-23)**, **state-machine groundwork first slice STARTED (2026-06-23)**, **event-bus seam formalised (2026-06-23)**, **bot-hit bridge migrated onto the bus (2026-06-23)**, **foliage shader globals migrated to a module registry (2026-06-23)**, and **mirror handle migrated to a module accessor — last functional global decoupled (2026-06-23)**. The clean source contains all live fixes v0.2.100→v0.2.108, the first SDK boundaries (physics raycast + bodies), `window.ToriiDebug`, hardening, inert NAP/handoff/presence skeletons, the v0.2.111 repair batch, the v0.2.112 hit-detection/look-down POV tuning pass, the v0.2.113 shared combat classifier/reticle, crate impulse, and snappy reload pass, the v0.2.114 player boundary first slice (pure player geometry + spawn + look-down POV math extracted to `engine/entities/player.js`), the v0.2.115 state-machine first slice (explicit `GAME_EVENT`/`TRANSITIONS`/`transition()` + phase predicates in `src/state.js`, all phase call sites routed through the seam), the v0.2.116 event-bus seam (registry convention documented, `EV.PHASE_CHANGE` wired from `state.transition()`, undefined-event regression guard), the v0.2.117 bot-hit migration (`EV.BOT_HIT_BY_PLAYER` from weapons.js → main.js subscriber; `window._onBotHit` deprecated to a forwarding alias; regression check 9), the v0.2.118 foliage-material registry (grass/flower shaders moved off `window` into `arena-foliage.js` — `tickFoliage`/`getGrassMat`/`getFlowerMat`; `_grassMat`/`_flowerMat` deprecated to debug aliases; regression check 10), the v0.2.119 mirror accessor (Reflector handle moved off `window` into `mirror.js` `getMirror()`; `_mirrorMesh` deprecated to a debug alias; regression check 10 extended — last functional global decoupled), the v0.2.120 Vitest foundation (added Vitest + `npm test`; first pure unit suites for the state machine, event bus, and headshot classifier — the classifier extracted to a pure `engine/combat/classifier.js`; regression check 11 guards the scaffold), and the v0.2.121 first real `EV.PHASE_CHANGE` subscriber (top-level screen visibility centralised into a pure `engine/ui/phaseScreens.js` map applied by one main.js subscriber; the imperative title/HUD/pause toggles removed from the transition call sites; `tests/phaseScreens.test.js` added), and the v0.2.122 BotAgent boundary first slice (pure `engine/entities/bot-agent.js` — `BOT_ACTION` constants, decision helpers `engageSpeed`/`steerComponent`/`inEngageRange`/`wantsToShoot`, and a `decideActions(worldState) -> BotAction[]` facade; `bots.js` hot path consumes the scalar helpers with the LOS short-circuit preserved; `decideActions` tested-but-unwired; `tests/bot-agent.test.js` added), and the v0.2.123 player-boundary continuation (movement heading basis `forwardX`/`forwardZ`/`rightX`/`rightZ` extracted to `engine/entities/player.js` and wired into the movement tick; the module's import narrowed to the pure `bodies.js` leaf so it — and its tests — stay free of the Three/Rapier chain; `tests/player-boundary.test.js` added), and the v0.2.124 target-practice combat hit-registration diagnostics (pure `engine/combat/shotDiagnostics.js` aim-vs-outcome miss-reason classifier; per-shot `ToriiDebug.combat.lastShot`/`lastMiss` snapshots recorded in `weapons.js` comparing the camera crosshair ray against the bullet's actual outcome; the distance-miss root cause documented — the reticle is an instantaneous camera hitscan while the bullet is a barrel-fired projectile with offset + travel time; **diagnostics only, no gameplay change**; `tests/shot-diagnostics.test.js` added), and the v0.2.125 headshot parallax fix (root cause of "headshots take two shots" found: the reticle previewed a headshot on the CAMERA ray but the bullet flew the BARREL→80m-convergence line, so muzzle parallax dropped the previewed headshot onto the BODY collider — 3 dmg ⇒ two shots; **honouring the camera-bullet rule**, `player.js shoot()` now fires straight down the camera/crosshair ray (origin = camera +0.30 m forward along the SAME axis), so the bullet line == reticle ray at every distance and a previewed headshot lands as a headshot; no damage value or classifier threshold changed; the damage/kill contract is now locked by a pure `engine/combat/damage.js` + `tests/combat-damage.test.js`; **remaining open work: finite travel time (60 m/s) means the instantaneous reticle still over-promises on fast-moving targets at range — future lead/hit-assist/projectile-prediction**), and the v0.2.126 barrel→crosshair firing rule (per a user revision before publish: bullets must ORIGINATE at the gun barrel, not the camera; the v0.2.125 camera-origin bullet is RETIRED. `player.js shoot()` now casts the camera/crosshair ray to find the aimed point (first hit, or `CONVERGE_DIST` 80 m fallback), spawns the bullet at the barrel via `getGunBarrelWorld`, and fires it **barrel → that crosshair point** through the pure `engine/combat/aim.js` — `crosshairPoint`/`aimDirection`/`CONVERGE_DIST`. The projectile passes through exactly what the reticle classified, so the v0.2.125 anti-parallax property is kept (a previewed headshot lands as a headshot) while the muzzle is back on the gun; convergence now happens at the ACTUAL aimed point at any range, not a fixed distance. Damage contract unchanged; `tests/aim.test.js` added), and the v0.2.127 reload viewmodel feel polish (per user feedback the FP reload should be snappier and synced to the "click down, clack snap back" audio; the old symmetric `sin(progress*π)` hump was replaced by a pure `engine/weapons/reloadPose.js` `reloadDip(p)` curve — quick ease-out DROP, brief HOLD lowered, fast SNAP-BACK through rest into a small overshoot, then SETTLE to rest; `weapons.js _tickGun()` scales the same rest-offsets by the dip; `RELOAD_TIME=1.1` and the reload audio are unchanged so gameplay duration + sync are preserved; `tests/reload-pose.test.js` added), and the v0.2.128 combat hitbox + re-entry fix (manual feedback: headshots only landed when aiming ABOVE the bot on first entry, and hardly any shots connected on a SECOND entry. **Head zone:** the head sphere sat too high — old centre 1.65 + radius 0.22 spanned [1.43,1.87] vs a visible crown ≈1.70, so the sphere's top floated 0.17 m over the head while a crosshair on the face resolved the body cap; lowered `BOT_HEAD_CENTRE_Y_OFFSET` 1.65→1.55 and tightened `BOT_HEAD_RADIUS` 0.22→0.20 → sphere [1.35,1.75] hugging the face/crown, bottom still overlapping the body cap (1.52) so no thread-through gap; the above-head zone was *removed*, not loosened, and shoulder/above shots stay body. **Re-entry:** `initPhysics()` builds a fresh Rapier world each call and the ENTER handler re-ran the whole bootstrap every entry, orphaning the load-time bot colliders (bound to the discarded world) so a re-entered arena had no bot colliders; the ENTER handler now bootstraps physics/colliders/player-body/viewmodels exactly ONCE via an `_arenaBootstrapped` guard so the single world persists across HOME/ENTER, with each entry only `resetRun()` + spawn reset (`resetRun()` was defined but never called before). +7 head-zone cases in `tests/classifier.test.js`), and the v0.2.129 muzzle origin side fix (manual feedback: bullets/tracers appeared to come from the LEFT, not the visible RIGHT-hand gun. Root cause: `getGunBarrelWorld` built the barrel offset basis from the camera's LOCAL quaternion, but the FP camera is a CHILD of `playerObj` which carries the yaw — so the +0.12 right offset pointed in a fixed world direction regardless of facing and the origin/tracer drifted to the wrong side as the player turned. Extracted the barrel math to a pure `engine/weapons/muzzle.js` (`muzzlePoint`/`barrelWorldFromCamera` + `MUZZLE_FORWARD/RIGHT/UP`) and rebuilt the basis from `camera.getWorldQuaternion()` so the +right offset tracks yaw and the muzzle stays on the visible right-hand gun; the barrel→crosshair firing direction is unchanged. `tests/muzzle.test.js` added — locks the +right side convention and the world-quaternion yaw-tracking). Builds green; all static regression checks pass (`npm run check`); `npm test` green (126 tests / 11 files). See `torii-source-reconciliation-report.md`, `torii-foundation-sprint-report.md`, `torii-v0.2.111-regression-repair-report.md`, `torii-v0.2.112-tuning-report.md`, `torii-v0.2.113-foundation-tuning-report.md`, `torii-v0.2.114-player-boundary-report.md`, `torii-v0.2.115-state-machine-report.md`, `torii-v0.2.116-event-bus-report.md`, `torii-v0.2.117-bot-hit-event-report.md`, `torii-v0.2.118-material-registry-report.md`, `torii-v0.2.119-mirror-accessor-report.md`, `torii-v0.2.120-vitest-foundation-report.md`, `torii-v0.2.121-phase-subscriber-report.md`, `torii-v0.2.122-botagent-report.md`, `torii-v0.2.123-player-boundary-report.md`, `torii-v0.2.124-target-practice-report.md`, `torii-v0.2.125-headshot-damage-report.md`, `torii-v0.2.126-barrel-crosshair-report.md`, `torii-v0.2.127-reload-snap-report.md`, `torii-v0.2.128-headzone-reentry-report.md`, and `torii-v0.2.129-muzzle-alignment-report.md`.  
 Project direction: Torii Quest is an extension of Plebeian.Market, exploring a self-sovereign, federated, decentralised metaverse built on Nostr, Bitcoin, open protocols, free markets, and FOSS developer participation.
 
+## What We Are Building
+
+Torii Quest is an open world builder built on open protocols, free open-source software, Bitcoin, and Nostr.
+
+The shoot'em up arena is a proof-of-work layer — it is the fun, playable front that draws people in and proves that a decentralised game can be built without custodial identity, platform accounts, or corporate infrastructure. It is also a technical stress test: real-time physics, hit registration, and 3D rendering running in a browser with Nostr identity and Bitcoin rails is a hard problem. Solving it well validates the stack.
+
+The strategic goal is bigger. We are building a self-sovereign, FOSS, Nostr/Bitcoin-powered open world builder and decentralised metaverse layer for Plebeian and Plebeian.Market. That means:
+
+- **Anyone can run a world node.** No central operator controls who gets a space.
+- **Players own their identity.** An npub carries reputation, assets, and presence across every node without re-registration.
+- **Commerce is non-custodial.** Plebeian.Market listings become spatial objects. Payments move over Bitcoin/Cashu/Nutzap rails without a payment processor in the middle.
+- **FOSS is the growth model.** Contributors can add bot behaviours, NAP zones, game modes, shop layouts, and world types without asking permission from a platform.
+- **Nostr is the coordination layer.** Discovery, presence, handoff, community chat, event announcements, and asset metadata all move through the relay network.
+
+This is not a game with crypto bolted on. It is a reference implementation of what a free, open, self-sovereign digital world can feel like when built on honest foundations.
+
 ## Vision
 
 Torii Quest starts as a fun browser shoot'em up, but the larger goal is bigger than a game. It is a working prototype of a decentralised digital world where people can move between NAP zones, shops, stalls, art galleries, hangouts, events, duels, communities, and marketplaces without needing a central platform account.
@@ -21,7 +37,7 @@ Torii Quest should become the playful, explorable, spatial layer of the Plebeian
 - **Bitcoin and Nostr only by default**: value, identity, messaging, presence, discovery, and handoff should prefer Bitcoin/Cashu/Nostr rails before platform-specific infrastructure.
 - **Federated, not centralised**: worlds should discover each other through relays and signed metadata, not a mandatory central registry.
 - **Fun before ideology**: the shoot'em up must remain fun. The freedom-tech architecture should make the game more meaningful, not make it boring.
-- **Progressive fixes that work**: ship small, testable improvements. Avoid broad speculative rewrites that create repeated bug cycles.
+- **Incremental structure, no big rewrites**: every task must leave one system cleaner, more testable, or more agent-readable than it found it. No broad speculative rewrites; they create bug cycles, waste handoff context, and break FOSS contributors' understanding of the codebase.
 - **FOSS developer growth**: structure the code so other developers can build bots, NAP zones, shops, objects, and game modes without needing permission.
 - **Trade-offs over fake certainty**: every path has cost. We should choose the path that maximises freedom, interoperability, playability, and maintainability.
 - **SDK evolves with bug fixing**: every meaningful bug fix should either strengthen an SDK/API seam, add a debug hook, add a smoke check, or improve the code index when useful.
@@ -336,6 +352,59 @@ Third SDK layer:
 - Community modules for shops, art galleries, markets, events, and hangouts.
 - Bitcoin/Cashu/Nutzap rails.
 
+## Agent-Readable Structure and Cross-Agent Portability
+
+### Why This Matters
+
+Torii Quest is a FOSS project with a vision that extends well beyond any single development session. Future contributors may be human developers, open-source communities, or AI agents operating under different operators. If the codebase requires reading every source file to understand what is happening, handoff fails every time. The structural work being done here is not internal housekeeping — it is a prerequisite for the open world we are trying to build.
+
+Specifically:
+
+- **Reduces source archaeology.** A new agent or developer should be able to find a fault or understand a system from `CODE_INDEX.md`, the test suite, and `ToriiDebug` — not from reading 3,000 lines of `main.js`.
+- **Makes changes local.** Well-bounded modules with clear public APIs mean a fix to the physics layer does not silently break the combat layer. This matters for AI agents especially, which do not always know what they do not know.
+- **Allows faster debugging.** `ToriiDebug.snapshot()`, `ToriiDebug.combat.lastHit`, `ToriiDebug.combat.lastShot`, and similar hooks give any incoming session an instant read on runtime state. Without these, every debug session starts from scratch.
+- **Supports FOSS contributors.** An external contributor building a NAP zone, a custom bot, or a game mode needs a stable SDK entry point and enough documentation to work without asking the core team. A well-indexed, well-tested codebase is that entry point.
+- **Avoids vendor lock-in.** Clean module boundaries and open protocol integrations (Nostr, Bitcoin, Rapier, Three.js) mean the project does not depend on any single AI provider, cloud vendor, or proprietary runtime. This is consistent with the self-sovereign ethos of the project itself.
+
+### Agent Handoff Design
+
+Every system should be structured so an incoming agent can orientate quickly. The practical elements:
+
+- **Clear engine/game split**: `src/engine/` contains reusable, game-agnostic systems (physics, entities, combat math, debug tools). `src/gameplay/`, `src/scene/`, and `src/` contain the game-specific orchestration that consumes them. An agent touching combat mechanics should not need to understand the Nostr relay layer.
+- **Public APIs per system**: each `engine/` module declares a stable public surface (JSDoc `@public`) and marks internal helpers (`@internal`). Callers import from the public surface; they do not reach into implementation details.
+- **`CODE_INDEX.md`**: the primary handoff document. Updated after every structural task. Contains the current module map, public API list, `ToriiDebug` paths, test file locations, known constraints, and common fault locations. If `CODE_INDEX.md` is stale, it is worse than no index.
+- **Debug snapshots**: `window.ToriiDebug` exposes enough runtime state that any session can diagnose a fault without needing to add logging. The `ToriiDebug.snapshot()` function should serialise the full current state to a plain object that can be logged or reported.
+- **Tests as contracts**: every extracted seam has a test file that specifies its expected behaviour. These tests are the specification for any future agent or contributor. When a test breaks, the contract was violated; when a test passes, the contract holds.
+- **Explicit constraints in code**: rules that are non-obvious (no `new Vector3` in hot paths, bullets originate at the barrel, `godMode` must be false in production) are stated in both the source file comments and the Critical Rules section of the TODO. They should not live only in one place.
+- **Source-of-truth references**: every module's comment header should state which doc is its source of truth. `state.js` points to the FSM table in strategy. `CODE_INDEX.md` points to individual modules. Session reports point to both. No orphaned context.
+- **Small focused modules**: a module that does one thing is easy to hand off. A 3,000-line orchestrator is not. The extraction work (player boundary, state machine, event bus, bot-agent, combat seams) is directly in service of this.
+
+### Cross-Agent Portability
+
+The repo structure should let another AI operator or developer pick up work using docs and tests alone, without requiring access to a specific provider's memory or session history.
+
+DeepSeek, perplexica, routstr, and other open or self-hosted AI operators are plausible future contributors to this project. We do not promise compatibility with any specific agent or make architectural decisions based on any one provider's capabilities. What we do commit to is a repo structure where:
+
+- `CODE_INDEX.md` + `HANDOFF.md` give enough context to start a new session productively.
+- The test suite verifies the invariants a new agent must not break.
+- `ToriiDebug` gives the agent runtime visibility without requiring a guided tour.
+- The `src/sdk/index.js` entry point gives a bounded surface for external contributions.
+- Nostr and Bitcoin dependencies are kept explicit and documented, not buried in implementation details.
+
+This is also consistent with avoiding vendor lock-in at the infrastructure level. A codebase that only works well when a specific AI provider drives it is as fragile as one that only works on a specific cloud platform.
+
+### Near-Term Structural Tasks
+
+See the `Near-Term — Agent-Readable Structure` section in `todo.md` for the ordered task list (ARS-1 through ARS-7):
+
+1. **ARS-1**: Debug dump / handoff snapshot (`ToriiDebug.snapshot()`).
+2. **ARS-2**: Physics interaction API (public surface markers, mock-world test).
+3. **ARS-3**: Rapier raycast service (injectable facade, breaks direct Rapier coupling).
+4. **ARS-4**: Player state machine cleanup (fold `reloading`/`pointerLocked` into FSM).
+5. **ARS-5**: SDK/API skeleton (`src/sdk/index.js` with stability tiers).
+6. **ARS-6**: `CODE_INDEX.md` upkeep (updated after every ARS task).
+7. **ARS-7**: Handoff template (`HANDOFF.md` or `CODE_INDEX.md` handoff section).
+
 ## NAP Zone Strategy
 
 NAP zones should become peaceful, player-owned, programmable social spaces.
@@ -545,8 +614,10 @@ Use these rules to avoid repeated AI-created bugs:
 
 ## Working Recommendation
 
-Build the best fun arena shooter we can, but treat every stable system as a future SDK boundary.
+Build the best fun arena shooter we can, but treat every stable system as a future SDK boundary and every structural task as an investment in the wider open world.
 
-The game brings people in. NAP zones make it social. Nostr makes it sovereign. Bitcoin makes trade real. FOSS makes it grow beyond one team. The near-term engineering job is to keep those ambitions from collapsing into brittle code by moving from patched dist back to clean, modular source.
+The game brings people in. NAP zones make it social. Nostr makes it sovereign. Bitcoin makes trade real. FOSS makes it grow beyond one team. The agent-readable structure work makes it maintainable across sessions, contributors, and operators.
+
+The shoot'em up is the proof-of-work layer. The prize is a self-sovereign, open, FOSS, Nostr/Bitcoin-powered world builder and decentralised metaverse layer for Plebeian and Plebeian.Market — one that no single company owns, no central server controls, and any developer or AI agent can contribute to from the repo alone.
 
 Bitcoin and Nostr only, baby.
