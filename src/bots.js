@@ -7,8 +7,9 @@ import { BOT_COUNT, BOT_SPEED, BOT_HP, BOT_SHOOT_CD, BOT_SIGHT, BOT_SPREAD, AREN
 import { playBotShoot } from './audio.js';
 import { BotModel, preloadBotModel } from './botModel.js';
 import { getLodLevel, applyLod } from './lod.js';
-import { PLAYER_SAFE_CORNER } from './player.js';
+import { PLAYER_SAFE_CORNER, getPlayerCollider } from './player.js';
 import { createBotBody, createBotHead, setBotBodyPos, physicsReady,
+         hasLineOfSight,
          BOT_BODY_CENTRE_Y_OFFSET, BOT_HEAD_CENTRE_Y_OFFSET } from './physics.js';
 
 export const bots = [];
@@ -234,7 +235,12 @@ export function tickBots(dt) {
     // Bots respect the Non-Aggression Principle past the torii gate.
     let isShooting = false;
     const playerInNap = pp.x > NAP_X;
-    if (dist < BOT_SIGHT && !playerInNap) {
+    // LOS gate (v0.2.105): a bot only fires when it has a clear Rapier line to
+    // the player — no wall, crate or obstacle in the way. Stops bots shooting
+    // through cover. Eye-to-eye segment, player capsule excluded so it doesn't
+    // self-block.
+    if (dist < BOT_SIGHT && !playerInNap &&
+        hasLineOfSight(nx, EYE_Y, nz, pp.x, pp.y, pp.z, getPlayerCollider())) {
       bot.shootCd -= dt;
       if (bot.shootCd <= 0) {
         bot.shootCd = BOT_SHOOT_CD + Math.random() * 0.8;

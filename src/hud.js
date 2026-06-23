@@ -15,7 +15,7 @@ let _hitTimer=0, _crossTimer=0;
 
 export function initHUD() {
   on(EV.HUD_UPDATE,    updateHUD);
-  on(EV.BOT_KILLED,    d => { addKill(`<span style="color:#f7931a">☠ NOSTRICH DOWN +5⚡</span>`); updateHUD(); });
+  on(EV.BOT_KILLED,    d => { addKill('☠ NOSTRICH DOWN +5⚡', '#f7931a'); updateHUD(); });
   on(EV.PLAYER_HIT,    d => flashHit(d?.dmg || 25));
   on(EV.PLAYER_KILLED, () => { elDeathMsg.classList.add('show'); });
   on(EV.PLAYER_RESPAWN,() => { elDeathMsg.classList.remove('show'); });
@@ -32,7 +32,14 @@ export function updateHUD() {
     _ph = hp;
   }
   const at = state.reloading ? 'R' : String(state.ammo);
-  if (at !== _pa) { elAmmo.textContent = at; _pa = at; }
+  if (at !== _pa) {
+    elAmmo.textContent = at;
+    // v0.2.101: reload visual feedback — pulse the ammo readout and fade the
+    // crosshair while reloading so the player feels the disarmed window.
+    elAmmo.parentElement.classList.toggle('reloading', state.reloading);
+    elCross.classList.toggle('reloading', state.reloading);
+    _pa = at;
+  }
 }
 
 export function flashHit(dmg=25) {
@@ -43,9 +50,15 @@ export function flashHit(dmg=25) {
 
 export function flashCross() { elCross.classList.add('hit'); _crossTimer = 0.12; }
 
-export function addKill(html) {
+// Build the kill-feed entry with safe DOM construction (textContent, not
+// innerHTML) so feed text can never be parsed as markup.
+export function addKill(text, color = '#f7931a') {
   const d = document.createElement('div');
-  d.className='kill-entry'; d.innerHTML=html;
+  d.className = 'kill-entry';
+  const span = document.createElement('span');
+  span.style.color = color;
+  span.textContent = text;
+  d.appendChild(span);
   elKillFeed.appendChild(d);
   while(elKillFeed.children.length>6) elKillFeed.removeChild(elKillFeed.firstChild);
   setTimeout(()=>d.remove(), 5000);

@@ -68,7 +68,9 @@ export function buildMirror() {
       _origOnBefore(renderer, scene, camera);
       if (!_layerPatched) {
         const rc = mirror._reflectionCameras?.get(camera);
-        if (rc) { rc.layers.enable(1); _layerPatched = true; }
+        // Enable layer 1 (3rd-person player model) and DISABLE layer 2 (the
+        // first-person headless body) so the FP body is never reflected.
+        if (rc) { rc.layers.enable(1); rc.layers.disable(2); _layerPatched = true; }
       }
     };
     mirror.onBeforeRender = _patchedFn;

@@ -7,16 +7,21 @@ import { buildArena } from './arena.js';
 import { buildMirror, tickMirror, shouldUpdateMirror } from './mirror.js';
 import { initLoop, startLoop } from './loop.js';
 import { onKeyDown, requestLock, setYaw, onPointerLockLost, keys } from './input.js';
-import { initPlayer, tickPlayer, tickDeath, playerObj, setPlayerBody, spawnPlayerBody, takeDamage, setNextSpawn, getPlayerCollider } from './player.js';
+import { initPlayer, tickPlayer, tickDeath, playerObj, setPlayerBody, spawnPlayerBody, takeDamage, setNextSpawn, getPlayerCollider, resetPlayerPos } from './player.js';
 import { loadPlayerModel, tickPlayerModel, triggerHit, triggerDeath, triggerReload, setCharacter } from './playerModel.js';
-import { initPhysics, stepPhysics, buildArenaColliders } from './physics.js';
+import { initPhysics, stepPhysics, buildArenaColliders, getWorld, castRay, castRayStatic, hasLineOfSight } from './physics.js';
 import { bots, initBots, tickBots, hitBot } from './bots.js';
 import { initWeapons, spawnBullet, tickWeapons, triggerRecoil } from './weapons.js';
+import { buildDynamicCrates, tickDynamicCrates } from './dynamicCrates.js';
+import { buildNapNpc, tickNapNpc } from './napNpc.js';
+import { loadFirstPersonBody, tickFirstPersonBody } from './firstPersonBody.js';
 import { initHUD, tickHUD, flashCross, drawMinimap, setNapMode } from './hud.js';
 import { ARENA_HALF, WALL_H, NAP_X } from './config.js';
 import { nostrLogin } from './nostr.js';
 import { playShoot, playFootstep, playJumpLand } from './audio.js';
 import { initPlayerStats } from './playerStats.js';
+import { installToriiDebug } from './engine/debug/toriiDebug.js';
+import { VERSION } from './config.js';
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 
@@ -44,6 +49,13 @@ on(EV.SHOOT, ({ origin, dir }) => {
 
 // Bot-hit bridge
 window._onBotHit = (bot, dmg) => { hitBot(bot, dmg); flashCross(); };
+
+// Deliberate debug namespace (ships unconditionally in alpha). Consolidates
+// inspection under window.ToriiDebug; legacy functional globals are preserved.
+installToriiDebug({
+  version: VERSION, bots, hitBot, playerObj, resetPlayerPos,
+  castRay, castRayStatic, hasLineOfSight, getWorld,
+});
 
 
 // Crosshair — show when pointer locked, hide when not
@@ -99,6 +111,7 @@ elEnterBtn?.addEventListener('click', async () => {
   try {
     await initPhysics();
     buildArenaColliders();
+    buildDynamicCrates();
     const handle = spawnPlayerBody();
     setPlayerBody(handle);
   } catch (e) {
@@ -114,6 +127,8 @@ elEnterBtn?.addEventListener('click', async () => {
 
   // Load Chiefmonkey player model — attaches to playerObj (camera parent)
   loadPlayerModel(playerObj);
+  loadFirstPersonBody(playerObj);
+  buildNapNpc();
 
   elTitle?.classList.add('hidden');
   elHud?.classList.remove('hidden');
@@ -233,7 +248,7 @@ const EYE = 1.7;
 on(EV.SHOOT, () => { _isShooting = true; });
 
 function update(dt, frame) {
-  if (state.phase === PHASE.PLAYING) stepPhysics();
+  if (state.phase === PHASE.PLAYING) { stepPhysics(); tickDynamicCrates(); }
   tickPlayer(dt);
   tickDeath(dt, renderer);
   tickBots(dt);
@@ -260,6 +275,8 @@ function update(dt, frame) {
   }
 
   tickPlayerModel(dt, _isShooting, state.reloading, _isJumping, !_isJumping);
+  tickFirstPersonBody(dt);
+  tickNapNpc(dt);
   _isShooting = false; // reset after 1 frame
   setNapMode(playerObj.position.x > NAP_X);
   tickHUD(dt);

@@ -157,6 +157,24 @@ export function tickPlayer(dt) {
     }
   }
 
+  // Arena boundary + fall-hole safety net (v0.2.104). Rapier occasionally lets
+  // the capsule squeeze past a wall seam or drop through a collider gap. If the
+  // body falls below the floor, respawn; otherwise hard-clamp X/Z to the legal
+  // play area (arena + NAP corridor) so the player can never end up in the void.
+  if (_body) {
+    const t = _body.translation();
+    if (t.y < -2) {
+      resetPlayerPos();
+    } else {
+      const cx = Math.max(-19.5, Math.min(44.5, t.x));
+      const cz = Math.max(-19.5, Math.min(19.5, t.z));
+      if (cx !== t.x || cz !== t.z) {
+        _body.setNextKinematicTranslation({ x: cx, y: t.y, z: cz });
+        playerObj.position.set(cx, t.y - BODY_FROM_EYE, cz);
+      }
+    }
+  }
+
   // Reload tick
   if (state.reloading) {
     state.reloadTimer -= dt;

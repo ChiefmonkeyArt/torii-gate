@@ -4,9 +4,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene, gunScene } from './scene.js';
-import { BULLET_SPEED, BULLET_LIFE, BOT_DAMAGE, ARENA_HALF, WALL_H, EAST_GAP_HALF, CRATES, OBSTACLES } from './config.js';
+import { BULLET_SPEED, BULLET_LIFE, BOT_DAMAGE, ARENA_HALF, WALL_H } from './config.js';
 import { spawnSpark, spawnRicochet, tickFx } from './fx.js';
-import { castRay } from './physics.js';
+import { castRay, castRayStatic } from './physics.js';
 
 // -- Bullet pool ----------------------------------------------------------
 const _pool   = [];
@@ -84,104 +84,12 @@ export function spawnBullet(origin, dir, isPlayer) {
   return b;
 }
 
-// ── Object-collision (swept) ─────────────────────────────────────────────────
-// At BULLET_SPEED ~60 m/s a bullet covers ~1 m per tick, so a point-in-AABB
-// test would tunnel through thin walls and crate edges. We sweep the prev→curr
-// segment instead. East-wall plane is suppressed inside the torii gate gap
-// (|z| < EAST_GAP_HALF) so the opening is a real hole. _impactPos/_impactNrm
-// are scratch vectors — read them after a successful sweep test, before the
-// next call overwrites them.
+// Scratch vectors for impact resolution. Read immediately after a hit, before
+// the next bullet overwrites them.
 const _impactPos     = new THREE.Vector3();
 const _impactNrm     = new THREE.Vector3();
 const _reflDir       = new THREE.Vector3();
 const _bodyBurstNrm  = new THREE.Vector3();
-
-function sweepWalls(b) {
-  const p0 = b.prev, p1 = b.mesh.position;
-  let tHit = 2, hx = 0, hy = 0, hz = 0, nx = 0, nz = 0;
-  if (p1.x >= ARENA_HALF && p0.x < ARENA_HALF) {
-    const t = (ARENA_HALF - p0.x) / (p1.x - p0.x);
-    const zAt = p0.z + (p1.z - p0.z) * t;
-    if (Math.abs(zAt) > EAST_GAP_HALF && t < tHit) {
-      tHit = t; hx = ARENA_HALF; hy = p0.y + (p1.y - p0.y) * t; hz = zAt; nx = -1; nz = 0;
-    }
-  }
-  if (p1.x <= -ARENA_HALF && p0.x > -ARENA_HALF) {
-    const t = (-ARENA_HALF - p0.x) / (p1.x - p0.x);
-    if (t < tHit) { tHit = t; hx = -ARENA_HALF; hy = p0.y + (p1.y - p0.y) * t; hz = p0.z + (p1.z - p0.z) * t; nx = 1; nz = 0; }
-  }
-  if (p1.z >= ARENA_HALF && p0.z < ARENA_HALF) {
-    const t = (ARENA_HALF - p0.z) / (p1.z - p0.z);
-    if (t < tHit) { tHit = t; hx = p0.x + (p1.x - p0.x) * t; hy = p0.y + (p1.y - p0.y) * t; hz = ARENA_HALF; nx = 0; nz = -1; }
-  }
-  if (p1.z <= -ARENA_HALF && p0.z > -ARENA_HALF) {
-    const t = (-ARENA_HALF - p0.z) / (p1.z - p0.z);
-    if (t < tHit) { tHit = t; hx = p0.x + (p1.x - p0.x) * t; hy = p0.y + (p1.y - p0.y) * t; hz = -ARENA_HALF; nx = 0; nz = 1; }
-  }
-  if (tHit > 1) return false;
-  _impactPos.set(hx, hy, hz);
-  _impactNrm.set(nx, 0, nz);
-  return true;
-}
-
-// Slab method swept-AABB against one crate. Returns t ∈ [0,1] or -1.
-function _sweepCrate(b, cx, cz, hw, hd, fullH) {
-  const p0 = b.prev, p1 = b.mesh.position;
-  const dx = p1.x - p0.x, dy = p1.y - p0.y, dz = p1.z - p0.z;
-  let tEnter = 0, tExit = 1;
-  let nx = 0, ny = 0, nz = 0;
-  if (Math.abs(dx) < 1e-8) { if (p0.x < cx - hw || p0.x > cx + hw) return -1; }
-  else {
-    let t1 = (cx - hw - p0.x) / dx, t2 = (cx + hw - p0.x) / dx, eN = -1;
-    if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; eN = 1; }
-    if (t1 > tEnter) { tEnter = t1; nx = eN; ny = 0; nz = 0; }
-    if (t2 < tExit) tExit = t2;
-    if (tEnter > tExit) return -1;
-  }
-  if (Math.abs(dy) < 1e-8) { if (p0.y < 0 || p0.y > fullH) return -1; }
-  else {
-    let t1 = (0 - p0.y) / dy, t2 = (fullH - p0.y) / dy, eN = -1;
-    if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; eN = 1; }
-    if (t1 > tEnter) { tEnter = t1; nx = 0; ny = eN; nz = 0; }
-    if (t2 < tExit) tExit = t2;
-    if (tEnter > tExit) return -1;
-  }
-  if (Math.abs(dz) < 1e-8) { if (p0.z < cz - hd || p0.z > cz + hd) return -1; }
-  else {
-    let t1 = (cz - hd - p0.z) / dz, t2 = (cz + hd - p0.z) / dz, eN = -1;
-    if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; eN = 1; }
-    if (t1 > tEnter) { tEnter = t1; nx = 0; ny = 0; nz = eN; }
-    if (t2 < tExit) tExit = t2;
-    if (tEnter > tExit) return -1;
-  }
-  if (tEnter < 0 || tEnter > 1) return -1;
-  _impactPos.set(p0.x + dx * tEnter, p0.y + dy * tEnter, p0.z + dz * tEnter);
-  _impactNrm.set(nx, ny, nz);
-  return tEnter;
-}
-
-function sweepCrates(b) {
-  let bestT = 2, hpx = 0, hpy = 0, hpz = 0, hnx = 0, hny = 0, hnz = 0;
-  // Sweep both visual crates AND collision-only OBSTACLES (tree trunk, torii
-  // pillars). Identical tuple shape so we just iterate two lists back-to-back.
-  for (let src = 0; src < 2; src++) {
-    const list = src === 0 ? CRATES : OBSTACLES;
-    for (let i = 0; i < list.length; i++) {
-      const c = list[i];
-      const t = _sweepCrate(b, c[0], c[1], c[2], c[3], c[4]);
-      if (t >= 0 && t < bestT) {
-        bestT = t;
-        hpx = _impactPos.x; hpy = _impactPos.y; hpz = _impactPos.z;
-        hnx = _impactNrm.x; hny = _impactNrm.y; hnz = _impactNrm.z;
-      }
-    }
-  }
-  if (bestT > 1) return false;
-  _impactPos.set(hpx, hpy, hpz);
-  _impactNrm.set(hnx, hny, hnz);
-  return true;
-}
-
 
 // ── Hit callbacks — set by main.js ───────────────────────────────────────────
 let _onPlayerHit = null;
@@ -255,21 +163,40 @@ export function tickWeapons(dt, playerPos) {
         }
       }
 
-      // ── BOT bullets — legacy path (deferred to v0.2.64 Phase 2b) ──────────
+      // ── BOT bullets — Rapier swept ray (v0.2.103) ─────────────────────────
       if (!remove && !b.isPlayer) {
-        // 1. Player hit
+        // 1. Player hit — keep the cheap distance test (the player capsule is
+        //    excluded from the static raycast, so the ray can't resolve it).
         if (_onPlayerHit && b.mesh.position.distanceToSquared(playerPos) < 0.5) {
           _onPlayerHit(BOT_DAMAGE);
           remove = true;
         }
 
-        // 2. Wall / crate — swept segment test (catches tunnelling).
-        if (!remove && (sweepWalls(b) || sweepCrates(b))) {
-          spawnSpark(_impactPos, _impactNrm);
-          const dot = b.vel.dot(_impactNrm);
-          _reflDir.copy(b.vel).addScaledVector(_impactNrm, -2 * dot).normalize();
-          spawnRicochet(_impactPos, _reflDir);
-          remove = true;
+        // 2. Wall / crate / obstacle / dynamic crate — Rapier swept ray that
+        //    ignores bots (a bot bullet never sparks on another bot). Excludes
+        //    the player collider so the ray passes through to the wall behind.
+        if (!remove) {
+          _rayDirN.copy(b.vel);
+          const segLen = _rayDirN.length() * dt;
+          if (segLen > 1e-5) {
+            _rayDirN.multiplyScalar(1 / (segLen / dt)); // normalize
+            const hit = castRayStatic(
+              b.prev.x, b.prev.y, b.prev.z,
+              _rayDirN.x, _rayDirN.y, _rayDirN.z,
+              segLen,
+              _getPlayerCollider() || null
+            );
+            if (hit) {
+              _rayHitP.set(hit.point.x, hit.point.y, hit.point.z);
+              _impactNrm.set(hit.normal.x, hit.normal.y, hit.normal.z);
+              spawnSpark(_rayHitP, _impactNrm);
+              const dot = b.vel.dot(_impactNrm);
+              _reflDir.copy(b.vel).addScaledVector(_impactNrm, -2 * dot).normalize();
+              spawnRicochet(_rayHitP, _reflDir);
+              b.mesh.position.copy(_rayHitP);
+              remove = true;
+            }
+          }
         }
       }
     }

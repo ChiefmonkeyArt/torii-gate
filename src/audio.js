@@ -120,35 +120,38 @@ export function playBotShoot() {
   if (!ctx) return;
   const t = ctx.currentTime;
 
-  // Tone — sawtooth zap, higher and rasper than the player's sine
+  // Tone — softer triangle zap (v0.2.102). Triangle is mellower than sawtooth;
+  // a gentle attack ramp + longer tail removes the harsh click of the old
+  // sawtooth while staying distinct from the player's deeper sine pow.
   const osc  = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(1100, t);
-  osc.frequency.exponentialRampToValueAtTime(380, t + 0.09);
-  gain.gain.setValueAtTime(0.010, t); // softened twice: 0.055 → 0.022 → 0.010
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.10);
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(720, t);
+  osc.frequency.exponentialRampToValueAtTime(200, t + 0.12);
+  gain.gain.setValueAtTime(1e-4, t);
+  gain.gain.linearRampToValueAtTime(0.035, t + 0.008);
+  gain.gain.exponentialRampToValueAtTime(1e-4, t + 0.18);
   osc.connect(gain);
   gain.connect(ctx.destination);
   osc.start(t);
-  osc.stop(t + 0.11);
+  osc.stop(t + 0.2);
 
-  // Crackle — short highpassed noise burst for that synthetic energy-weapon edge
-  const dur = 0.05;
+  // Body — short lowpassed noise burst for a soft energy thump (no crackle).
+  const dur = 0.04;
   const sr  = ctx.sampleRate;
   const buf = ctx.createBuffer(1, Math.floor(sr * dur), sr);
   const ch  = buf.getChannelData(0);
   for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
   const src   = ctx.createBufferSource();
   const ngain = ctx.createGain();
-  const hp    = ctx.createBiquadFilter();
+  const lp    = ctx.createBiquadFilter();
   src.buffer = buf;
-  hp.type = 'highpass';
-  hp.frequency.value = 1800;
-  ngain.gain.setValueAtTime(0.005, t); // softened twice: 0.03 → 0.012 → 0.005
+  lp.type = 'lowpass';
+  lp.frequency.value = 520;
+  ngain.gain.setValueAtTime(0.004, t);
   ngain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  src.connect(hp);
-  hp.connect(ngain);
+  src.connect(lp);
+  lp.connect(ngain);
   ngain.connect(ctx.destination);
   src.start(t);
 }

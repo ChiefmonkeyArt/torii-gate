@@ -4,6 +4,17 @@ import { emit, EV } from './events.js';
 
 const RELAYS = ['wss://relay.damus.io','wss://nos.lol','wss://relay.nostr.band'];
 
+// A nostrich profile's `picture` is attacker-controlled (anyone can sign a
+// kind:0 with any string). Only accept a well-formed https URL before it ever
+// reaches an <img src>, so a hostile value can't smuggle in javascript:/data:
+// or other surprising schemes. Returns the URL string, or null if unsafe.
+function _safeImageUrl(raw) {
+  if (typeof raw !== 'string' || raw.length > 2048) return null;
+  let u;
+  try { u = new URL(raw); } catch { return null; } // absolute URLs only — no relative resolution
+  return u.protocol === 'https:' ? u.href : null;
+}
+
 export async function nostrLogin() {
   if (!window.nostr) return 'NIP-07 extension not found';
   try {
@@ -31,8 +42,9 @@ function _fetchProfile(pubkey) {
           if (type !== 'EVENT') return;
           const meta = JSON.parse(event.content);
           if (meta.name)    { state.nostrName = meta.name; }
-          if (meta.picture) { state.nostrAvatar = meta.picture; }
-          emit(EV.NOSTR_LOGIN, { pubkey, name: meta.name, avatar: meta.picture });
+          const safePic = _safeImageUrl(meta.picture);
+          if (safePic) { state.nostrAvatar = safePic; }
+          emit(EV.NOSTR_LOGIN, { pubkey, name: meta.name, avatar: safePic });
           ws.close();
           _updateTitleUI();
         } catch(_){}

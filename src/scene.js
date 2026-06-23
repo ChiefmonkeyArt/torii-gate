@@ -15,6 +15,11 @@ export const scene  = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0xc8dde8, 0.008);
 
 export const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 600);
+// Layer 2 = the first-person headless body (firstPersonBody.js). Main camera
+// sees world (layer 0) + FP body (layer 2). The mirror reflection camera shows
+// the full 3rd-person model on layer 1 and DISABLES layer 2 so the headless FP
+// body never appears in the mirror.
+camera.layers.enable(2);
 
 // Gun viewmodel — separate scene so it's always on top
 export const gunScene  = new THREE.Scene();

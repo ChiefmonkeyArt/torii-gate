@@ -3,6 +3,14 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- CSP — conservative enforced subset that CANNOT break the WASM/Draco/Nostr
+       paths: it locks down plugin embeds, <base> hijacking, and form posting,
+       none of which the game uses. The FULL script/connect/img/worker policy is
+       documented in torii-foundation-sprint-report.md and must ship as an HTTP
+       header (so it can roll out in Report-Only first) — meta CSP has no
+       report-only mode and would risk breaking the Draco blob-worker + gstatic
+       fetch + Rapier WASM before a live smoke test confirms it. -->
+  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'"/>
   <meta name="description" content="Torii Quest — an open-world arena shooter built on Nostr and Bitcoin. Sats. Shots. Sovereignty."/>
   <meta property="og:title" content="Torii Quest"/>
   <meta property="og:description" content="An open-world arena shooter built on Nostr and Bitcoin. Sats. Shots. Sovereignty."/>
@@ -274,6 +282,12 @@
     #crosshair .ch-h { width: 18px; height: 2px; top: 50%; left: 50%; transform: translate(-50%,-50%); }
     #crosshair .ch-v { width: 2px; height: 18px; top: 50%; left: 50%; transform: translate(-50%,-50%); }
     #crosshair.hit .ch-h, #crosshair.hit .ch-v { background: #f7931a; }
+    /* v0.2.101: reload feedback — pulse ammo, fade crosshair while disarmed */
+    #ammo-display.reloading { color: #f7931a; animation: reloadPulse 0.5s ease-in-out infinite; }
+    #crosshair.reloading { animation: reloadFade 0.5s ease-in-out infinite; }
+    #crosshair.reloading .ch-h, #crosshair.reloading .ch-v { background: #f7931a; }
+    @keyframes reloadPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(1.15); } }
+    @keyframes reloadFade { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
   </style>
 </head>
 <body>
@@ -303,7 +317,7 @@
         <!-- Identity -->
         <div id="stats-identity">
           <div id="nostr-avatar-ph">👤</div>
-          <img id="nostr-avatar-img" src="" alt=""/>
+          <img id="nostr-avatar-img" alt="nostrich avatar"/>
           <div id="nostr-display-name">ANON</div>
           <div id="stats-status-sub" style="font-size:8px;color:#444;letter-spacing:1px;margin-top:2px;">connect wallet to load stats</div>
         </div>
@@ -382,7 +396,7 @@
         <div><span class="ctrl-key">SPACE</span> &nbsp;Jump &nbsp;&nbsp; <span class="ctrl-key">R</span> &nbsp;Reload &nbsp;&nbsp; <span class="ctrl-key">ESC</span> &nbsp;Pause</div>
       </div>
 
-      <div id="version-label">v0.2.64-alpha</div>
+      <div id="version-label">v0.2.110-alpha</div>
     </div>
 
     <!-- RIGHT: Live chat (orange) -->
@@ -512,7 +526,7 @@
   <canvas id="minimap" width="110" height="110" style="display:block"></canvas>
   <div id="minimap-wrap"></div>
 
-  <div id="ver">v0.2.64-alpha · torii quest</div>
+  <div id="ver">v0.2.110-alpha · torii quest</div>
 </div>
 
 <!-- Crosshair -->
