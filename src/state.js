@@ -21,7 +21,6 @@ export const state = {
   reloadTimer:0,
   shootCd:    0,
   respawnTimer:0,
-  paused:     false,
   pointerLocked: false,
   nostrPubkey:  null,
   nostrName:    'ANON',
@@ -92,6 +91,17 @@ export function transition(event) {
   emit(EV.PHASE_CHANGE, { from, to: next, event });
   return true;
 }
+
+// ── Weapon-state predicates (v0.2.130) ─────────────────────────────────────
+// Pure gates for the firing/reload flow, extracted from player.js so the rules
+// live in one place and are unit-testable. They take a state-like object (the
+// live `state` by default) and read only the weapon fields, so behaviour is
+// identical to the inline guards they replace:
+//   shoot()       was: shootCd > 0 || reloading || ammo <= 0  → return
+//   startReload() was: reloading || ammo === MAX_AMMO          → return
+// (ammo is capped at MAX_AMMO, so `ammo < MAX_AMMO` matches `ammo !== MAX_AMMO`.)
+export function canShoot(s = state)  { return s.shootCd <= 0 && !s.reloading && s.ammo > 0; }
+export function canReload(s = state) { return !s.reloading && s.ammo < MAX_AMMO; }
 
 // ── Phase predicates ───────────────────────────────────────────────────────
 export const isTitle    = () => state.phase === PHASE.TITLE;

@@ -36,6 +36,8 @@
 import * as napZone from '../../world/napZone.js';
 import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
+import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
+import { raycastService } from '../physics/raycastService.js';
 
 export function installToriiDebug(refs) {
   const {
@@ -43,7 +45,26 @@ export function installToriiDebug(refs) {
     castRay, castRayStatic, hasLineOfSight, getWorld, getLastHit,
     getLastShot, getLastMiss,
     getGrassMat, getFlowerMat, getMirror,
+    // v0.2.130 — snapshot/report providers.
+    getState, getPhase, getCrateSummary, config,
   } = refs;
+
+  // v0.2.130 — providers for the JSON-serialisable debug snapshot. Each is a
+  // function the pure snapshot builder reads behind safe(), so the surface never
+  // throws even before physics/state are ready. Counts come from the live Rapier
+  // world (not serialisable itself) and the bot roster.
+  const snapProviders = {
+    version,
+    getPhase, getState,
+    getPlayerPos: () => (playerObj ? playerObj.position : null),
+    getLastHit, getLastShot, getLastMiss,
+    isPhysicsReady: () => !!(getWorld && getWorld()),
+    getBodyCount:     () => { const w = getWorld && getWorld(); return w ? w.bodies.len() : null; },
+    getColliderCount: () => { const w = getWorld && getWorld(); return w ? w.colliders.len() : null; },
+    getBotSummary: () => ({ total: bots.length, alive: bots.filter(b => b.alive).length }),
+    getCrateSummary,
+    config,
+  };
 
   const api = {
     version,
@@ -69,6 +90,12 @@ export function installToriiDebug(refs) {
       raycastStatic: castRayStatic,
       lineOfSight: hasLineOfSight,
       get world() { return getWorld(); },
+      // v0.2.130 — injectable raycast facade (SDK first slice). Consumers can
+      // depend on this service instead of the raw functions above.
+      service: raycastService,
+      // v0.2.130 — JSON-serialisable physics summary (world readiness +
+      // body/collider/bot/crate counts). Safe to call before physics loads.
+      report() { return buildPhysicsReport(snapProviders); },
     },
 
     world: {
@@ -101,7 +128,15 @@ export function installToriiDebug(refs) {
       get lastHit()  { return getLastHit  ? getLastHit()  : null; },
       get lastShot() { return getLastShot ? getLastShot() : null; },
       get lastMiss() { return getLastMiss ? getLastMiss() : null; },
+      // v0.2.130 — JSON-serialisable {lastHit,lastShot,lastMiss} in one object.
+      report() { return buildCombatReport(snapProviders); },
     },
+
+    // v0.2.130 — one compact, JSON-serialisable status object for post-playtest
+    // feedback: `JSON.stringify(ToriiDebug.snapshot())` → paste. Includes
+    // version, phase, run state, player position, combat last shot/hit/miss,
+    // physics/crate summary, and the key tuning values. Safe to call any time.
+    snapshot() { return buildSnapshot(snapProviders); },
   };
 
   window.ToriiDebug = api;

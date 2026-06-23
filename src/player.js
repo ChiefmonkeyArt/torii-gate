@@ -1,6 +1,6 @@
 // player.js — movement, shoot, reload, death/respawn
 import * as THREE from 'three';
-import { state, isPlaying, isDead, transition, GAME_EVENT } from './state.js';
+import { state, isPlaying, isDead, transition, GAME_EVENT, canShoot, canReload } from './state.js';
 import { emit, EV } from './events.js';
 import { keys, getYaw, getPitch, setYaw, onKeyDown, onShoot, requestLock } from './input.js';
 import { scene, camera } from './scene.js';
@@ -208,7 +208,7 @@ const _aimPoint        = new THREE.Vector3();
 const AIM_RANGE = 80;
 
 export function shoot() {
-  if (state.shootCd > 0 || state.reloading || state.ammo <= 0) return null;
+  if (!canShoot()) return null;
   state.ammo--;
   state.shootCd = SHOOT_CD;
   _recoilTimer  = RECOIL_DUR;
@@ -256,7 +256,7 @@ export function shoot() {
 }
 
 export function startReload() {
-  if (state.reloading || state.ammo === MAX_AMMO) return;
+  if (!canReload()) return;
   state.reloading   = true;
   state.reloadTimer = RELOAD_TIME;
   playReload();

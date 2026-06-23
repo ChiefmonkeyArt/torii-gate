@@ -13,7 +13,7 @@ import { loadPlayerModel, tickPlayerModel, triggerHit, triggerDeath, triggerRelo
 import { initPhysics, stepPhysics, buildArenaColliders, getWorld, castRay, castRayStatic, hasLineOfSight } from './physics.js';
 import { bots, initBots, tickBots, hitBot } from './bots.js';
 import { initWeapons, spawnBullet, tickWeapons, triggerRecoil, getLastHit, recordPlayerShot, getLastShot, getLastMiss } from './weapons.js';
-import { buildDynamicCrates, tickDynamicCrates } from './dynamicCrates.js';
+import { buildDynamicCrates, tickDynamicCrates, getCrateSummary } from './dynamicCrates.js';
 import { buildNapNpc, tickNapNpc } from './napNpc.js';
 import { loadFirstPersonBody, tickFirstPersonBody } from './firstPersonBody.js';
 import { initTargetReticle, tickTargetReticle } from './targetReticle.js';
@@ -24,7 +24,7 @@ import { playShoot, playFootstep, playJumpLand } from './audio.js';
 import { initPlayerStats } from './playerStats.js';
 import { installToriiDebug } from './engine/debug/toriiDebug.js';
 import { applyPhaseScreens } from './engine/ui/phaseScreens.js';
-import { VERSION } from './config.js';
+import { VERSION, TUNING } from './config.js';
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 
@@ -73,6 +73,14 @@ installToriiDebug({
   castRay, castRayStatic, hasLineOfSight, getWorld, getLastHit,
   getLastShot, getLastMiss,
   getGrassMat, getFlowerMat, getMirror,
+  // v0.2.130 — snapshot/report providers.
+  getPhase: () => state.phase,
+  getState: () => ({
+    hp: state.hp, ammo: state.ammo, kills: state.kills, deaths: state.deaths,
+    hits: state.hits, sats: state.sats,
+    reloading: state.reloading, pointerLocked: state.pointerLocked,
+  }),
+  getCrateSummary, config: TUNING,
 });
 
 

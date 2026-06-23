@@ -1,7 +1,7 @@
 # Torii Quest — Progress Dashboard
 
 > Visual execution dashboard. See `strategy.md` for vision and decision rules. See `todo.md` for active tasks.
-> Current version: **v0.2.129-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
+> Current version: **v0.2.130-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
 
 ---
 
@@ -11,13 +11,13 @@ Baseline totals are marked **[baseline]** — update them as the project grows r
 
 ### Foundation / Agent-Readable Structure
 
-Tasks: ARS-1 through ARS-7 (7 total) | Done: 0 | In progress: 0 | Remaining: 7
+Tasks: ARS-1 through ARS-7 (7 total) | Done: 4 | In progress: 0 | Remaining: 3
 
 ```
-[..................................................] 0 / 7
+[#############################.....................] 4 / 7
 ```
 
-Status: not started. Structural layer that enables safe handoff to any agent or FOSS contributor.
+Status: ARS-1 (snapshot tooling), ARS-2 (interactions API), ARS-3 (RaycastService), ARS-7 (HANDOFF.md) landed in v0.2.130. Remaining: ARS-4 (FSM fold of reloading/pointerLocked — partial: canShoot/canReload predicates added), ARS-5 (sdk/index.js), ARS-6 (ongoing CODE_INDEX upkeep).
 
 ---
 
@@ -93,13 +93,13 @@ Next: manual smoke test v0.2.113+ → publish source-built artifact to `torii-qu
 
 | # | Track | Task | Status |
 |---|-------|------|--------|
-| ARS-1 | Foundation | ToriiDebug.snapshot() | pending |
-| ARS-2 | Rapier | Physics interaction API (public/internal markers + mock test) | pending |
-| ARS-3 | Rapier | RaycastService injectable facade | pending |
-| ARS-4 | Foundation | Fold reloading/pointerLocked into guarded FSM | pending |
+| ARS-1 | Foundation | ToriiDebug.snapshot() / combat.report() / physics.report() | done (v0.2.130) |
+| ARS-2 | Rapier | Physics interaction API (pure interactions.js + mock tests) | done (v0.2.130) |
+| ARS-3 | Rapier | RaycastService injectable facade | done (v0.2.130) |
+| ARS-4 | Foundation | Fold reloading/pointerLocked into guarded FSM | partial — canShoot/canReload predicates extracted |
 | ARS-5 | SDK | src/sdk/index.js skeleton with stability tiers | pending |
-| ARS-6 | Foundation | CODE_INDEX.md upkeep pass after each ARS task | pending |
-| ARS-7 | Foundation | HANDOFF.md template | pending |
+| ARS-6 | Foundation | CODE_INDEX.md upkeep pass after each ARS task | ongoing |
+| ARS-7 | Foundation | HANDOFF.md template | done (v0.2.130) |
 | TQ-MANUAL-113 | Combat | Manual smoke test on real hardware | pending |
 | PROGRESS-1 | Docs | Formalise / maintain progress.md | in progress |
 
@@ -109,6 +109,7 @@ Next: manual smoke test v0.2.113+ → publish source-built artifact to `torii-qu
 
 Items stay here (crossed out) for ~24 hours, then move to Archive below.
 
+- ~~v0.2.130 no-blocker foundation batch — ARS-1 `engine/debug/snapshot.js` (`ToriiDebug.snapshot()`/`combat.report()`/`physics.report()`); ARS-2 `engine/physics/interactions.js` (pure `nudgeImpulse`/`applyNudge`, crate nudge tuning moved off weapons.js); ARS-3 `engine/physics/raycastService.js` (injectable facade on `ToriiDebug.physics.service`); FSM slice `canShoot`/`canReload` predicates in state.js (dead `state.paused` removed); ARS-7 `HANDOFF.md`; +26 tests (152 total / 14 files)~~
 - ~~v0.2.129 muzzle origin side fix — `engine/weapons/muzzle.js`; `camera.getWorldQuaternion()` so barrel tracks yaw; +11 muzzle tests (126 total / 11 files)~~
 - ~~v0.2.128 head-zone lowered (centre 1.65→1.55, radius 0.22→0.20); `_arenaBootstrapped` guard fixes re-entry collider orphan; +7 classifier tests~~
 - ~~v0.2.127 reload snap viewmodel — pure `engine/weapons/reloadPose.js`; +8 reload-pose tests~~

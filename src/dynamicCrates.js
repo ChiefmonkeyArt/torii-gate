@@ -39,3 +39,16 @@ export function tickDynamicCrates() {
     c.mesh.quaternion.set(r.x, r.y, r.z, r.w);
   }
 }
+
+// Debug/handoff summary (v0.2.130) — current crate count + live positions.
+// Allocates a small array; called only from the debug snapshot surface, never in
+// the per-frame path, so it stays clear of the no-alloc hot-path rule.
+export function getCrateSummary() {
+  return {
+    count: _crates.length,
+    positions: _crates.map(c => {
+      const t = c.body.translation();
+      return { x: t.x, y: t.y, z: t.z };
+    }),
+  };
+}

@@ -1,4 +1,4 @@
-// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.129).
+// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.130).
 // No external deps. Run with: node tools/regression-check.mjs  (or: npm run check)
 //
 // Catches the regressions the Strategy doc calls out, without needing a browser:
@@ -23,7 +23,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.129-alpha';
+const EXPECTED_VERSION = 'v0.2.130-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -107,7 +107,7 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   const count = (html.match(new RegExp(EXPECTED_VERSION.replace(/\./g, '\\.'), 'g')) || []).length;
   if (count < 2) fail(`index.html has ${count} ${EXPECTED_VERSION} markers (expected >=2)`);
   else pass(`index.html has ${count} version markers`);
-  if (/v0\.2\.128-alpha/.test(html)) fail('index.html still references v0.2.128-alpha');
+  if (/v0\.2\.129-alpha/.test(html)) fail('index.html still references v0.2.129-alpha');
 }
 
 // 6. dist markers (only if built)
@@ -117,10 +117,14 @@ console.log('[6] dist markers (skipped if no dist/)');
   if (!existsSync(distDir)) { pass('no dist/ — skipped'); }
   else {
     const assets = existsSync(join(distDir, 'assets')) ? readdirSync(join(distDir, 'assets')) : [];
-    const jsName = assets.find((a) => /^index-.*\.js$/.test(a));
-    if (!jsName) fail('no dist/assets/index-*.js');
+    // The app entry chunk is content-hashed by Vite/rolldown; its exact filename
+    // (separator, hash, even the `index` stem) is not guaranteed across builds.
+    // Rather than pin one filename, scan ALL emitted .js assets for the behaviour
+    // markers — robust to any hashing/chunk-naming scheme.
+    const jsFiles = assets.filter((a) => a.endsWith('.js'));
+    if (jsFiles.length === 0) fail('no .js assets in dist/assets/');
     else {
-      const js = readFileSync(join(distDir, 'assets', jsName), 'utf8');
+      const js = jsFiles.map((a) => readFileSync(join(distDir, 'assets', a), 'utf8')).join('\n');
       const markers = ['chiefmonkey-headless.glb', 'triangle', 'Idle_11', 'Stylish_Walk_inplace', 'ToriiDebug', 'aim-head', 'applyImpulseAtPoint'];
       for (const m of markers) {
         if (js.includes(m)) pass(`dist marker present: ${m}`);

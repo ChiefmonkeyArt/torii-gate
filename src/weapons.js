@@ -23,6 +23,10 @@ import { classifyShotOutcome } from './engine/combat/shotDiagnostics.js';
 // WebGL renderer. The helper builds the offset basis from the camera's WORLD
 // quaternion so the muzzle tracks player yaw (fixes the bullet-from-the-left bug).
 import { barrelWorldFromCamera } from './engine/weapons/muzzle.js';
+// v0.2.130 — physics interaction helpers (SDK first slice). The bullet→crate
+// nudge math + tuning lives in the pure interactions module so it is reusable
+// and unit-testable; weapons.js just supplies the hit + reused scratch.
+import { applyNudge, CRATE_IMPULSE, CRATE_LIFT } from './engine/physics/interactions.js';
 // v0.2.125 — pure damage model (head/body damage + kill threshold), extracted
 // from the old inline `isHead ? 9 : 3` so it is unit-testable and the
 // one-shot-headshot contract is locked by tests against BOT_HP.
@@ -166,11 +170,10 @@ const _bodyBurstNrm  = new THREE.Vector3();
 // v0.2.113 — crate nudge. When a player bullet resolves a dynamic crate body
 // (hit.crate, set by raycast.js via colliderToCrate), apply a small impulse at
 // the impact point along the bullet's travel direction with a slight upward
-// kick so the crate visibly shifts/tips without launching. Plain reused {x,y,z}
-// objects — Rapier accepts bare vector-likes, so no THREE allocation in the hot
-// path. Tuned low: BULLET_SPEED-normalized dir × CRATE_IMPULSE.
-const CRATE_IMPULSE  = 2.2;  // N·s along bullet dir
-const CRATE_LIFT     = 0.6;  // N·s upward component
+// kick so the crate visibly shifts/tips without launching. v0.2.130 — the math
+// + tuning moved to the pure engine/physics/interactions.js (applyNudge); the
+// reused {x,y,z} scratch stays here so the hot path is still allocation-free
+// (Rapier accepts bare vector-likes).
 const _crateImp      = { x: 0, y: 0, z: 0 };
 const _cratePt       = { x: 0, y: 0, z: 0 };
 
@@ -307,12 +310,14 @@ export function tickWeapons(dt, playerPos) {
               _reflDir.copy(b.vel).addScaledVector(_impactNrm, -2 * dot).normalize();
               spawnRicochet(_rayHitP, _reflDir);
               // v0.2.113 — dynamic crate? nudge it along the bullet direction.
+              // v0.2.130 — via the pure interactions helper (applyNudge).
               if (hit.crate) {
-                _crateImp.x = _rayDirN.x * CRATE_IMPULSE;
-                _crateImp.y = _rayDirN.y * CRATE_IMPULSE + CRATE_LIFT;
-                _crateImp.z = _rayDirN.z * CRATE_IMPULSE;
-                _cratePt.x = _rayHitP.x; _cratePt.y = _rayHitP.y; _cratePt.z = _rayHitP.z;
-                hit.crate.applyImpulseAtPoint(_crateImp, _cratePt, true);
+                applyNudge(
+                  hit.crate,
+                  _rayDirN.x, _rayDirN.y, _rayDirN.z,
+                  _rayHitP.x, _rayHitP.y, _rayHitP.z,
+                  CRATE_IMPULSE, CRATE_LIFT, _crateImp, _cratePt,
+                );
               }
               // v0.2.124 — resolve the per-shot diagnostic as a geometry miss.
               _finalizeShot(b, hit.crate ? 'crate' : 'wall', false, null, hit.toi);

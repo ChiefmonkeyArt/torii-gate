@@ -1,5 +1,5 @@
 // config.js — ALL constants. Never scatter magic numbers.
-export const VERSION   = 'v0.2.129-alpha';
+export const VERSION   = 'v0.2.130-alpha';
 export const GAME_NAME = 'Torii Quest';
 export const ARENA_HALF     = 20;
 export const WALL_H         = 2.6;  // was 8 → 5.5 → 4.4 → 3.52 → 2.6 (reduced again, user request v0.2.57)
@@ -33,6 +33,16 @@ export const BULLET_LIFE    = 2.5;
 export const ENTRY_SATS     = 100;
 export const RESPAWN_TIME   = 4.0;
 export const godMode        = false; // NEVER deploy true
+
+// Compact, JSON-serialisable tuning snapshot (v0.2.130) — surfaced via
+// ToriiDebug.snapshot().config so a tester can paste the live balance values
+// alongside their playtest feedback. Mirror of the constants above; keep in sync.
+export const TUNING = Object.freeze({
+  PLAYER_HP, PLAYER_SPEED, MAX_AMMO, RELOAD_TIME, SHOOT_CD,
+  BULLET_SPEED, BULLET_LIFE,
+  BOT_COUNT, BOT_HP, BOT_DAMAGE, BOT_SPEED, BOT_SHOOT_CD, BOT_SIGHT, BOT_SPREAD,
+  ARENA_HALF, godMode,
+});
 
 // CRATES — single source of truth for geometry AND collision.
 // Format: [cx, cz, halfW, halfD, fullH]

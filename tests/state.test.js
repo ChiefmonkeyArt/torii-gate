@@ -7,7 +7,9 @@ import {
   PHASE, GAME_EVENT, state,
   nextPhase, canTransition, transition,
   isTitle, isPlaying, isPaused, isDead, isGameover, isLive,
+  canShoot, canReload,
 } from '../src/state.js';
+import { MAX_AMMO } from '../src/config.js';
 
 function setPhase(p) { state.phase = p; }
 
@@ -88,5 +90,30 @@ describe('phase predicates', () => {
     setPhase(PHASE.DEAD);    expect(isLive()).toBe(true);
     setPhase(PHASE.TITLE);   expect(isLive()).toBe(false);
     setPhase(PHASE.PAUSED);  expect(isLive()).toBe(false);
+  });
+});
+
+describe('weapon-state predicates (pure, take a state-like object)', () => {
+  // canShoot: shootCd <= 0 && !reloading && ammo > 0
+  it('canShoot true only when cooled down, not reloading, and ammo remains', () => {
+    expect(canShoot({ shootCd: 0,   reloading: false, ammo: 5 })).toBe(true);
+    expect(canShoot({ shootCd: 0.1, reloading: false, ammo: 5 })).toBe(false); // on cooldown
+    expect(canShoot({ shootCd: 0,   reloading: true,  ammo: 5 })).toBe(false); // reloading
+    expect(canShoot({ shootCd: 0,   reloading: false, ammo: 0 })).toBe(false); // empty
+  });
+  // canReload: !reloading && ammo < MAX_AMMO
+  it('canReload true only when not already reloading and the mag is not full', () => {
+    expect(canReload({ reloading: false, ammo: 0 })).toBe(true);
+    expect(canReload({ reloading: false, ammo: MAX_AMMO - 1 })).toBe(true);
+    expect(canReload({ reloading: false, ammo: MAX_AMMO })).toBe(false); // full
+    expect(canReload({ reloading: true,  ammo: 0 })).toBe(false);        // already reloading
+  });
+  it('default to the live state singleton when no argument is passed', () => {
+    state.shootCd = 0; state.reloading = false; state.ammo = MAX_AMMO;
+    expect(canShoot()).toBe(true);   // cooled, loaded, ammo present
+    expect(canReload()).toBe(false); // mag full
+    state.ammo = 0;
+    expect(canShoot()).toBe(false);  // empty
+    expect(canReload()).toBe(true);  // not full
   });
 });

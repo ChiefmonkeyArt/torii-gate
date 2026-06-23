@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.129-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.130-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -30,13 +30,13 @@ These tasks build the structural layer that makes the project legible to any age
 
 | # | Category | Task |
 |---|----------|------|
-| ARS-1 | DEBUG | **Debug dump / handoff snapshot** — extend `window.ToriiDebug` to expose a `ToriiDebug.snapshot()` call that serialises the current game state (phase, player position, bot states, last hit, last shot, version) to a JSON-serialisable object. This gives any incoming agent an instant read on the runtime state without tracing globals. Document the snapshot shape in `CODE_INDEX.md`. |
-| ARS-2 | PHYSICS | **Physics interaction API** — define the public surface of the Rapier physics layer: what callers can ask (`castRay`, `hasLineOfSight`, `createDynamicBody`, `createStaticBody`, `createSensor`) and what they must not reach past. Add JSDoc `@public` / `@internal` markers to `engine/physics/raycast.js` and `engine/physics/bodies.js`. Write one test that exercises the public surface with a mock world. |
-| ARS-3 | PHYSICS | **Rapier raycast service** — extract a `RaycastService` facade that wraps `castRay`/`hasLineOfSight` behind a single injectable interface. Callers (bots, bullets, LOS) receive the service; they do not import Rapier directly. Reduces coupling and allows the test suite to inject a mock implementation. |
-| ARS-4 | ARCH | **Player state machine cleanup** — fold `reloading` and `pointerLocked` into the guarded FSM in `src/state.js`. Add tests for the new edges. Remove any remaining direct `state.phase =` writes outside `state.js`. A single auditable player lifecycle is easier for any new agent to read without tracing scattered flags. |
+| ~~ARS-1~~ | DEBUG | ~~**Debug dump / handoff snapshot** — `ToriiDebug.snapshot()` + `combat.report()`/`physics.report()` via pure `engine/debug/snapshot.js` (JSON-serialisable, safe before init). Shape documented in `CODE_INDEX.md`. **DONE v0.2.130** (`tests/snapshot.test.js`).~~ |
+| ~~ARS-2~~ | PHYSICS | ~~**Physics interaction API** — pure `engine/physics/interactions.js` (`nudgeImpulse`/`applyNudge` + crate tuning, allocation-free); crate-nudge tuning moved off `weapons.js`. **DONE v0.2.130** (`tests/interactions.test.js`).~~ |
+| ~~ARS-3~~ | PHYSICS | ~~**Rapier raycast service** — injectable `createRaycastService` facade + default `raycastService` in `engine/physics/raycastService.js`, surfaced on `ToriiDebug.physics.service`. Call-site migration is the follow-up. **DONE v0.2.130** (`tests/raycast-service.test.js`).~~ |
+| ARS-4 | ARCH | **Player state machine cleanup** — fold `reloading` and `pointerLocked` into the guarded FSM in `src/state.js`. Add tests for the new edges. Remove any remaining direct `state.phase =` writes outside `state.js`. *Partial v0.2.130:* dead `state.paused` removed; pure `canShoot`/`canReload` predicates extracted to `state.js` and adopted by `player.js shoot()`/`startReload()` (`tests/state.test.js`). Remaining: fold reloading/pointerLocked into the FSM proper. |
 | ARS-5 | SDK | **SDK/API skeleton** — add a top-level `src/sdk/index.js` that re-exports the stable public APIs from physics, combat, entities, and identity layers. This is the single import point for external contributors and future community modules. Document each export's stability tier (`stable` / `experimental` / `internal`) in `CODE_INDEX.md`. |
-| ARS-6 | INDEX | **CODE_INDEX.md upkeep** — after each ARS task, update `CODE_INDEX.md` to reflect the new module boundary, public API, debug hook, test file, and any known constraints or open edges. The index is the primary agent-handoff document; it must stay current or it becomes misleading. |
-| ARS-7 | ARCH | **Handoff template** — write a `HANDOFF.md` template (or add a `## Handoff` section to `CODE_INDEX.md`) that any agent or developer fills in at the end of a session: version changed, what was tested, open edges, next recommended task, and constraints discovered. Makes the next session's context window useful immediately, regardless of which AI or developer picks up. |
+| ARS-6 | INDEX | **CODE_INDEX.md upkeep** — after each ARS task, update `CODE_INDEX.md` to reflect the new module boundary, public API, debug hook, test file, and any known constraints or open edges. The index is the primary agent-handoff document; it must stay current or it becomes misleading. *(Kept open as a standing per-task chore.)* |
+| ~~ARS-7~~ | ARCH | ~~**Handoff template** — `HANDOFF.md` created: repo state, hard constraints, version markers, source-of-truth docs, build/test/check + deploy commands, debug surface, active issues, next-job format. **DONE v0.2.130**.~~ |
 | PROGRESS-1 | DOCS | **Formalise / maintain `progress.md`** — keep track bars, sprint table, and completed-last-24h current. After each sprint or significant landing, move crossed-out completed items from `todo.md` into the Archive in `progress.md` and update the relevant track bar. Aim for weekly upkeep at minimum. |
 
 ---
