@@ -4,6 +4,7 @@ import { emit, on, EV } from './events.js';
 import { renderer, renderFrame } from './scene.js';
 import { initAtmosphere, tickAtmosphere } from './atmosphere.js';
 import { buildArena } from './arena.js';
+import { tickFoliage, getGrassMat, getFlowerMat } from './arena-foliage.js';
 import { buildMirror, tickMirror, shouldUpdateMirror } from './mirror.js';
 import { initLoop, startLoop } from './loop.js';
 import { onKeyDown, requestLock, setYaw, onPointerLockLost, keys } from './input.js';
@@ -64,6 +65,7 @@ window._onBotHit = (bot, dmg) => emit(EV.BOT_HIT_BY_PLAYER, { bot, dmg });
 installToriiDebug({
   version: VERSION, bots, hitBot, playerObj, resetPlayerPos,
   castRay, castRayStatic, hasLineOfSight, getWorld, getLastHit,
+  getGrassMat, getFlowerMat,
 });
 
 
@@ -313,9 +315,9 @@ function update(dt, frame) {
   tickAtmosphere(dt);
   tickMirror(dt);
   // Mirror throttle handled inside tickMirror via onBeforeRender swap — no visibility toggle needed
-  // Tick grass + flower shader uTime (set via window refs — no import needed)
-  if (window._grassMat)  window._grassMat.uniforms.uTime.value  += dt;
-  if (window._flowerMat) window._flowerMat.uniforms.uTime.value += dt;
+  // Tick grass + flower shader uTime via the foliage registry (v0.2.118 — no
+  // longer reaches through window._grassMat/_flowerMat).
+  tickFoliage(dt);
   if (++_minimapTick >= 4) { _minimapTick = 0; drawMinimap(playerObj.position, bots); }
   // Wrap render in try/catch — a Three.js crash must not kill the rAF loop
   try {

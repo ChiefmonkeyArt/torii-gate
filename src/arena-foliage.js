@@ -23,10 +23,33 @@ const _quat = new THREE.Quaternion();
 const _scl  = new THREE.Vector3();
 const _m4   = new THREE.Matrix4();
 
+// Material registry (v0.2.118) — the foliage shaders live here, not on
+// `window`. main.js advances their uTime via tickFoliage() each frame and
+// ToriiDebug reads them via getGrassMat()/getFlowerMat(). This replaces the
+// old `window._grassMat`/`window._flowerMat` cross-module wiring; the globals
+// are still set in _buildGrass/_buildWildflowers as DEPRECATED debug aliases
+// (console/tester convenience) but internal code must not read them
+// (regression check 10).
+let _grassMat  = null;
+let _flowerMat = null;
+
 export function buildFoliage() {
   _buildGrass();
   _buildWildflowers();
 }
+
+// Per-frame shader tick — advances the grass + flower uTime uniforms. Reads
+// module-scope refs only (no `window`, no allocation). Behaviour-identical to
+// the previous main.js inline `window._grassMat.uniforms.uTime.value += dt`.
+export function tickFoliage(dt) {
+  if (_grassMat)  _grassMat.uniforms.uTime.value  += dt;
+  if (_flowerMat) _flowerMat.uniforms.uTime.value += dt;
+}
+
+// Debug accessors — injected into ToriiDebug so the namespace can surface the
+// live materials without reaching through a global.
+export function getGrassMat()  { return _grassMat; }
+export function getFlowerMat() { return _flowerMat; }
 
 // ── Instanced grass ───────────────────────────────────────────────────────────
 function _buildGrass() {
@@ -164,7 +187,8 @@ function _buildGrass() {
   mesh.geometry.computeBoundingSphere();
   mesh.frustumCulled = true;
   scene.add(mesh);
-  window._grassMat = mat;
+  _grassMat = mat;
+  window._grassMat = mat; // DEPRECATED debug alias (v0.2.118) — internal code uses tickFoliage()/getGrassMat()
 }
 
 // ── Instanced wildflowers ─────────────────────────────────────────────────────
@@ -278,5 +302,6 @@ function _buildWildflowers() {
   mesh.geometry.computeBoundingSphere();
   mesh.frustumCulled = true;
   scene.add(mesh);
-  window._flowerMat = mat;
+  _flowerMat = mat;
+  window._flowerMat = mat; // DEPRECATED debug alias (v0.2.118) — internal code uses tickFoliage()/getFlowerMat()
 }

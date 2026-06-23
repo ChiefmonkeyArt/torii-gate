@@ -3,7 +3,7 @@
 > Lightweight developer/agent index. Keep this practical and update it as systems are touched.
 > Purpose: help future debugging, SDK extraction, FOSS contribution, and AI handoff speed.
 
-Current version: `v0.2.117-alpha`  
+Current version: `v0.2.118-alpha`  
 Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app)
 
 ---
@@ -27,7 +27,7 @@ Do not abstract imaginary systems. Index proven systems and extract boundaries f
 |---|---|---|
 | Version/config | `src/config.js`, `index.html`, `tools/regression-check.mjs` | Version must bump every deploy. `godMode` must remain false. |
 | Game state | `src/state.js` | v0.2.115 added the explicit state machine: `PHASE` + `GAME_EVENT` + transition table; `transition(event)` is the only write path; predicates `isTitle/isPlaying/isPaused/isDead/isGameover/isLive`. All phase reads/writes route through this seam. Check 7 guards against direct `state.phase =` writes elsewhere. v0.2.116: `transition()` also emits `EV.PHASE_CHANGE`. |
-| Event bus | `src/events.js` | Decoupling seam — modules publish/subscribe by name instead of importing each other. `EV` is the canonical registry; `on/off/emit`. Imports nothing (no cycles). v0.2.116 wired `EV.PHASE_CHANGE` (payload `{from,to,event}`) from `state.transition()` and added check 8 (every `EV.<NAME>` reference must be defined here). v0.2.117 migrated the bot-hit bridge onto the bus: weapons.js emits `EV.BOT_HIT_BY_PLAYER` (`{bot,dmg}`), main.js subscribes (`hitBot`+`flashCross`); the legacy `window._onBotHit` global is now a deprecated debug-tap alias that forwards onto the bus, and check 9 forbids internal `window._onBotHit(` calls. Dormant seams: `PHASE_CHANGE` (no subscriber yet), `WS_PLAYER_HIT`, `WS_CHAT`. |
+| Event bus | `src/events.js` | Decoupling seam — modules publish/subscribe by name instead of importing each other. `EV` is the canonical registry; `on/off/emit`. Imports nothing (no cycles). v0.2.116 wired `EV.PHASE_CHANGE` (payload `{from,to,event}`) from `state.transition()` and added check 8 (every `EV.<NAME>` reference must be defined here). v0.2.117 migrated the bot-hit bridge onto the bus: weapons.js emits `EV.BOT_HIT_BY_PLAYER` (`{bot,dmg}`), main.js subscribes (`hitBot`+`flashCross`); the legacy `window._onBotHit` global is now a deprecated debug-tap alias that forwards onto the bus, and check 9 forbids internal `window._onBotHit(` calls. v0.2.118 moved the foliage shader materials off `window` into a module-scope registry in `arena-foliage.js` (`tickFoliage`/`getGrassMat`/`getFlowerMat`); `window._grassMat`/`_flowerMat` remain only as deprecated debug aliases and check 10 forbids internal reads of them. Dormant seams: `PHASE_CHANGE` (no subscriber yet), `WS_PLAYER_HIT`, `WS_CHAT`. |
 | Scene/rendering | `src/scene.js`, mirror modules, Three.js renderer | Mirror and first-person camera regressions should be checked manually. |
 | Player | `src/engine/entities/player.js` (boundary), `src/player.js` (runtime), `src/firstPersonBody.js`, `playerObj` | v0.2.114 began the boundary: geometry, spawn shape, and look-down POV math now live in `engine/entities/player.js`. Movement tick, combat, lifecycle, and body-state still in `src/player.js` (next slice). |
 | Weapons/combat | `src/weapons.js`, `src/targetReticle.js`, `src/hud.js` | v0.2.113 introduced shared classifier for bullets and HUD preview. |
@@ -55,7 +55,7 @@ Do not abstract imaginary systems. Index proven systems and extract boundaries f
 
 - **Player boundary (continue)**: lift the stateful movement/kinematic tick, combat (shoot/reload/recoil), lifecycle (damage/death/respawn), and body-state (`setPlayerBody`/`getPlayerCollider`/`spawnPlayerBody`) behind the boundary; then add dash/zoom shape.
 - **State machine (continue)**: first slice landed v0.2.115 (see Stable/started). Remaining: fold the secondary booleans (`reloading`, `pointerLocked`) into derived/guarded state, wire a real `GAMEOVER` edge if an end-of-run screen lands, and add unit tests for the transition table.
-- **Event bus (continue)**: first slice formalised v0.2.116; bot-hit bridge migrated v0.2.117 (`EV.BOT_HIT_BY_PLAYER`, `window._onBotHit` now a deprecated forwarding alias, check 9). Remaining: migrate the `window._grassMat`/`window._flowerMat` shader refs onto the bus, add subscribers for `PHASE_CHANGE` (HUD/audio/presence) and emit `WS_*` from the netcode skeleton when it lands.
+- **Event bus / decoupling (continue)**: first slice formalised v0.2.116; bot-hit bridge migrated v0.2.117 (`EV.BOT_HIT_BY_PLAYER`, `window._onBotHit` now a deprecated forwarding alias, check 9); foliage shader materials moved off `window` into a module-scope registry in `arena-foliage.js` v0.2.118 (`tickFoliage`/`getGrassMat`/`getFlowerMat`, deprecated `_grassMat`/`_flowerMat` aliases, check 10). Remaining: `window._mirrorMesh` is the last functional global (mirror.js Reflector handle — read via ToriiDebug only, not ticked); add subscribers for `PHASE_CHANGE` (HUD/audio/presence) and emit `WS_*` from the netcode skeleton when it lands.
 - **BotAgent**: `BotAgent.tick(worldState) -> BotAction[]`.
 - **Vitest suite**: one test per extracted seam.
 
@@ -124,3 +124,4 @@ Run on real hardware after publish:
 - `torii-v0.2.115-state-machine-report.md` — v0.2.115 state-machine groundwork first slice.
 - `torii-v0.2.116-event-bus-report.md` — v0.2.116 event-bus seam formalisation + `PHASE_CHANGE` wiring.
 - `torii-v0.2.117-bot-hit-event-report.md` — v0.2.117 bot-hit bridge migrated onto the bus (`EV.BOT_HIT_BY_PLAYER`); `_onBotHit` deprecated to a forwarding alias.
+- `torii-v0.2.118-material-registry-report.md` — v0.2.118 foliage shader materials moved off `window` into an arena-foliage.js module-scope registry; `_grassMat`/`_flowerMat` deprecated to debug aliases.

@@ -12,8 +12,13 @@
 //                          documented debug tap that forwards onto the bus, so
 //                          console/tester calls keep working. Internal code must
 //                          not call it (regression check [9]).
-//   • window._grassMat    — arena-foliage.js shader, ticked by main.js each frame
-//   • window._flowerMat   — arena-foliage.js shader, ticked by main.js each frame
+//   • window._grassMat    — DEPRECATED (v0.2.118). arena-foliage.js now owns the
+//                          shader in a module-scope registry, ticked by main.js
+//                          via tickFoliage() and surfaced here through the
+//                          injected getGrassMat() accessor. The global remains
+//                          ONLY as a documented debug alias; internal code must
+//                          not read it (regression check [10]).
+//   • window._flowerMat   — DEPRECATED (v0.2.118), same as _grassMat (getFlowerMat()).
 //   • window._mirrorMesh  — mirror.js Reflector handle
 // ToriiDebug MIRRORS these (read-only convenience) under ToriiDebug.fx /
 // ToriiDebug.world so they are discoverable from one namespace, but the
@@ -32,6 +37,7 @@ export function installToriiDebug(refs) {
   const {
     version, bots, hitBot, playerObj, resetPlayerPos,
     castRay, castRayStatic, hasLineOfSight, getWorld, getLastHit,
+    getGrassMat, getFlowerMat,
   } = refs;
 
   const api = {
@@ -71,8 +77,8 @@ export function installToriiDebug(refs) {
     identity: { presence },
 
     fx: {
-      get grass()  { return window._grassMat  || null; },
-      get flower() { return window._flowerMat || null; },
+      get grass()  { return (getGrassMat  ? getGrassMat()  : null) || null; },
+      get flower() { return (getFlowerMat ? getFlowerMat() : null) || null; },
     },
 
     // Combat — last bot-hit classification (impact Y, foot Y, neck-line, head
