@@ -5,7 +5,7 @@ import { renderer, renderFrame } from './scene.js';
 import { initAtmosphere, tickAtmosphere } from './atmosphere.js';
 import { buildArena } from './arena.js';
 import { tickFoliage, getGrassMat, getFlowerMat } from './arena-foliage.js';
-import { buildMirror, tickMirror, shouldUpdateMirror } from './mirror.js';
+import { buildMirror, tickMirror, shouldUpdateMirror, getMirror } from './mirror.js';
 import { initLoop, startLoop } from './loop.js';
 import { onKeyDown, requestLock, setYaw, onPointerLockLost, keys } from './input.js';
 import { initPlayer, tickPlayer, tickDeath, playerObj, setPlayerBody, spawnPlayerBody, takeDamage, setNextSpawn, getPlayerCollider, resetPlayerPos } from './player.js';
@@ -65,7 +65,7 @@ window._onBotHit = (bot, dmg) => emit(EV.BOT_HIT_BY_PLAYER, { bot, dmg });
 installToriiDebug({
   version: VERSION, bots, hitBot, playerObj, resetPlayerPos,
   castRay, castRayStatic, hasLineOfSight, getWorld, getLastHit,
-  getGrassMat, getFlowerMat,
+  getGrassMat, getFlowerMat, getMirror,
 });
 
 

@@ -19,7 +19,11 @@
 //                          ONLY as a documented debug alias; internal code must
 //                          not read it (regression check [10]).
 //   • window._flowerMat   — DEPRECATED (v0.2.118), same as _grassMat (getFlowerMat()).
-//   • window._mirrorMesh  — mirror.js Reflector handle
+//   • window._mirrorMesh  — DEPRECATED (v0.2.119). mirror.js owns the Reflector
+//                          handle in a module-scope ref, surfaced here through
+//                          the injected getMirror() accessor. The global remains
+//                          ONLY as a documented debug alias; internal code must
+//                          not read it (regression check [10]).
 // ToriiDebug MIRRORS these (read-only convenience) under ToriiDebug.fx /
 // ToriiDebug.world so they are discoverable from one namespace, but the
 // originals keep working so nothing breaks.
@@ -37,7 +41,7 @@ export function installToriiDebug(refs) {
   const {
     version, bots, hitBot, playerObj, resetPlayerPos,
     castRay, castRayStatic, hasLineOfSight, getWorld, getLastHit,
-    getGrassMat, getFlowerMat,
+    getGrassMat, getFlowerMat, getMirror,
   } = refs;
 
   const api = {
@@ -67,7 +71,7 @@ export function installToriiDebug(refs) {
     },
 
     world: {
-      get mirror() { return window._mirrorMesh || null; },
+      get mirror() { return (getMirror ? getMirror() : null) || null; },
       // Foundation skeletons (inert): zone metadata + local handoff helpers.
       napZone,
       handoff,

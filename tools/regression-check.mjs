@@ -1,4 +1,4 @@
-// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.118).
+// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.119).
 // No external deps. Run with: node tools/regression-check.mjs  (or: npm run check)
 //
 // Catches the regressions the Strategy doc calls out, without needing a browser:
@@ -11,8 +11,9 @@
 //   7. state.phase writes confined to state.js (FSM seam, v0.2.115)
 //   8. every EV.<NAME> reference is defined in the events.js registry (v0.2.116)
 //   9. no internal call to window._onBotHit() — use the bus event instead (v0.2.117)
-//  10. no internal READ of window._grassMat/_flowerMat — use the foliage
-//      registry (tickFoliage/getGrassMat/getFlowerMat) instead (v0.2.118)
+//  10. no internal READ of window._grassMat/_flowerMat (v0.2.118) or
+//      window._mirrorMesh (v0.2.119) — use the foliage registry
+//      (tickFoliage/getGrassMat/getFlowerMat) / mirror getMirror() instead
 //
 // Exit code 0 = all green; non-zero = at least one FAIL.
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
@@ -20,7 +21,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.118-alpha';
+const EXPECTED_VERSION = 'v0.2.119-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -104,7 +105,7 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   const count = (html.match(new RegExp(EXPECTED_VERSION.replace(/\./g, '\\.'), 'g')) || []).length;
   if (count < 2) fail(`index.html has ${count} ${EXPECTED_VERSION} markers (expected >=2)`);
   else pass(`index.html has ${count} version markers`);
-  if (/v0\.2\.117-alpha/.test(html)) fail('index.html still references v0.2.117-alpha');
+  if (/v0\.2\.118-alpha/.test(html)) fail('index.html still references v0.2.118-alpha');
 }
 
 // 6. dist markers (only if built)
@@ -180,25 +181,26 @@ console.log('[9] no internal window._onBotHit() call');
   if (!bad) pass('bot-hit bridge runs over the event bus, not the global');
 }
 
-// 10. no internal READ of window._grassMat/_flowerMat — the foliage shader
-// materials live in arena-foliage.js's module-scope registry since v0.2.118
-// (tickFoliage/getGrassMat/getFlowerMat). The globals are still DEFINED in
-// arena-foliage.js as deprecated debug aliases (`window._grassMat = mat`), so
-// an ASSIGNMENT is allowed; any READ (`window._grassMat.uniforms`, passing it
-// as a value, etc.) is forbidden. Strip comments, then match the global NOT
+// 10. no internal READ of window._grassMat/_flowerMat (v0.2.118) or
+// window._mirrorMesh (v0.2.119) — these handles live in their owning module's
+// scope now (arena-foliage.js registry via tickFoliage/getGrassMat/getFlowerMat;
+// mirror.js via getMirror()). The globals are still DEFINED as deprecated debug
+// aliases (`window._grassMat = mat`, `window._mirrorMesh = mirror`), so an
+// ASSIGNMENT is allowed; any READ (`window._mirrorMesh.onBeforeRender`, passing
+// it as a value, etc.) is forbidden. Strip comments, then match the global NOT
 // immediately followed by `=` (the assignment form is the only legal use).
-console.log('[10] no internal window._grassMat/_flowerMat read');
+console.log('[10] no internal window._grassMat/_flowerMat/_mirrorMesh read');
 {
   let bad = false;
   for (const f of srcFiles) {
     const code = readFileSync(join(ROOT, f), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/[^\n]*/g, '');
-    if (/window\._(?:grassMat|flowerMat)\b(?!\s*=[^=])/.test(code)) {
-      fail(`internal window._grassMat/_flowerMat read in ${f} (use the foliage registry)`); bad = true;
+    if (/window\._(?:grassMat|flowerMat|mirrorMesh)\b(?!\s*=[^=])/.test(code)) {
+      fail(`internal window._grassMat/_flowerMat/_mirrorMesh read in ${f} (use the owning module's accessor)`); bad = true;
     }
   }
-  if (!bad) pass('foliage materials read via registry, not the globals');
+  if (!bad) pass('foliage + mirror handles read via accessors, not the globals');
 }
 
 console.log(fails === 0 ? '\nALL GREEN' : `\n${fails} FAILURE(S)`);

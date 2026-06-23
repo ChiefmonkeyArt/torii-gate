@@ -39,6 +39,12 @@ export function tickMirror(dt) {
 function _noop() {}
 export function shouldUpdateMirror() { return true; } // kept for compat — mesh always visible
 
+// Mirror handle accessor (v0.2.119) — returns the live Reflector mesh (or null
+// before buildMirror runs). Replaces internal reads of the `window._mirrorMesh`
+// global; ToriiDebug surfaces the mirror through this. The global remains only
+// as a deprecated debug alias (regression check 10 forbids internal reads).
+export function getMirror() { return _mirrorRef; }
+
 export function buildMirror() {
   try {
     // ── Reflector surface ─────────────────────────────────────────────────────
@@ -57,7 +63,8 @@ export function buildMirror() {
     mirror.rotation.y = Math.PI / 2;  // normal faces +X (eastward, into arena)
     mirror.position.set(MX, MY, MZ);
     scene.add(mirror);
-    window._mirrorMesh = mirror; // expose for throttle in renderFrame
+    _mirrorRef = mirror; // module handle — see getMirror() / tickMirror()
+    window._mirrorMesh = mirror; // DEPRECATED debug alias (v0.2.119) — internal code uses getMirror()
 
     // Enable layer 1 on the reflection camera so the player's own GLB shows.
     // Three.js r168+ uses a WeakMap of reflection cameras (no more mirror.camera).
@@ -74,8 +81,7 @@ export function buildMirror() {
       }
     };
     mirror.onBeforeRender = _patchedFn;
-    mirror._patchedOnBefore = _patchedFn; // stored for throttle restore
-    _mirrorRef = mirror; // expose to tickMirror
+    mirror._patchedOnBefore = _patchedFn; // stored for throttle restore (_mirrorRef set above)
 
     // Pre-warm: let the first real onBeforeRender handle it — mirror.camera no longer
     // exists in Three.js r168+. Attempting renderer.render with undefined camera crashes
