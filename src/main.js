@@ -23,6 +23,7 @@ import { nostrLogin } from './nostr.js';
 import { playShoot, playFootstep, playJumpLand } from './audio.js';
 import { initPlayerStats } from './playerStats.js';
 import { installToriiDebug } from './engine/debug/toriiDebug.js';
+import { applyPhaseScreens } from './engine/ui/phaseScreens.js';
 import { VERSION } from './config.js';
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -86,6 +87,14 @@ const elHud      = document.getElementById('hud');
 const elPause    = document.getElementById('pause-overlay');
 const elEnterBtn = document.getElementById('btn-enter');
 
+// v0.2.121 — the FIRST real EV.PHASE_CHANGE subscriber. Top-level screen
+// visibility (title / HUD / pause modal) is now derived declaratively from the
+// phase the FSM transitioned INTO, instead of being hand-toggled at each
+// transition() call site. transition() stays the single source of phase change;
+// this just reacts to it. Behaviour-preserving: phaseVisibility() reproduces the
+// exact toggles the call sites used (see engine/ui/phaseScreens.js).
+on(EV.PHASE_CHANGE, ({ to }) => applyPhaseScreens(to, { elTitle, elHud, elPause }));
+
 // Character selector
 document.querySelectorAll('.char-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -141,9 +150,7 @@ elEnterBtn?.addEventListener('click', async () => {
   loadFirstPersonBody(playerObj);
   buildNapNpc();
 
-  elTitle?.classList.add('hidden');
-  elHud?.classList.remove('hidden');
-  transition(GAME_EVENT.ENTER); // TITLE → PLAYING
+  transition(GAME_EVENT.ENTER); // TITLE → PLAYING (PHASE_CHANGE subscriber shows HUD, hides title)
   requestLock(renderer.domElement);
   emit(EV.HUD_UPDATE);
 });
@@ -161,8 +168,8 @@ elNostrCentreBtn?.addEventListener('click', _doNostrLogin);
 // but we no longer depend on the pointerlockchange signal for the pause UI.
 function _openPause() {
   // PLAYING → PAUSED; no-op from any other phase (same as the old guard).
+  // PHASE_CHANGE subscriber shows the pause modal.
   if (!transition(GAME_EVENT.PAUSE)) return;
-  elPause?.classList.add('show');
   document.exitPointerLock?.();
 }
 
@@ -189,10 +196,9 @@ onPointerLockLost(() => {
 elResumeBtn?.addEventListener('click', _resume);
 
 elHomeBtn?.addEventListener('click', () => {
-  transition(GAME_EVENT.HOME); // PAUSED → TITLE (Home is only reachable from the pause modal)
-  elPause?.classList.remove('show');
-  elTitle?.classList.remove('hidden');
-  elHud?.classList.add('hidden');
+  // PAUSED → TITLE (Home is only reachable from the pause modal). PHASE_CHANGE
+  // subscriber hides the pause modal + HUD and shows the title screen.
+  transition(GAME_EVENT.HOME);
   document.exitPointerLock?.();
   // Re-arm the Enter button — physics is already initialized, so going back
   // into the arena from here just needs the original label restored.
@@ -204,8 +210,8 @@ elHomeBtn?.addEventListener('click', () => {
 
 function _resume() {
   // PAUSED → PLAYING; no-op from any other phase (same as the old guard).
+  // PHASE_CHANGE subscriber hides the pause modal.
   if (!transition(GAME_EVENT.RESUME)) return;
-  elPause?.classList.remove('show');
   requestLock(renderer.domElement); // works from button click; canvas click re-locks if from ESC
 }
 
