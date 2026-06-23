@@ -1,5 +1,5 @@
 // main.js — wiring only. No game logic here.
-import { state, isTitle, isPlaying, isPaused, isLive, needsPointerLock, transition, GAME_EVENT, resetRun } from './state.js';
+import { state, isTitle, isPlaying, isPaused, isLive, needsPointerLock, isReloading, transition, GAME_EVENT, resetRun } from './state.js';
 import { emit, on, EV } from './events.js';
 import { renderer, renderFrame } from './scene.js';
 import { initAtmosphere, tickAtmosphere } from './atmosphere.js';
@@ -282,7 +282,7 @@ on(EV.PLAYER_KILLED, () => {
   setNextSpawn(best.x, best.z, best.yaw);
 });
 // HUD_UPDATE is emitted on reload start — check state.reloading to trigger anim
-on(EV.HUD_UPDATE,    () => { if (state.reloading) triggerReload(); });
+on(EV.HUD_UPDATE,    () => { if (isReloading()) triggerReload(); });
 
 // ── Game loop ─────────────────────────────────────────────────────────────────
 
@@ -348,7 +348,7 @@ function update(dt, frame) {
     _footAccum = 0;
   }
 
-  tickPlayerModel(dt, _isShooting, state.reloading, _isJumping, !_isJumping);
+  tickPlayerModel(dt, _isShooting, isReloading(), _isJumping, !_isJumping);
   tickFirstPersonBody(dt);
   tickNapNpc(dt);
   _isShooting = false; // reset after 1 frame

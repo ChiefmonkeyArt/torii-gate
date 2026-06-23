@@ -4,7 +4,7 @@
 // (ray/rayStatic → null, lineOfSight → true). We test the FACTORY, not the
 // default singleton, so no Rapier is needed.
 import { describe, it, expect } from 'vitest';
-import { createRaycastService } from '../src/engine/physics/raycastService.js';
+import { createRaycastService, raycastService } from '../src/engine/physics/raycastService.js';
 
 describe('createRaycastService — delegation', () => {
   it('forwards ray() args to castRay and returns its result', () => {
@@ -52,5 +52,25 @@ describe('createRaycastService — safe degradation (missing impls)', () => {
     const svc = createRaycastService();
     expect(svc.ray(0, 0, 0, 1, 0, 0, 10)).toBeNull();
     expect(svc.lineOfSight(0, 0, 0, 1, 1, 1)).toBe(true);
+  });
+});
+
+// The default singleton is what weapons.js / player.js / bots.js now call (the
+// v0.2.131–132 ARS-3 migration). It is wired to the real raycast.js layer, which
+// guards an uninitialised Rapier world: ray/rayStatic → null, lineOfSight → true.
+// So even with no world loaded the production service is callable and safe — that
+// is exactly the pre-init behaviour the migrated call sites depend on.
+describe('default raycastService — production wiring (no world loaded)', () => {
+  it('exposes ray / rayStatic / lineOfSight as functions', () => {
+    expect(typeof raycastService.ray).toBe('function');
+    expect(typeof raycastService.rayStatic).toBe('function');
+    expect(typeof raycastService.lineOfSight).toBe('function');
+  });
+  it('ray and rayStatic return null before the world is initialised', () => {
+    expect(raycastService.ray(0, 0, 0, 1, 0, 0, 10)).toBeNull();
+    expect(raycastService.rayStatic(0, 0, 0, 1, 0, 0, 10)).toBeNull();
+  });
+  it('lineOfSight falls back to true before the world is initialised', () => {
+    expect(raycastService.lineOfSight(0, 0, 0, 1, 1, 1)).toBe(true);
   });
 });

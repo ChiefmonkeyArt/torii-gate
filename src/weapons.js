@@ -4,12 +4,17 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene, gunScene } from './scene.js';
-import { state } from './state.js';
+import { state, isReloading } from './state.js';
 import { emit, EV } from './events.js';
 import { BULLET_SPEED, BULLET_LIFE, BOT_DAMAGE, ARENA_HALF, WALL_H, RELOAD_TIME } from './config.js';
 import { spawnSpark, spawnRicochet, tickFx } from './fx.js';
-import { castRay, castRayStatic,
-         BOT_HEAD_CENTRE_Y_OFFSET, BOT_HEAD_RADIUS } from './physics.js';
+import { BOT_HEAD_CENTRE_Y_OFFSET, BOT_HEAD_RADIUS } from './physics.js';
+// v0.2.132 (ARS-3) — bullet/aim rays now go through the injectable RaycastService
+// facade instead of the concrete castRay/castRayStatic singletons. The default
+// service wraps the same Rapier-backed functions (raycast.js), so this is
+// behaviour-identical today; it gives the weapon ray path one injectable seam for
+// future tests/components.
+import { raycastService } from './engine/physics/raycastService.js';
 // v0.2.120 — the shared headshot classifier was extracted to a pure module
 // (no Three/Rapier) so it can be unit tested. Re-exported here unchanged so
 // every existing `from './weapons.js'` import site keeps working.
@@ -215,10 +220,10 @@ export function recordPlayerShot(b, ax, ay, az, adx, ady, adz) {
 
   const excl = _getPlayerCollider() || null;
   // Aim line (camera/crosshair) — what the reticle is on.
-  const aimHit = castRay(ax, ay, az, adx, ady, adz, DIAG_RANGE, excl);
+  const aimHit = raycastService.ray(ax, ay, az, adx, ady, adz, DIAG_RANGE, excl);
   _describeInto(d.aim, aimHit);
   // Bullet line (muzzle → convergence) — what the projectile would hit if static.
-  const predHit = castRay(d.origin.x, d.origin.y, d.origin.z, d.dir.x, d.dir.y, d.dir.z, DIAG_RANGE, excl);
+  const predHit = raycastService.ray(d.origin.x, d.origin.y, d.origin.z, d.dir.x, d.dir.y, d.dir.z, DIAG_RANGE, excl);
   _describeInto(d.pred, predHit);
 
   d.predicted = classifyShotOutcome(d.aim, d.pred);
@@ -264,7 +269,7 @@ export function tickWeapons(dt, playerPos) {
         const segLen = _rayDirN.length() * dt;          // tick distance, ~1 m
         if (segLen > 1e-5) {
           _rayDirN.multiplyScalar(1 / (segLen / dt));   // normalize (== /BULLET_SPEED)
-          const hit = castRay(
+          const hit = raycastService.ray(
             b.prev.x, b.prev.y, b.prev.z,
             _rayDirN.x, _rayDirN.y, _rayDirN.z,
             segLen,
@@ -346,7 +351,7 @@ export function tickWeapons(dt, playerPos) {
           const segLen = _rayDirN.length() * dt;
           if (segLen > 1e-5) {
             _rayDirN.multiplyScalar(1 / (segLen / dt)); // normalize
-            const hit = castRayStatic(
+            const hit = raycastService.rayStatic(
               b.prev.x, b.prev.y, b.prev.z,
               _rayDirN.x, _rayDirN.y, _rayDirN.z,
               segLen,
@@ -464,7 +469,7 @@ function _tickGun(dt) {
   // purely a dt/state-driven viewmodel pose, no timers. progress 0→1 across
   // RELOAD_TIME (unchanged, so audio sync is preserved). dip: 0 rest, 1 lowered,
   // negative on the snap-back overshoot (gun kicks slightly above rest).
-  if (state.reloading) {
+  if (isReloading()) {
     const progress = 1 - Math.max(0, Math.min(1, state.reloadTimer / RELOAD_TIME));
     const dip = reloadDip(progress);
     mesh.position.y = FP_REST_Y - 0.22 * dip;

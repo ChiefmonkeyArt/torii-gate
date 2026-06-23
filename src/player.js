@@ -1,10 +1,13 @@
 // player.js — movement, shoot, reload, death/respawn
 import * as THREE from 'three';
-import { state, isPlaying, isDead, transition, GAME_EVENT, canShoot, canReload } from './state.js';
+import { state, isPlaying, isDead, transition, GAME_EVENT, canShoot, canReload, tickReload } from './state.js';
 import { emit, EV } from './events.js';
 import { keys, getYaw, getPitch, setYaw, onKeyDown, onShoot, requestLock } from './input.js';
 import { scene, camera } from './scene.js';
-import { stepPhysics, createKinematic, movePlayer, physicsReady, castRay } from './physics.js';
+import { stepPhysics, createKinematic, movePlayer, physicsReady } from './physics.js';
+// v0.2.132 (ARS-3) — crosshair/aim ray goes through the RaycastService facade
+// (same default Rapier impl as before, behaviour-identical).
+import { raycastService } from './engine/physics/raycastService.js';
 import { getGunBarrelWorld } from './weapons.js';
 import { crosshairPoint, aimDirection, CONVERGE_DIST } from './engine/combat/aim.js';
 import { playReload } from './audio.js';
@@ -180,15 +183,9 @@ export function tickPlayer(dt) {
     }
   }
 
-  // Reload tick
-  if (state.reloading) {
-    state.reloadTimer -= dt;
-    if (state.reloadTimer <= 0) {
-      state.reloading = false;
-      state.ammo = MAX_AMMO;
-      emit(EV.HUD_UPDATE);
-    }
-  }
+  // Reload tick — the timer/refill now lives in state.tickReload (ARS-4 fold);
+  // it returns true on the frame the reload completes so we emit the HUD update.
+  if (tickReload(dt)) emit(EV.HUD_UPDATE);
   if (state.shootCd > 0) state.shootCd -= dt;
 
   // Recoil timer
@@ -226,7 +223,7 @@ export function shoot() {
   // through the exact spot the reticle classified (a previewed headshot lands as
   // a headshot) without pretending the muzzle sits at the camera (the v0.2.125
   // camera-origin experiment, now retired — it moved the muzzle off the gun).
-  const aimHit = castRay(
+  const aimHit = raycastService.ray(
     _camPos.x, _camPos.y, _camPos.z,
     _camFwd.x, _camFwd.y, _camFwd.z,
     AIM_RANGE, _collider || null,

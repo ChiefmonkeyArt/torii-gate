@@ -103,6 +103,27 @@ export function transition(event) {
 export function canShoot(s = state)  { return s.shootCd <= 0 && !s.reloading && s.ammo > 0; }
 export function canReload(s = state) { return !s.reloading && s.ammo < MAX_AMMO; }
 
+// isReloading — the reload sub-state predicate (PLAYING-only sub-flow). Reads
+// only the `reloading` flag so the "is a reload in progress" question lives with
+// the other weapon-state gates instead of being hand-rolled as `state.reloading`
+// at each read site (player tick, viewmodel pose, reload anim trigger).
+export const isReloading = (s = state) => s.reloading;
+
+// tickReload — advance the reload timer by dt; the ONE place the reload sub-state
+// completes (v0.2.132, ARS-4 fold). Mirrors the old inline block in player.js:
+// when the timer elapses, clear the flag and refill the mag. Returns true ONLY on
+// the frame the reload finishes, so the caller emits its HUD update exactly as
+// before; returns false (no-op) when not reloading or still counting down. Pure
+// w.r.t. modules — mutates only the passed state object (live `state` default).
+export function tickReload(dt, s = state) {
+  if (!s.reloading) return false;
+  s.reloadTimer -= dt;
+  if (s.reloadTimer > 0) return false;
+  s.reloading = false;
+  s.ammo = MAX_AMMO;
+  return true;
+}
+
 // ── Phase predicates ───────────────────────────────────────────────────────
 export const isTitle    = () => state.phase === PHASE.TITLE;
 export const isPlaying  = () => state.phase === PHASE.PLAYING;

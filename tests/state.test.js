@@ -8,7 +8,7 @@ import {
   nextPhase, canTransition, transition,
   isTitle, isPlaying, isPaused, isDead, isGameover, isLive,
   isEngaged, needsPointerLock,
-  canShoot, canReload,
+  canShoot, canReload, isReloading, tickReload,
 } from '../src/state.js';
 import { MAX_AMMO } from '../src/config.js';
 
@@ -148,5 +148,39 @@ describe('weapon-state predicates (pure, take a state-like object)', () => {
     state.ammo = 0;
     expect(canShoot()).toBe(false);  // empty
     expect(canReload()).toBe(true);  // not full
+  });
+});
+
+describe('reload sub-state fold (isReloading / tickReload, ARS-4)', () => {
+  it('isReloading mirrors the reloading flag', () => {
+    expect(isReloading({ reloading: true })).toBe(true);
+    expect(isReloading({ reloading: false })).toBe(false);
+  });
+  it('tickReload is a no-op when not reloading', () => {
+    const s = { reloading: false, reloadTimer: 0, ammo: 0 };
+    expect(tickReload(0.1, s)).toBe(false);
+    expect(s.ammo).toBe(0);            // not refilled
+    expect(s.reloading).toBe(false);
+  });
+  it('tickReload counts the timer down without finishing early', () => {
+    const s = { reloading: true, reloadTimer: 1.0, ammo: 0 };
+    expect(tickReload(0.4, s)).toBe(false);  // 1.0 → 0.6, still going
+    expect(s.reloadTimer).toBeCloseTo(0.6, 6);
+    expect(s.reloading).toBe(true);
+    expect(s.ammo).toBe(0);                  // mag not refilled mid-reload
+  });
+  it('tickReload completes once: clears the flag, refills the mag, returns true', () => {
+    const s = { reloading: true, reloadTimer: 0.3, ammo: 0 };
+    expect(tickReload(0.3, s)).toBe(true);   // hits exactly 0 → done
+    expect(s.reloading).toBe(false);
+    expect(s.ammo).toBe(MAX_AMMO);
+    // A subsequent tick is a clean no-op (reload already finished).
+    expect(tickReload(0.1, s)).toBe(false);
+  });
+  it('tickReload defaults to the live state singleton', () => {
+    state.reloading = true; state.reloadTimer = 0.05; state.ammo = 0;
+    expect(tickReload(0.1)).toBe(true);      // overshoot still completes
+    expect(state.reloading).toBe(false);
+    expect(state.ammo).toBe(MAX_AMMO);
   });
 });

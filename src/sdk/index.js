@@ -29,6 +29,7 @@ export * as muzzle from '../engine/weapons/muzzle.js';
 export * as botAgent from '../engine/entities/bot-agent.js';
 export * as snapshot from '../engine/debug/snapshot.js';
 export * as phaseScreens from '../engine/ui/phaseScreens.js';
+export * as component from '../engine/components/contract.js';
 export { createRaycastService, raycastService } from '../engine/physics/raycastService.js';
 
 // ---- Metadata --------------------------------------------------------------
@@ -56,6 +57,8 @@ export const SDK_SURFACE = Object.freeze({
   botAgent:        { tier: STABILITY.EXPERIMENTAL, module: '../engine/entities/bot-agent.js' },
   snapshot:        { tier: STABILITY.EXPERIMENTAL, module: '../engine/debug/snapshot.js' },
   phaseScreens:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/ui/phaseScreens.js' },
+  // Component economy contract (CMP-2) — mount/unmount + manifest validation.
+  component:       { tier: STABILITY.EXPERIMENTAL, module: '../engine/components/contract.js' },
   // Forward-declared internals — public story, not safe/ready to re-export yet:
   physicsBodies:   { tier: STABILITY.INTERNAL,     module: null },
   physicsRaycast:  { tier: STABILITY.INTERNAL,     module: null },
