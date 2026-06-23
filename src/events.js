@@ -1,4 +1,12 @@
-// events.js — event bus. Modules never import each other directly.
+// events.js — event bus. Modules talk through named events here instead of
+// importing each other directly. This is the decoupling seam: a publisher emits,
+// any number of subscribers react, and neither side knows about the other.
+//
+// EV is the canonical registry — emit/on ONLY with an EV.* name so the set of
+// signals stays discoverable in one place (the regression check rejects any
+// EV.<NAME> reference that isn't defined here). Some entries are live seams with
+// no subscriber yet (PHASE_CHANGE, WS_*); emitting to an empty listener list is a
+// harmless no-op, so wiring a publisher ahead of its consumers is safe.
 const _listeners = {};
 export const EV = Object.freeze({
   HUD_UPDATE:     'hud:update',
@@ -9,7 +17,7 @@ export const EV = Object.freeze({
   BOT_KILLED:     'bot:killed',
   SHOOT:          'player:shoot',
   NOSTR_LOGIN:    'nostr:login',
-  PHASE_CHANGE:   'game:phase',
+  PHASE_CHANGE:   'game:phase',   // emitted by state.transition(); payload {from,to,event}
   WS_PLAYER_HIT:  'ws:playerHit',
   WS_CHAT:        'ws:chat',
 });

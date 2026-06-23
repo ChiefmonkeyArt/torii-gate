@@ -1,4 +1,4 @@
-// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.115).
+// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.116).
 // No external deps. Run with: node tools/regression-check.mjs  (or: npm run check)
 //
 // Catches the regressions the Strategy doc calls out, without needing a browser:
@@ -8,6 +8,8 @@
 //   4. no `new THREE.Vector3` / `new THREE.Matrix4` in foundation/new modules
 //   5. version markers agree on EXPECTED_VERSION (config.js + index.html)
 //   6. dist marker check (only if dist/ exists) — key behaviours present
+//   7. state.phase writes confined to state.js (FSM seam, v0.2.115)
+//   8. every EV.<NAME> reference is defined in the events.js registry (v0.2.116)
 //
 // Exit code 0 = all green; non-zero = at least one FAIL.
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
@@ -15,7 +17,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.115-alpha';
+const EXPECTED_VERSION = 'v0.2.116-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -99,7 +101,7 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   const count = (html.match(new RegExp(EXPECTED_VERSION.replace(/\./g, '\\.'), 'g')) || []).length;
   if (count < 2) fail(`index.html has ${count} ${EXPECTED_VERSION} markers (expected >=2)`);
   else pass(`index.html has ${count} version markers`);
-  if (/v0\.2\.114-alpha/.test(html)) fail('index.html still references v0.2.114-alpha');
+  if (/v0\.2\.115-alpha/.test(html)) fail('index.html still references v0.2.115-alpha');
 }
 
 // 6. dist markers (only if built)
@@ -135,6 +137,25 @@ console.log('[7] state.phase writes confined to state.js');
     if (/state\.phase\s*=/.test(txt)) { fail(`direct state.phase write in ${f} (use transition())`); bad = true; }
   }
   if (!bad) pass('no direct state.phase writes outside state.js');
+}
+
+// 8. event-bus registry — every EV.<NAME> used in src/ is defined in events.js
+console.log('[8] EV.<NAME> references defined in events.js registry');
+{
+  const evSrc = readFileSync(join(ROOT, 'src/events.js'), 'utf8');
+  const block = evSrc.match(/EV\s*=\s*Object\.freeze\(\{([\s\S]*?)\}\)/);
+  const defined = new Set(
+    [...(block ? block[1] : '').matchAll(/^\s*([A-Z0-9_]+)\s*:/gm)].map((m) => m[1]),
+  );
+  let bad = false;
+  for (const f of srcFiles) {
+    if (f === 'src/events.js') continue;
+    const txt = readFileSync(join(ROOT, f), 'utf8');
+    for (const m of txt.matchAll(/\bEV\.([A-Z0-9_]+)\b/g)) {
+      if (!defined.has(m[1])) { fail(`unknown event EV.${m[1]} in ${f}`); bad = true; }
+    }
+  }
+  if (!bad) pass(`${defined.size} events defined; all EV.* references valid`);
 }
 
 console.log(fails === 0 ? '\nALL GREEN' : `\n${fails} FAILURE(S)`);
