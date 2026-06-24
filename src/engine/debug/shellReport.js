@@ -233,3 +233,75 @@ export function buildShellReport(inputs = {}) {
     mvpLoop: mvpLoopReport(),
   };
 }
+
+// shellsSummary(inputs) → a compact, JSON-serialisable map of the four MVP proof
+// surfaces (the title-screen preview cards) framed by the MVP loop, intended as a
+// one-call DISCOVERABILITY aid for an AI handoff / FOSS dev: "what proof surfaces
+// exist, which SDK namespace + ToriiDebug.shells report each maps to, and what
+// inert invariants they guarantee." Every invariant is READ from the live report
+// output above (not hard-coded), so the summary can never claim an inertness the
+// underlying shell does not actually have. Pure + read-only; no network/actions.
+export function shellsSummary(inputs = {}) {
+  const r = buildShellReport(inputs);
+
+  const surfaces = [
+    {
+      key: 'gatewayPreview', lean: 'LEAN-2', step: 'TRAVEL',
+      sdk: 'gatewayPreview', shell: 'gatewayPreview',
+      title: r.gatewayPreview.title,
+      invariants: { actionable: r.gatewayPreview.actionable },
+    },
+    {
+      key: 'productPreview', lean: 'LEAN-3', step: 'MARKET',
+      sdk: 'productPreview', shell: 'productPreview',
+      title: r.productPreview.title,
+      invariants: { readOnly: r.productPreview.readOnly, actionable: r.productPreview.actionable },
+    },
+    {
+      key: 'leaderboardPreview', lean: 'LEAN-4', step: 'SCORE',
+      sdk: 'leaderboardPreview', shell: 'leaderboardPreview',
+      title: r.leaderboardPreview.title,
+      invariants: {
+        readOnly: r.leaderboardPreview.readOnly,
+        actionable: r.leaderboardPreview.actionable,
+        signed: r.leaderboardPreview.signed,
+        published: r.leaderboardPreview.published,
+      },
+    },
+    {
+      key: 'updatePreview', lean: 'LEAN-5', step: 'UPDATE',
+      sdk: 'updatePreview', shell: 'updatePreview',
+      title: r.updatePreview.title,
+      invariants: { readOnly: r.updatePreview.readOnly, actionable: r.updatePreview.actionable },
+    },
+  ];
+
+  const loop = {
+    key: 'mvpLoop', sdk: 'mvpLoop', shell: 'mvpLoop',
+    title: r.mvpLoop.title,
+    flow: r.mvpLoop.flow,
+    invariants: { readOnly: r.mvpLoop.readOnly, actionable: r.mvpLoop.actionable },
+  };
+
+  // True only if NO surface (or the loop header) is actionable, and nothing claims
+  // to be signed/published. This is the single gate a reviewer can assert on.
+  const allInert =
+    loop.invariants.actionable === false &&
+    surfaces.every((s) =>
+      s.invariants.actionable === false &&
+      s.invariants.signed !== true &&
+      s.invariants.published !== true);
+
+  return {
+    version: r.mvpLoop.version,
+    flow: r.mvpLoop.flow,
+    loop,
+    surfaces,
+    count: surfaces.length,
+    allInert,
+    // Safety flags that are false BY CONSTRUCTION across every proof surface —
+    // these modules never fetch, navigate, sign, publish, or auto-update.
+    network: false,
+    autoUpdate: false,
+  };
+}

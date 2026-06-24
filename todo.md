@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.144-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.145-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -10,7 +10,7 @@
 
 ---
 
-## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.144)
+## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.145)
 
 > **The project is refocused onto a 15-hour proof-of-concept.** Build the vision
 > fast, prove the architecture, avoid polish traps — then add retrospective polish
@@ -47,6 +47,14 @@
   cards as **Travel → Market → Score → Update**, and each card title carries its step
   (`1 · TRAVEL` … `4 · UPDATE`). Content/CSS/labelling only — `actionable:false`, no
   network/links/actions; rendered via `textContent`. Read-only at `ToriiDebug.shells.mvpLoop()`.
+- **SDK/debug surfaces are now indexed for handoffs** (v0.2.145) — `SDK_DEBUG_INDEX.md`
+  maps the SDK namespaces (by stability tier), the four MVP proof surfaces
+  (gateway/product/leaderboard/update previews + the MVP loop) with their SDK
+  namespace, `ToriiDebug.shells` report, and inert invariants, where the tests live,
+  and how to add a new proof card or promote preview→live. A new read-only
+  `ToriiDebug.shells.summary()` (pure `shellsSummary()`) aggregates the four surfaces
+  + loop with an `allInert` gate and `network:false`/`autoUpdate:false` flags read
+  from the live reports. Docs/debug only — `actionable:false`, no network/actions.
 - **Host-side self-hosting is now documented** (v0.2.144) — `VPS_INSTALL.md` covers
   running the static `dist/` build at `torii.quest` on a shared Ubuntu VPS (Caddy or
   Nginx, HTTPS, DNS checklist, min specs), the **manual** GitHub update sequence

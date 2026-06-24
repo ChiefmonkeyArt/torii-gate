@@ -3,9 +3,10 @@
 // output, is deterministic, and exposes NO commerce/signer/publish/navigation.
 import { describe, it, expect } from 'vitest';
 import {
-  gatewayReport, productReport, leaderboardReport, buildShellReport,
+  gatewayReport, productReport, leaderboardReport, buildShellReport, shellsSummary,
   DEMO_GATEWAY, DEMO_PRODUCT, DEMO_SCORES,
 } from '../src/engine/debug/shellReport.js';
+import { VERSION } from '../src/config.js';
 
 describe('shellReport — gatewayReport', () => {
   it('reports an armed, ready portal for the demo gateway (display only)', () => {
@@ -79,6 +80,55 @@ describe('shellReport — buildShellReport', () => {
     expect(r.gateway.status).toBe('not-a-gateway');
     expect(r.leaderboard.count).toBe(0);
     expect(r.product.ok).toBe(true); // falls back to DEMO_PRODUCT
+  });
+});
+
+describe('shellReport — shellsSummary', () => {
+  it('summarises the four MVP proof surfaces framed by the loop', () => {
+    const s = shellsSummary();
+    expect(s.count).toBe(4);
+    expect(s.surfaces.map((x) => x.key)).toEqual([
+      'gatewayPreview', 'productPreview', 'leaderboardPreview', 'updatePreview',
+    ]);
+    expect(s.surfaces.map((x) => x.lean)).toEqual(['LEAN-2', 'LEAN-3', 'LEAN-4', 'LEAN-5']);
+    expect(s.surfaces.map((x) => x.step)).toEqual(['TRAVEL', 'MARKET', 'SCORE', 'UPDATE']);
+    // Each surface maps to a real SDK namespace + ToriiDebug.shells report.
+    for (const x of s.surfaces) {
+      expect(typeof x.sdk).toBe('string');
+      expect(x.shell).toBe(x.key);
+    }
+  });
+
+  it('ties version + flow to the MVP loop and frames the loop header', () => {
+    const s = shellsSummary();
+    expect(s.version).toBe(VERSION);
+    expect(s.flow).toBe('Travel → Market → Score → Update');
+    expect(s.loop.flow).toBe(s.flow);
+    expect(s.loop.key).toBe('mvpLoop');
+  });
+
+  it('reports every surface inert: actionable/signed/published never true', () => {
+    const s = shellsSummary();
+    expect(s.allInert).toBe(true);
+    expect(s.network).toBe(false);
+    expect(s.autoUpdate).toBe(false);
+    expect(s.loop.invariants.actionable).toBe(false);
+    for (const x of s.surfaces) {
+      expect(x.invariants.actionable).toBe(false);
+      expect(x.invariants.signed).not.toBe(true);
+      expect(x.invariants.published).not.toBe(true);
+    }
+    // The leaderboard surface explicitly pins signed/published false.
+    const lb = s.surfaces.find((x) => x.key === 'leaderboardPreview');
+    expect(lb.invariants.signed).toBe(false);
+    expect(lb.invariants.published).toBe(false);
+  });
+
+  it('exposes NO live-action keys on the summary', () => {
+    const s = shellsSummary();
+    for (const k of ['fetch', 'navigate', 'href', 'sign', 'publish', 'update', 'checkout', 'onClick']) {
+      expect(s).not.toHaveProperty(k);
+    }
   });
 });
 

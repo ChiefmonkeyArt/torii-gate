@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, updatePreviewReport, mvpLoopReport, buildShellReport } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, updatePreviewReport, mvpLoopReport, buildShellReport, shellsSummary } from './shellReport.js';
 
 export function installToriiDebug(refs) {
   const {
@@ -168,6 +168,13 @@ export function installToriiDebug(refs) {
       // actionable:false — content/labelling only, no navigation/fetch/sign/publish.
       mvpLoop(opts) { return mvpLoopReport(opts); },
       report(inputs) { return buildShellReport(inputs); },
+      // v0.2.145 — one-call DISCOVERABILITY summary of the four MVP proof surfaces
+      // (gateway/product/leaderboard/update previews) framed by the MVP loop: each
+      // surface's SDK namespace, its ToriiDebug.shells report, and its inert
+      // invariants (readOnly/actionable/signed/published), all READ from the live
+      // reports. `allInert` is the single gate a reviewer can assert. Read-only;
+      // no network/actions. For AI handoffs + FOSS devs (see SDK_DEBUG_INDEX.md).
+      summary(inputs) { return shellsSummary(inputs); },
     },
   };
 
