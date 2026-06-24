@@ -53,6 +53,7 @@ export * as submitIntent from '../engine/leaderboard/submitIntent.js';
 export * as gatewayRead from '../engine/gateway/gatewayRead.js';
 export * as travelConfirm from '../engine/gateway/travelConfirm.js';
 export * as handoffPlan from '../engine/gateway/handoffPlan.js';
+export * as handoffExecute from '../engine/gateway/handoffExecute.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
@@ -162,6 +163,13 @@ export const SDK_SURFACE = Object.freeze({
   // NO browser navigation, world unload/reload, signing, publishing, or relay I/O —
   // dryRun:true/navigated:false/performed:false/readOnly:true on every plan.
   handoffPlan:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/handoffPlan.js' },
+  // First controlled SAME-ORIGIN travel EXECUTOR (GATEWAY / NAP-zone handoff, v0.2.168) —
+  // acts on a v0.2.167 READY handoff plan ONLY through an injected host transport and ONLY
+  // for a safe same-origin route; the external targetUrl is never executed. NO direct
+  // browser navigation, world reload, signing, publishing, or network I/O — external:false/
+  // worldReloaded:false/signed:false/published:false/network:false on every report; default
+  // no-op without a transport, single rollback (no timers) on navigate failure.
+  handoffExecute:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/handoffExecute.js' },
   // torii.quest GitHub release/update-check helpers (LEAN-5, v0.2.138) — pure
   // compare + inert view-model; NO network fetch, NO auto-update.
   updateCheck:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateCheck.js' },

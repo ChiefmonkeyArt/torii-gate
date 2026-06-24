@@ -1,9 +1,12 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.167-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.168-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
-> and inert:** no network, no navigation, no signing/publishing, no auto-update.
+> and inert:** no network, no signing/publishing, no auto-update, and no navigation —
+> with ONE narrow exception: `handoffExecute` (v0.2.168) can change a SAFE same-origin
+> route, but ONLY through an explicitly injected host transport; with no transport it
+> is a dry-run no-op, and it never touches `window.location`/`history`/external URLs.
 > Source of truth for the SDK surface is `src/sdk/index.js` (`SDK_SURFACE`); for the
 > debug reports it is `src/engine/debug/shellReport.js`. See `CODE_INDEX.md` for the
 > full file-by-file map and `HANDOFF.md` for onboarding.
@@ -39,7 +42,7 @@ frozen `SDK_SURFACE` map; `surfacesByTier(tier)` lists names at a tier.
 `productDisplay`, `productPanel`, `productPanelShell`, `productPreview`,
 `travelIntent`, `gatewayHandoff`, `gatewayPortal`, `gatewayPreview`, `leaderboard`,
 `leaderboardPublisher`, `leaderboardView`, `leaderboardPreview`, `relayRead`, `leaderboardRelayRead`, `profileRead`,
-`consentGate`, `consentView`, `submitIntent`, `gatewayRead`, `travelConfirm`, `handoffPlan`, `updateCheck`,
+`consentGate`, `consentView`, `submitIntent`, `gatewayRead`, `travelConfirm`, `handoffPlan`, `handoffExecute`, `updateCheck`,
 `updatePreview`, `githubReleaseSource`, `updateStatus`, `mvpLoop`, `proofSurfaceSpecs`, `anchorTransforms`.
 
 `relayRead` (NOSTR-READ, v0.2.159) is the pure READ-ONLY Nostr relay adapter
@@ -172,6 +175,27 @@ route+url fields sanitised to null. Host `window.location` is NEVER read at runt
 comes from the injected `hostContext` so the module stays node-testable. Exposes NO
 navigate/goto/open/reload/unload/sign/publish/send/connect/apply method.
 
+`handoffExecute` (GATEWAY / NAP-zone handoff, v0.2.168) is the FIRST acting travel EXECUTOR — it
+consumes a v0.2.167 [[handoffPlan]] `status:'ready'` dry-run plan and performs a SAFE same-origin
+route change, but ONLY through an explicitly injected host transport, and never by touching
+`window.location`/`history.pushState`/`location.href`/`window.open`/`reload` itself. `EXECUTE_VERSION`=1;
+`EXECUTE_BADGE`='TRAVEL · SAME-ORIGIN · HOST-TRANSPORT'; `EXECUTE_STATUS`
+(done/no-op/blocked/failed/rolled-back). `isHostTransport(t)` is true only for a non-array object with a
+`navigate` function. `executeHandoff(plan,transport,opts)` (1) requires a ready plan — anything else →
+BLOCKED `plan-not-ready`; (2) re-validates `plan.targetRoute` with `safeRoutePath` (defense in depth) →
+BLOCKED `unsafe-target-route`; the external `targetUrl` is NEVER executed; (3) with no transport or
+`opts.dryRun` → NO-OP (`no-transport`/`dry-run`); (4) optionally calls `transport.snapshot()`; (5) calls
+`transport.navigate(targetRoute)` ONCE inside try/catch — a thrown error OR a `false` return is a failure;
+(6) on success → DONE/`ok:true`/`navigated:true`/`performed:true`; on failure, attempts a SINGLE
+synchronous rollback (no timers) via `transport.rollback(rollbackRoute)` when present → ROLLED-BACK if the
+rollback succeeds, else FAILED, with a `rollback:{attempted,ok,route}` record and any rollback throw
+captured in `errors`. `executeHandoffFor(input,grant,transport,opts)` folds `planHandoff`+`executeHandoff`.
+The report PINS `external:false`, `worldReloaded:false`, `signed:false`, `published:false`, `network:false`
+LAST, so a tampered/sneaky plan can never flip a safety flag; `navigated`/`performed` are true ONLY when the
+injected navigate actually succeeded. Default debug/SDK use injects NO transport, so it stays a dry-run
+no-op and never moves the live app. Exposes NO bare open/reload/goto/assign/href/pushState/replaceState/
+redirect/location/unload method.
+
 `githubReleaseSource` (LEAN-5, v0.2.157) is the pure GitHub Releases source adapter:
 `normalizeRelease`/`selectLatestRelease`/`evaluateFromSource` turn a `releases/latest`
 object, a `releases` array, or a manifest into an update verdict; the optional
@@ -238,6 +262,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.gatewayTravel(input?,grant?)` | **v0.2.165** READ-ONLY gateway TRAVEL CONFIRMATION/INTENT behind the consent gate over `DEMO_TRAVEL_INPUT` — `{title:'GATEWAY TRAVEL INTENT',badge,action,ok,allowed,blocked,reason,destination,summary,navigated:false,performed:false,signed:false,published:false,readOnly:true,errors}` (sanitise destination → `evaluateConsent('gateway:travel',grant)`; BLOCKED with no grant, allowed-but-never-performed with a matching grant; no navigation/sign/publish/send/connect) |
 | `shells.consentPrompt(o?)` | **v0.2.166** CONSENT UX VIEW-MODEL preview map — `{title:'CONSENT PROMPT PREVIEW',badge:'CONSENT · PREVIEW · NO ACTION',count,writeActions,allowedByDefault,rows:[{action,headline,actionLabel,cancelLabel,severity,requiresExplicitConsent,allowed,blocked,reason,reasonText,actionable:false}],readOnly:true,actionable:false,performed:false}` (the user-facing prompt copy a future confirm dialog WOULD draw for every action; blocked-by-default for writes, pass `{grants}` to preview allow; never confirms/signs/publishes/navigates) |
 | `shells.handoffPlan(input?,grant?,hostContext?)` | **v0.2.167** INERT host TRAVEL HANDOFF PLAN over `DEMO_HANDOFF_INPUT` — `{title:'GATEWAY HANDOFF PLAN',badge:'HANDOFF · DRY-RUN · NO NAVIGATION',action,status,ok,reason,targetZoneId,targetRoute,targetUrl,currentRoute,rollbackRoute,preflight,commands,summary,dryRun:true,navigated:false,worldReloaded:false,performed:false,signed:false,published:false,readOnly:true,errors}` (consumes a `gateway:travel` intent → dry-run handoff/rollback plan; READY only under a matching grant, blocked-by-default; sanitised route/url; future command names are STRINGS only; no navigation/world-reload/sign/publish/send/connect) |
+| `shells.handoffExecute(input?,grant?,transport?,opts?)` | **v0.2.168** TRAVEL EXECUTE report over `DEMO_HANDOFF_INPUT` — `{title:'GATEWAY TRAVEL EXECUTE',badge:'TRAVEL · SAME-ORIGIN · HOST-TRANSPORT',action,status,ok,reason,targetRoute,fromRoute,rollbackRoute,steps,rollback,rolledBack,navigated,performed,external:false,worldReloaded:false,signed:false,published:false,network:false,errors}` (plans then runs the executor; with NO transport injected it is a dry-run NO-OP and never navigates the live app; pass a fake `{navigate,snapshot?,rollback?,log?}` to preview a same-origin route change; targetUrl/external never executed; safety flags pinned) |
 | `shells.updatePreview(r?,o?)` | LEAN-5 preview block — `{title,badge,status,statusLabel,currentVersion,latestVersion,updateAvailable,prompt,source,lines,readOnly:true,actionable:false}` |
 | `shells.updateStatus(p?,o?)` | **v0.2.158** LEAN-5 in-game UPDATE-STATUS panel — `{title,badge,surface,step,status,statusLabel,currentVersion,latestVersion,updateAvailable,prompt,source:{status,kind,candidates,errors},sourceUrl,lines,readOnly:true,actionable:false}` (defaults to local sample feed) |
 | `shells.mvpLoop(o?)` | loop header block — `{title,badge,flow,note,version,steps,lines,readOnly:true,actionable:false}` |
@@ -556,6 +581,7 @@ PURE/node-safe — composes plain data only; renders and acts on nothing.
 | `gatewayRead` | `tests/gateway-read.test.js` |
 | `travelConfirm` | `tests/gateway-travel-confirm.test.js` |
 | `handoffPlan` | `tests/handoff-plan.test.js` |
+| `handoffExecute` | `tests/handoff-execute.test.js` |
 | `mvpLoop` | `tests/mvp-loop.test.js` |
 | `ToriiDebug.shells.*` reports + `summary()` | `tests/shell-report.test.js` |
 | `proofSurfaceSpecs` / `shells.surfaceSpecs()` | `tests/proof-surface-specs.test.js` |

@@ -308,8 +308,21 @@ linked by signed spatial events, with **no central router**.
   `window.location` is never read at runtime (currentRoute is injected). The last safe seam
   before v0.2.168 can implement a first controlled local/same-site travel action. No
   navigation/world-reload/signing/publishing/relay I/O.
+- `src/engine/gateway/handoffExecute.js` (v0.2.168) — the FIRST acting travel **executor**:
+  `executeHandoff(plan, transport, opts)` consumes a `status:'ready'` `handoffPlan.js` plan and
+  performs a SAFE same-origin route change, but ONLY through an explicitly injected host
+  transport `{ navigate(route), snapshot?(), rollback?(route), log?() }` — it never touches
+  `window.location` / `history.pushState` / `location.href` / `window.open` / `reload`, and the
+  external `targetUrl` is NEVER executed (preview-only). It re-validates `targetRoute` with
+  `safeRoutePath` (defense in depth), and with NO transport (or `opts.dryRun`) it is a dry-run
+  NO-OP. On a navigate throw/`false`-return it attempts a SINGLE synchronous rollback (no timers)
+  via `transport.rollback(rollbackRoute)`. The report PINS `external:false`, `worldReloaded:false`,
+  `signed:false`, `published:false`, `network:false` (and `navigated`/`performed` true ONLY when the
+  injected navigate actually succeeded), so a tampered plan can never flip a safety flag.
+  `executeHandoffFor(input, grant, transport, opts)` folds `planHandoff`+`executeHandoff`. The
+  REAL host transport wiring (router/history adapter) is still a deferred step in `world/handoff.js`.
 - `src/world/handoff.js` — the (skeleton) host seam where a future build will act
-  on a validated intent (and consume the `handoffPlan.js` plan above).
+  on a validated intent (and consume the `handoffPlan.js` plan + `handoffExecute.js` executor above).
 
 Component is code. Protocol is agreement. This file is the agreement; the modules
 above are one implementation of it.

@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, handoffExecuteReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 import { resolveAllAnchors } from '../world/anchorTransforms.js';
@@ -216,6 +216,14 @@ export function installToriiDebug(refs) {
       // a grant to preview a READY plan. dryRun:true/navigated:false/performed:false —
       // never navigates, unloads/reloads the world, signs, or publishes.
       handoffPlan(input, grant, hostContext) { return handoffPlanReport(input, grant, hostContext); },
+      // v0.2.168 — the first controlled SAME-ORIGIN travel EXECUTOR (GATEWAY /
+      // NAP-zone handoff): runs the v0.2.167 READY plan through the executor. By
+      // DEFAULT no host transport is injected, so this is a NO-OP — the debug shell
+      // never navigates the live app. Pass a fake transport ({ navigate, snapshot?,
+      // rollback?, log? }) to preview an acting run. The external targetUrl is never
+      // executed; external:false/worldReloaded:false/signed:false/published:false/
+      // network:false — never signs, publishes, reloads the world, or writes network.
+      handoffExecute(input, grant, transport, opts) { return handoffExecuteReport(input, grant, transport, opts); },
       // v0.2.142 — the visible-but-inert torii.quest update-check PREVIEW block
       // (LEAN-5) the title/HUD card draws. Read-only; actionable:false — no network
       // fetch, no auto-update, no install, no navigation (deterministic local sample).

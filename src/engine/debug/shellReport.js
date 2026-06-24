@@ -23,6 +23,7 @@ import { prepareSubmitIntent, DEMO_SUBMIT_INPUT } from '../leaderboard/submitInt
 import { readGateways, DEMO_GATEWAY_EVENTS } from '../gateway/gatewayRead.js';
 import { prepareTravelIntent, DEMO_TRAVEL_INPUT } from '../gateway/travelConfirm.js';
 import { planHandoff, DEMO_HANDOFF_INPUT } from '../gateway/handoffPlan.js';
+import { executeHandoff } from '../gateway/handoffExecute.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -475,6 +476,41 @@ export function handoffPlanReport(input = DEMO_HANDOFF_INPUT, grant = null, host
   };
 }
 
+// handoffExecuteReport(input, grant, transport, opts) → the SAME-ORIGIN travel
+// EXECUTOR report (GATEWAY / NAP-zone handoff, v0.2.168). Builds the v0.2.167 READY
+// handoff plan from the demo intent and runs the executor over it. By DEFAULT no
+// host transport is injected, so this is a NO-OP (navigated:false/performed:false) —
+// the debug shell never navigates the live app. Pass a fake `transport`
+// ({ navigate, snapshot?, rollback?, log? }) to preview an acting run; the external
+// targetUrl is never executed and all network/sign/publish/world flags stay false.
+export function handoffExecuteReport(input = DEMO_HANDOFF_INPUT, grant = true, transport = null, opts = {}) {
+  const hostContext = opts && opts.hostContext ? opts.hostContext : { currentRoute: '/title', rollbackRoute: '/title' };
+  const plan = planHandoff(input, grant, hostContext);
+  const r = executeHandoff(plan, transport, opts);
+  return {
+    title: 'GATEWAY TRAVEL EXECUTE',
+    badge: r.badge,
+    action: r.action,
+    status: r.status,
+    ok: r.ok,
+    reason: r.reason,
+    targetRoute: r.targetRoute,
+    fromRoute: r.fromRoute,
+    rollbackRoute: r.rollbackRoute,
+    steps: r.steps,
+    rollback: r.rollback,
+    rolledBack: r.rolledBack,
+    navigated: r.navigated,
+    performed: r.performed,
+    external: r.external,
+    worldReloaded: r.worldReloaded,
+    signed: r.signed,
+    published: r.published,
+    network: r.network,
+    errors: r.errors,
+  };
+}
+
 // updatePreviewReport(release, opts) → the visible-but-inert torii.quest
 // update-check PREVIEW block (LEAN-5) a title/HUD card would draw. Read-only;
 // pins actionable:false so the no-fetch/no-auto-update guarantee is explicit.
@@ -561,6 +597,10 @@ export function buildShellReport(inputs = {}) {
     handoffInput = DEMO_HANDOFF_INPUT,
     handoffGrant = null,
     handoffContext = null,
+    executeInput = DEMO_HANDOFF_INPUT,
+    executeGrant = true,
+    executeTransport = null,
+    executeOpts = {},
     release = DEMO_RELEASE,
     updateFeed,
   } = inputs;
@@ -579,6 +619,7 @@ export function buildShellReport(inputs = {}) {
     gatewayRead: gatewayReadReport(gatewayEvents),
     gatewayTravel: gatewayTravelReport(travelInput, travelGrant),
     handoffPlan: handoffPlanReport(handoffInput, handoffGrant, handoffContext),
+    handoffExecute: handoffExecuteReport(executeInput, executeGrant, executeTransport, executeOpts),
     updatePreview: updatePreviewReport(release),
     updateStatus: updateStatusReport(updateFeed),
     mvpLoop: mvpLoopReport(),
