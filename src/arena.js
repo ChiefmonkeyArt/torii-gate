@@ -5,6 +5,7 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene } from './scene.js';
 import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X } from './config.js';
 import { buildFoliage } from './arena-foliage.js';
+import { buildProofSurfaceMeshes } from './engine/world/proofSurfaceMeshes.js';
 
 // ── Colours ───────────────────────────────────────────────────────────────────
 const C_FLOOR  = 0x0a1f23; // deep teal-black, underlit by floor light
@@ -267,6 +268,10 @@ function _buildNapZone() {
   scene.add(napLight);
 
   _buildNapTree(NAP_X + 6, 0); // ~x=26 just past the gate, centred on z=0
+
+  // Display-only proof-surface panels (v0.2.150). One-time setup; inert visual
+  // markers gated behind the pure render plan. No interaction/hot-path work.
+  buildProofSurfaceMeshes(scene);
 }
 
 // Bonsai-style oak. Chunky brown trunk + curving branches reaching out to

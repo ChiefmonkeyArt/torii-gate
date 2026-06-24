@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.149-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.150-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -10,7 +10,7 @@
 
 ---
 
-## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.149)
+## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.150)
 
 > **The project is refocused onto a 15-hour proof-of-concept.** Build the vision
 > fast, prove the architecture, avoid polish traps — then add retrospective polish
@@ -72,6 +72,17 @@
   `origin+offset===position`) while reporting unresolved anchors. PLAIN data — no
   THREE/render/gameplay; +14 tests. The isolated mesh pass that reads these transforms
   is the next slice.
+- **First display-only in-world proof-surface MESH pass landed** (v0.2.150) — split
+  into the PURE `engine/world/proofSurfaceRenderPlan.js` (gates on
+  `resolveAllAnchors().ok` + `checkProofSurfaceSpecs().ok`, then turns the four specs
+  into a plain-data RENDER PLAN of inert panels) and the browser-only adapter
+  `engine/world/proofSurfaceMeshes.js` (builds a coloured board + `CanvasTexture` label
+  plate per panel EXACTLY ONCE during scene setup, gated on `plan.ok`). Wired into
+  `arena.js` `_buildNapZone()` after the bonsai tree; read-only render state at
+  `ToriiDebug.shells.surfaceRender()`. DISPLAY-ONLY/INERT — no click/raycast/navigation/
+  payments/Nostr/live-data/fetch; no per-frame allocation. +14 tests (pure plan + adapter
+  guards). **Next:** anchor↔scene-graph parent binding (attach each panel to its live
+  `parent` node) and folding `surfaceRender().ok` into promotion review / regression check.
 - **Proof surfaces are now review-symmetric + diffable** (v0.2.146) — the gateway
   preview gained `readOnly:true` so all four MVP proof surfaces expose the same
   `readOnly`+`actionable` invariant pair. Added a pure read-only

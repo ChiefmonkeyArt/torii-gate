@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.149-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.150-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -220,7 +220,7 @@ npm run preview  # serve the built dist/ (used for headless smoke)
 ```
 
 A change is "green" when **build + check + test** all pass. Current baseline:
-**421 tests / 37 files**, all 11 regression checks GREEN, build clean.
+**435 tests / 39 files**, all 11 regression checks GREEN, build clean.
 
 Tests run in node (`vite.config.js` → `environment: 'node'`). `WebGLRenderer` is
 created at module load in `scene.js`, so any module importing `scene.js`
@@ -239,7 +239,7 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
 - `.snapshot()` — one JSON-serialisable object: version, phase, run state, player
   pos, combat last shot/hit/miss, physics+crate summary, tuning. Safe anytime.
 - `.combat.report()` / `.physics.report()` — focused JSON sub-reports.
-- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,report,summary,diff,surfaceSpecs,surfaceSpecCheck,anchorTransforms}()` —
+- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,report,summary,diff,surfaceSpecs,surfaceSpecCheck,anchorTransforms,surfaceRender}()` —
   read-only reports over the VIEW shells + visible preview blocks (demo fixtures by
   default; pass overrides). No signer, no relay/publish, no navigation, no checkout,
   no fetch/auto-update
@@ -262,7 +262,15 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
   ANCHOR→TRANSFORM contract — it binds each spec's `anchor` id to a plain transform
   descriptor (ground origin/position/`offset`/size/yawRad) and lists unresolved
   anchors (`{ok,count,resolved,unresolved}`), the single source of truth the future
-  mesh pass reads to place each surface. See `SDK_DEBUG_INDEX.md`.
+  mesh pass reads to place each surface. `surfaceRender()` (v0.2.150, from
+  `engine/world/proofSurfaceMeshes.js`) reports the render state of the FIRST
+  display-only in-world proof-surface mesh pass — `{rendered,count,ok,badge,reasons}`.
+  `rendered` is true only after the inert panels were built (both gates passed);
+  otherwise `reasons` carries the gate failures. The panels are display-only/inert:
+  no click handlers, raycast, navigation, payments, Nostr, live data, or fetch.
+  Meshes are allocated EXACTLY ONCE during scene setup (`arena.js` `_buildNapZone`),
+  off the hot path; the pure plan (`engine/world/proofSurfaceRenderPlan.js`) holds
+  all gating/placement logic. See `SDK_DEBUG_INDEX.md`.
 - `.physics.service` — injectable RaycastService facade (`ray`/`rayStatic`/`lineOfSight`).
 - `.bots`, `.player`, `.physics`, `.world`, `.fx`, `.combat`, `.identity`.
 

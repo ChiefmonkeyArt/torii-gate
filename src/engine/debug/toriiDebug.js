@@ -42,6 +42,7 @@ import { gatewayReport, gatewayPreviewReport, productReport, productPreviewRepor
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 import { resolveAllAnchors } from '../world/anchorTransforms.js';
+import { proofSurfaceRenderState } from '../world/proofSurfaceMeshes.js';
 
 export function installToriiDebug(refs) {
   const {
@@ -204,6 +205,11 @@ export function installToriiDebug(refs) {
       // The placement contract the future mesh pass reads — no Three/render/
       // gameplay. See SDK `anchorTransforms` + SDK_DEBUG_INDEX.md.
       anchorTransforms(specs) { return resolveAllAnchors(specs); },
+      // v0.2.150 — render state of the FIRST display-only proof-surface mesh
+      // pass: `{rendered, count, ok, badge, reasons}`. `rendered` is true only
+      // after the inert panels were built (gates passed); otherwise `reasons`
+      // carries the gate failures. Read-only. See SDK_DEBUG_INDEX.md.
+      surfaceRender() { return proofSurfaceRenderState(); },
     },
   };
 
