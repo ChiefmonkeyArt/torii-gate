@@ -73,6 +73,39 @@ gate.unmount();                                       // symmetric teardown
 > contract + a parallel COMPONENTS/contract approach was intentionally superseded
 > in favour of the v0.2.132 published API so no v0.2.132 work is dropped.
 
+### Reference component: product display (CMP-13, v0.2.134)
+
+The first commerce-surface reference component lives at
+`src/engine/components/productDisplay.js` and is surfaced via the SDK
+`productDisplay` namespace (experimental tier). Same `defineComponent` contract,
+so it is contract-valid, idempotent, and node-testable
+(`tests/product-display.test.js`).
+
+```js
+import { createProductDisplay, productDisplay, validateProduct } from
+  '../engine/components/productDisplay.js';           // or SDK.productDisplay.*
+
+const card = createProductDisplay({
+  title, image, sellerNpub, priceSats, url, reward,   // reward = optional in-game hint
+});
+card.mount(scene); card.unmount();                    // idempotent, symmetric
+```
+
+- **Manifest:** `id: 'plebeian.product-display'`, `kind: 'product'`,
+  `mountTarget: 'panel'`, provenance `author.npub` (the seller), and a
+  `product: { title, image, sellerNpub, priceSats, url, reward }` block.
+- **READ-ONLY by design.** It DISPLAYS a Plebeian.Market listing and links OUT to
+  the marketplace via a validated `https://` URL. It performs **NO payment, NO
+  checkout, NO zap, NO Nostr publish** — buying happens on Plebeian.Market. The
+  test suite asserts no `checkout`/`pay`/`zap` surface exists.
+- **Safe validation** (`validateProduct`): requires title + seller npub + an
+  `https://` URL; rejects `javascript:`/`data:`/relative/`http:` links for both
+  `url` and `image`; price must be a non-negative sats integer. The optional
+  `reward` is a HINT only (e.g. a 'sticker gun' skin) — no entitlement granted.
+- **Lifecycle (skeleton):** mount/unmount are symmetric no-ops; pure + node-safe
+  (NO Three/Rapier/DOM/Nostr imports). The in-world panel/billboard mesh is a
+  documented TODO.
+
 ---
 
 ## 2. The manifest

@@ -1,7 +1,7 @@
 # Torii Quest — Progress Dashboard
 
 > Visual execution dashboard. See `strategy.md` for vision and decision rules. See `todo.md` for active tasks.
-> Current version: **v0.2.133-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
+> Current version: **v0.2.134-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
 
 ---
 
@@ -45,24 +45,25 @@ Seams extracted: bodies, raycast, RaycastService facade (ARS-3, consumed by bot 
 
 ### SDK / API
 
-SDK boundaries started: 6 (physics raycast, physics bodies, combat classifier, combat damage, combat aim, reload pose) [baseline] + `src/sdk/index.js` public entrypoint (ARS-5, v0.2.131) + component contract (`engine/components/contract.js`, CMP-1/2, v0.2.132) + first reference component (`engine/components/toriiGateway.js`, CMP-8, v0.2.133)
+SDK boundaries started: 6 (physics raycast, physics bodies, combat classifier, combat damage, combat aim, reload pose) [baseline] + `src/sdk/index.js` public entrypoint (ARS-5, v0.2.131) + component contract (`engine/components/contract.js`, CMP-1/2, v0.2.132) + reference components (gateway CMP-8 v0.2.133; read-only product display CMP-13 v0.2.134) + gateway-protocol URL-handoff helpers (`engine/gateway/travelIntent.js`, GWPROTO-1, v0.2.134) + Nostr leaderboard score-event helpers (`engine/nostr/leaderboard.js`, LB-1, v0.2.134)
 Remaining before Layer 1 complete: player boundary full lift, BotAgent runtime, grow the SDK surface as boundaries stabilise
 
 ```
-[############################......................] 8 / ~12 Layer 1 boundaries
+[##################################................] 11 / ~14 Layer 1 boundaries
 ```
 
 ---
 
 ### Nostr / Plebeian / Open-World
 
-Skeletons present: NAP zone module, world handoff, presence | Formalised: 0
+Skeletons present: NAP zone module, world handoff, presence | Protocol drafted: 1 (Gateway Protocol) | Formalised: 0
 
 ```
-[####......................................................] 0 / 5+ formalised (skeletons only)
+[########..................................................] 0 / 5+ formalised (Gateway Protocol drafted v0.2.134; skeletons only)
 ```
 
-Blocked on: SDK Layer 1 close-out, identity boundary, kind:0 profile sync.
+v0.2.134 added the open **Gateway Protocol** draft (`GATEWAY_PROTOCOL.md`) + pure URL-handoff helpers (`travelIntent.js`) and pure unsigned Nostr leaderboard score-event helpers (`leaderboard.js`) — wire-format + helpers, not yet wired to relays/handoff.
+Blocked on: SDK Layer 1 close-out, identity boundary, kind:0 profile sync, the CMP-7 loader + the gateway portal/handoff to act on a travel intent.
 
 ---
 
@@ -85,10 +86,10 @@ Time-boxed sprint to demonstrate the end-to-end freedom-tech loop (thin vertical
 
 | # | Slice | Status |
 |---|-------|--------|
-| LEAN-1 | Torii.quest live (publish v0.2.133-alpha — manual maintainer deploy) | pending (smoke first) |
-| LEAN-2 | n2n hop via Torii Gateway component (relay-mediated) | pending (needs CMP-7 loader + CMP-8 portal/handoff) |
-| LEAN-3 | Product component (Plebeian.Market product display) | pending |
-| LEAN-4 | Nostr leaderboard (signed events) | pending |
+| LEAN-1 | Torii.quest live (publish v0.2.134-alpha — manual maintainer deploy) | pending (smoke first) |
+| LEAN-2 | n2n hop via Torii Gateway component (relay-mediated) | foundation in (v0.2.134: `GATEWAY_PROTOCOL.md` + `travelIntent` URL-handoff helpers); needs CMP-7 loader + CMP-8 portal/handoff to act on the intent |
+| LEAN-3 | Product component (Plebeian.Market product display) | skeleton in (v0.2.134: read-only `productDisplay`, links out, no checkout); needs the in-world panel mesh |
+| LEAN-4 | Nostr leaderboard (signed events) | skeleton in (v0.2.134: pure unsigned `leaderboard` score-event helpers); needs the signer/publisher + relay read |
 
 ---
 
@@ -113,6 +114,9 @@ Time-boxed sprint to demonstrate the end-to-end freedom-tech loop (thin vertical
 | ARS-3+ | Rapier | Weapons/player bullet+aim ray migration to RaycastService | done (v0.2.132); reticle preview migrated + injected-world tests v0.2.133 → ARS-3 cleanup done |
 | CMP-1/2 | SDK/Nostr | Component contract + manifest spec (`COMPONENTS.md`, `contract.js`, SDK `component`) | done (v0.2.132) |
 | CMP-8 | SDK | First reference component — Torii gateway skeleton (`toriiGateway.js`, SDK `toriiGateway`) | done (v0.2.133) |
+| GWPROTO-1 | SDK/Nostr | Gateway Protocol draft (`GATEWAY_PROTOCOL.md`) + pure URL-handoff helpers (`engine/gateway/travelIntent.js`, SDK `travelIntent`) | done (v0.2.134) |
+| CMP-13 | SDK | Read-only product display reference component (`productDisplay.js`, SDK `productDisplay`) | done (v0.2.134) |
+| LB-1 | Nostr | Leaderboard score-event helpers — pure unsigned template (`engine/nostr/leaderboard.js`, SDK `leaderboard`) | done (v0.2.134) |
 | ARS-5 | SDK | src/sdk/index.js skeleton with stability tiers | done (v0.2.131) |
 | ARS-6 | Foundation | CODE_INDEX.md upkeep pass after each ARS task | ongoing |
 | ARS-7 | Foundation | HANDOFF.md template | done (v0.2.130) |
@@ -125,6 +129,7 @@ Time-boxed sprint to demonstrate the end-to-end freedom-tech loop (thin vertical
 
 Items stay here (crossed out) for ~24 hours, then move to Archive below.
 
+- ~~v0.2.134-alpha lean-MVP foundation batch (safe — no DNS/VPS/deploy) — GWPROTO-1 `GATEWAY_PROTOCOL.md` n2n spatial-hop protocol DRAFT (relay-first hybrid discovery, URL handoff MVP, world/zone/gateway identity, travel intent, return path, signed-event future, security tiers, NIP path; "component is code, protocol is agreement") + pure `engine/gateway/travelIntent.js` URL-handoff helpers (`buildTravelIntent`/`validateTravelIntent`/`buildTravelUrl`/`parseTravelUrl`; no navigation/relay/signing; `tests/travel-intent.test.js`); CMP-13 read-only `engine/components/productDisplay.js` reference component (`createProductDisplay`/`productDisplay`/`validateProduct`, manifest kind:'product'/mountTarget:'panel', links OUT to Plebeian.Market, NO checkout/pay/zap/publish, safe https-only validation; `tests/product-display.test.js`); LB-1 pure `engine/nostr/leaderboard.js` unsigned Nostr score-event helpers (`buildScore`/`validateScore`/`buildScoreEventTemplate`, kind 30000, indexable tags, headshots≤kills; no signing/relay/publish; `tests/leaderboard.test.js`); all three surfaced via the SDK at the experimental tier. +41 tests (241 total / 20 files)~~
 - ~~v0.2.133-alpha gateway batch (reconciled onto published v0.2.132 — no v0.2.132 work dropped) — ARS-4 real `GAMEOVER` edge (`GAME_EVENT.END` + `endRun()` in state.js, PLAYING/DEAD → terminal GAMEOVER; behaviour-preserving, no live caller yet; +state tests); ARS-3 final raycast cleanup (reticle preview `targetReticle.js` → `raycastService.ray`, no direct `castRay` consumers remain; +injected-fake-world ray/LOS tests); CMP-8 first reference component `engine/components/toriiGateway.js` (`createToriiGateway`/`toriiGateway`, skeleton no-op lifecycle, manifest kind:'gateway'/mountTarget:'scene', SDK `toriiGateway` experimental namespace; `tests/torii-gateway.test.js`). +15 tests (200 total / 17 files)~~
 - ~~v0.2.132-alpha infrastructure batch — ARS-4 reload sub-state fold (`isReloading`/`tickReload` pure predicates in state.js, adopted in player.js/weapons.js/main.js; +5 state tests); ARS-3 weapons/player bullet+aim ray migration to `raycastService.ray`/`.rayStatic` (behaviour-identical, barrel→crosshair preserved; +3 service-wiring tests); CMP-1 `COMPONENTS.md` manifest spec (identity/provenance/npub, bundle hash, capabilities, deps, assets, config→mount options, pricing/zap split, Nostr listing events, security rules); CMP-2 `src/engine/components/contract.js` pure lifecycle contract (`validateManifest`/`isComponent`/`defineComponent`, idempotent mount/unmount) surfaced via SDK `component` namespace (experimental tier); `tests/component.test.js` (+14 tests). +22 tests (185 total / 16 files)~~
 - ~~v0.2.131 foundation batch — ARS-5 `src/sdk/index.js` public SDK entrypoint (curated node-safe re-exports + `SDK_VERSION`/`STABILITY`/frozen `SDK_SURFACE` tier map; `tests/sdk.test.js`); ARS-3 follow-up: bot-LOS call-site migrated to `raycastService.lineOfSight()`; ARS-4 pointer-lock fold (`isEngaged`/`needsPointerLock` predicates in state.js, adopted at the main.js canvas re-lock guard; +4 state tests); CMP-1..16 component-marketplace tasks added to todo.md (Later track); esbuild dev-server advisory assessed + deferred (audit fix too broad). +11 tests (163 total / 15 files)~~

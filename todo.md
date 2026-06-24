@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.133-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.134-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -66,10 +66,10 @@ These tasks build the structural layer that makes the project legible to any age
 
 | # | Codebase | Category | Task |
 |---|----------|----------|------|
-| LEAN-1 | TQ | DEPLOY | **Torii.quest live** — publish the current green source (v0.2.133-alpha) as the canonical live instance. Manual smoke (TQ-MANUAL-113) first; deploy is the maintainer's manual step. |
-| LEAN-2 | TQ | NOSTR | **n2n hop** — working spatial handoff between two instances via the Torii Gateway component (cross the gate → arrive in a second zone/node carrying identity). Build on `world/handoff.js` + `toriiGateway.js`; relay-mediated first. Depends on CMP-7 loader + CMP-8 portal/handoff. |
-| LEAN-3 | TQ | MARKET | **Product component** — one real Plebeian.Market product-display component (mountable, manifest-described) as the first in-world commerce surface. Reference component on the CMP contract. |
-| LEAN-4 | TQ | NOSTR | **Nostr leaderboard** — minimal score/kill leaderboard sourced from signed Nostr events, proving the social/identity layer end-to-end. Overlaps LB1 (kind:30000). |
+| LEAN-1 | TQ | DEPLOY | **Torii.quest live** — publish the current green source (v0.2.134-alpha) as the canonical live instance. Manual smoke (TQ-MANUAL-113) first; deploy is the maintainer's manual step. |
+| LEAN-2 | TQ | NOSTR | **n2n hop** — working spatial handoff between two instances via the Torii Gateway component (cross the gate → arrive in a second zone/node carrying identity). Build on `world/handoff.js` + `toriiGateway.js`; relay-mediated first. **v0.2.134: foundation in** — `GATEWAY_PROTOCOL.md` wire-format draft + pure `travelIntent.js` URL-handoff helpers. Still depends on CMP-7 loader + CMP-8 portal/handoff to act on the intent. |
+| LEAN-3 | TQ | MARKET | **Product component** — one real Plebeian.Market product-display component (mountable, manifest-described) as the first in-world commerce surface. Reference component on the CMP contract. **v0.2.134: read-only skeleton in** (`productDisplay.js`, links out, no checkout); needs the in-world panel mesh + a real listing. |
+| LEAN-4 | TQ | NOSTR | **Nostr leaderboard** — minimal score/kill leaderboard sourced from signed Nostr events, proving the social/identity layer end-to-end. Overlaps LB1 (kind:30000). **v0.2.134: pure skeleton in** (`leaderboard.js` unsigned score-event helpers); needs the signer/publisher + relay read + title-screen rank. |
 
 ---
 
@@ -105,7 +105,7 @@ These tasks build the structural layer that makes the project legible to any age
 | W1 | TQ | UI/UX | **Gate Modal** — Torii Gate social popup with following/follower avatars, online rings, open events, and JOIN buttons. Depends on presence/identity. |
 | CF1 | TQ/NA | GAMEPLAY | **Combat feedback checklist** — screen-shake, weapon kick, hit-markers, damage vignette, bot hit flash. Keep dt-driven, no new unapproved timers. |
 | R2 | TQ/NA | WEAPON | **Immersive reload mechanic** — mag-eject geometry and hip-fire lock during reload. Do after weapons boundary is cleaner. |
-| LB1 | TQ/NA | NOSTR | **Persistent leaderboard** — kind:30000 read/write, top 10, title screen rank, relay-native identity. Depends on identity boundary. |
+| LB1 | TQ/NA | NOSTR | **Persistent leaderboard** — kind:30000 read/write, top 10, title screen rank, relay-native identity. Depends on identity boundary. **v0.2.134: pure score-event helpers landed** (`engine/nostr/leaderboard.js`, SDK `leaderboard`; `buildScore`/`validateScore`/`buildScoreEventTemplate`, kind 30000 + indexable tags, headshots≤kills; unsigned template only; `tests/leaderboard.test.js`). Remaining: the signer/publisher, relay read, top-10 + title-screen rank. |
 | 21 | TQ/NA | HUD | **2D mini-map** — live player and bot positions. |
 | V1 | TQ/NA | GAMEPLAY | **Contrail plane** — low-poly flyby, permanent contrail, shootable hitbox, falling reward crate. |
 | G1 | TQ/NA | ASSET | **gun.glb** — proper compact sidearm model, compressed textures, swap into viewmodel/world gun, add to precache if applicable. |
@@ -153,11 +153,11 @@ These tasks build the structural layer that makes the project legible to any age
 | CMP-10 | TQ | NAP ZONE | **Reference component — video chat** — WebRTC video panel component (depends on the NAP video-chat infra, items 3/4a/4b). |
 | CMP-11 | TQ | NOSTR | **Reference component — art frame** — wall frame that renders a Plebeian gallery feed. |
 | CMP-12 | TQ | NAP ZONE | **Reference component — live auction panel** — auction podium component over kind:30402/16 (depends on item 6). |
-| CMP-13 | TQ | NOSTR | **Reference component — product display / browser** — single-product display and a multi-product browser over NIP-15 stalls. |
+| CMP-13 | TQ | NOSTR | **Reference component — product display / browser** — single-product display and a multi-product browser over NIP-15 stalls. **v0.2.134: read-only single-product skeleton landed** (`engine/components/productDisplay.js`, SDK `productDisplay`; safe `validateProduct`; no checkout/pay/zap; `tests/product-display.test.js`). Remaining: the in-world panel mesh, the multi-product browser, and real NIP-15 stall fetch. |
 | CMP-14 | TQ | ECASH | **Marketplace listing + sats pricing** — signed Nostr listing events for components with sats pricing (Lightning / Cashu / Nutzap); relay-based marketplace discovery reuses CMP-6. |
 | CMP-15 | TQ | ECASH | **Revenue-share via Zap splits** — optional author/host revenue-share using Zap splits (NIP-57 / NIP-61) encoded in the listing. |
 | CMP-16 | TQ | NOSTR | **Versioning, forks & remixes** — new events supersede prior versions (latest-wins by hash), forks/remixes carry original-author `npub` attribution, all bundle hashes verified. |
-| GWPROTO-1 | TQ | NOSTR | **Nostr Spatial Gateway Protocol (open protocol path)** — lift the spatial handoff out of the Torii client into a commons spec. Stages: (1) build out the CMP-8 gateway's portal mesh + handoff trigger; (2) extract `GATEWAY_PROTOCOL.md` — the signed spatial-handoff event (player npub, source/destination npub/relay/zone, display + state pointer, timestamp, signature), destination verification, relay-mediated-first/n2n-later; (3) interop demo across two independent instances (one non-Torii consumer); (4) propose as a NIP (spatial hop / world handoff). See `strategy.md` → "Nostr Spatial Gateway Protocol". Feeds LEAN-2. |
+| GWPROTO-1 | TQ | NOSTR | **Nostr Spatial Gateway Protocol (open protocol path)** — lift the spatial handoff out of the Torii client into a commons spec. Stages: (1) build out the CMP-8 gateway's portal mesh + handoff trigger; (2) ✅ **`GATEWAY_PROTOCOL.md` DRAFT landed v0.2.134** (relay-first hybrid discovery, URL handoff MVP, world/zone/gateway identity, travel-intent fields, return path, signed-event future, security tiers, NIP path; "component is code, protocol is agreement") + pure `engine/gateway/travelIntent.js` URL-handoff helpers (SDK `travelIntent`; `tests/travel-intent.test.js`); (3) interop demo across two independent instances (one non-Torii consumer); (4) propose as a NIP (spatial hop / world handoff). See `strategy.md` → "Nostr Spatial Gateway Protocol". Feeds LEAN-2. Remaining: stages (1), (3), (4) + the signed-event upgrade (§6 of the spec). |
 
 ---
 

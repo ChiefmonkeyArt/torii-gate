@@ -31,6 +31,9 @@ export * as snapshot from '../engine/debug/snapshot.js';
 export * as phaseScreens from '../engine/ui/phaseScreens.js';
 export * as component from '../engine/components/contract.js';
 export * as toriiGateway from '../engine/components/toriiGateway.js';
+export * as productDisplay from '../engine/components/productDisplay.js';
+export * as travelIntent from '../engine/gateway/travelIntent.js';
+export * as leaderboard from '../engine/nostr/leaderboard.js';
 export { createRaycastService, raycastService } from '../engine/physics/raycastService.js';
 
 // ---- Metadata --------------------------------------------------------------
@@ -62,6 +65,12 @@ export const SDK_SURFACE = Object.freeze({
   component:       { tier: STABILITY.EXPERIMENTAL, module: '../engine/components/contract.js' },
   // Reference component: Torii gateway (CMP-8 skeleton, v0.2.133).
   toriiGateway:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/components/toriiGateway.js' },
+  // Reference component: read-only product display (CMP-13 skeleton, v0.2.134).
+  productDisplay:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/components/productDisplay.js' },
+  // Gateway protocol URL-handoff / travel-intent helpers (GWPROTO-1, v0.2.134).
+  travelIntent:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/travelIntent.js' },
+  // Nostr leaderboard score-event helpers (LB-1 skeleton, v0.2.134).
+  leaderboard:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/leaderboard.js' },
   // Forward-declared internals — public story, not safe/ready to re-export yet:
   physicsBodies:   { tier: STABILITY.INTERNAL,     module: null },
   physicsRaycast:  { tier: STABILITY.INTERNAL,     module: null },
