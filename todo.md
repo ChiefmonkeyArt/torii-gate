@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.147-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.148-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -10,7 +10,7 @@
 
 ---
 
-## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.147)
+## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.148)
 
 > **The project is refocused onto a 15-hour proof-of-concept.** Build the vision
 > fast, prove the architecture, avoid polish traps — then add retrospective polish
@@ -56,6 +56,13 @@
   read-only `ToriiDebug.shells.surfaceSpecs()` (with an `allInert` gate + NAP-zone
   bounds). Spec layer only — no Three/render/gameplay; +9 tests. The mesh pass that
   reads these specs is the next (isolated, non-hot-path) slice.
+- **Proof-surface specs are cross-checked against the live registries** (v0.2.148) —
+  `engine/debug/proofSurfaceCheck.js` (`checkProofSurfaceSpecs()`, read-only at
+  `ToriiDebug.shells.surfaceSpecCheck()`) verifies each spec's `previewSdk` is a real
+  SDK experimental namespace and its `shell` is a real `ToriiDebug.shells` report,
+  re-asserts the inert invariants, and scans for leaked live-action keys —
+  `{ok,errors,warnings,surfaces}`. The guard to run BEFORE the future mesh pass binds
+  anything; deterministic, no render/network; +14 tests.
 - **Proof surfaces are now review-symmetric + diffable** (v0.2.146) — the gateway
   preview gained `readOnly:true` so all four MVP proof surfaces expose the same
   `readOnly`+`actionable` invariant pair. Added a pure read-only

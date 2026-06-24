@@ -40,6 +40,7 @@ import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot
 import { raycastService } from '../physics/raycastService.js';
 import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, updatePreviewReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
+import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 
 export function installToriiDebug(refs) {
   const {
@@ -187,6 +188,14 @@ export function installToriiDebug(refs) {
       // as PLAIN data. Spec layer only — no Three/render/gameplay. `allInert` reads
       // from the specs' own invariants. See SDK `proofSurfaceSpecs` + SDK_DEBUG_INDEX.md.
       surfaceSpecs() { return proofSurfaceLayout(); },
+      // v0.2.148 — pure CROSS-CHECK that each proof-surface spec stays aligned with
+      // the live registries it claims to feed from: `previewSdk` against the SDK
+      // experimental namespaces, `shell` against the ToriiDebug.shells report names,
+      // plus a re-assert of the inert invariants + a no-live-action-key scan. Returns
+      // { ok, errors, warnings, surfaces } so a reviewer can mechanically confirm the
+      // specs are wired correctly BEFORE the future mesh pass binds anything. Pass a
+      // { sdk, shells } map to check against your own registries. No render/network.
+      surfaceSpecCheck(surfaceMap, specs) { return checkProofSurfaceSpecs(surfaceMap, specs); },
     },
   };
 

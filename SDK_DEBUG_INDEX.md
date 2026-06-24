@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.147-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.148-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no navigation, no signing/publishing, no auto-update.
@@ -92,6 +92,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.summary(inputs?)` | **v0.2.145** discoverability aggregate (see §4) |
 | `shells.diff(a?,b?)` | **v0.2.146** pure diff of two `summary()` outputs, flagging invariant flips that loosen inertness (see §4.1) |
 | `shells.surfaceSpecs()` | **v0.2.147** pure in-world proof-surface LAYOUT/SPEC layer — `{badge,anchorZone,count,bounds,specs,allInert,rendered:false,actionable:false}` (see §4.2) |
+| `shells.surfaceSpecCheck(map?,specs?)` | **v0.2.148** pure cross-check that each spec's `previewSdk`/`shell` align with the live SDK + shells registries + inert invariants — `{ok,badge,checked,errors,warnings,surfaces}` (see §4.3) |
 
 Other namespaces on `ToriiDebug`: `snapshot()` / `combat.report()` / `physics.report()`
 (JSON-serialisable status), `bots`, `player`, `physics`, `world`, `identity`, `fx`.
@@ -192,6 +193,43 @@ a reviewer asserts to confirm nothing has gone live yet.
 
 ---
 
+## 4.3. `ToriiDebug.shells.surfaceSpecCheck()` — spec↔registry cross-check (v0.2.148)
+
+`shells.surfaceSpecCheck(map?, specs?)` (pure `checkProofSurfaceSpecs()` in
+`engine/debug/proofSurfaceCheck.js`) verifies the proof-surface specs stay ALIGNED
+with the live registries they claim to feed from — the guard you run BEFORE the
+future mesh pass binds a mesh to a spec. It performs NO render/network/DOM; it only
+reads static `SDK_SURFACE` metadata + the deterministic demo output of
+`buildShellReport()`. For each spec it checks:
+
+- `previewSdk` names a real SDK **experimental** namespace (unknown → error;
+  known-but-non-experimental → warning),
+- `shell` names a real `ToriiDebug.shells` report (a `buildShellReport()` key),
+- the inert invariants hold (`readOnly:true`/`actionable:false`, never
+  `signed`/`published` true), and
+- no live-action key (`fetch`/`navigate`/`href`/`sign`/`publish`/`checkout`/
+  `onClick`/`mesh`/`geometry`/…) has crept onto the spec.
+
+Shape:
+
+```js
+{
+  badge: 'SPEC-CHECK · READ-ONLY · NO RENDER',
+  checked,                 // number of specs checked
+  ok,                      // true iff errors.length === 0
+  errors,                  // alignment/invariant violations (fail ok)
+  warnings,                // non-fatal (e.g. a non-experimental SDK reference)
+  surfaces: [ { id, previewSdk, shell, sdkOk, shellOk, inert }, ... ],
+}
+```
+
+Pass `{ sdk, shells }` (each a Set or array of names) to check against your own
+registries instead of the live defaults; pass `specs` to check a candidate spec set.
+`ok===true` is the single boolean a reviewer asserts to confirm the spec layer is
+wired correctly before promotion.
+
+---
+
 ## 5. Where the tests live
 
 | Surface | Test file |
@@ -204,6 +242,7 @@ a reviewer asserts to confirm nothing has gone live yet.
 | `mvpLoop` | `tests/mvp-loop.test.js` |
 | `ToriiDebug.shells.*` reports + `summary()` | `tests/shell-report.test.js` |
 | `proofSurfaceSpecs` / `shells.surfaceSpecs()` | `tests/proof-surface-specs.test.js` |
+| `shells.surfaceSpecCheck()` (spec↔registry cross-check) | `tests/proof-surface-check.test.js` |
 | underlying view/shell modules | `tests/gateway-portal.test.js`, `tests/product-panel-shell.test.js`, `tests/leaderboard-view.test.js`, `tests/update-check.test.js` |
 
 Run all with `npm test` (Vitest, node env). `npm run check` separately guards the
