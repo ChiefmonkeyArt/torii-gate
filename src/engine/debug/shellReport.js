@@ -22,6 +22,7 @@ import { consentPromptRows } from '../consent/consentView.js';
 import { prepareSubmitIntent, DEMO_SUBMIT_INPUT } from '../leaderboard/submitIntent.js';
 import { readGateways, DEMO_GATEWAY_EVENTS } from '../gateway/gatewayRead.js';
 import { prepareTravelIntent, DEMO_TRAVEL_INPUT } from '../gateway/travelConfirm.js';
+import { planHandoff, DEMO_HANDOFF_INPUT } from '../gateway/handoffPlan.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -438,6 +439,42 @@ export function gatewayTravelReport(input = DEMO_TRAVEL_INPUT, grant = null) {
   };
 }
 
+// handoffPlanReport(input, grant, hostContext) → the READ-ONLY host TRAVEL HANDOFF
+// PLAN map (GATEWAY / NAP-zone handoff, v0.2.167). Shows the INERT dry-run plan a
+// host executor WOULD run for an allowed gateway:travel intent — target zone/route/
+// url, preflight checks, the ordered future command names, and the rollback route —
+// plus its status/reason. With no grant (default) the plan is BLOCKED; an optional
+// `grant` previews a READY plan — still WITHOUT navigating/unloading/performing
+// (`dryRun:true`/`navigated:false`/`performed:false` pinned). Defaults to the
+// deterministic DEMO sample.
+export function handoffPlanReport(input = DEMO_HANDOFF_INPUT, grant = null, hostContext = null) {
+  const p = planHandoff(input, grant, hostContext);
+  return {
+    title: 'GATEWAY HANDOFF PLAN',
+    badge: p.badge,
+    action: p.action,
+    status: p.status,
+    ok: p.ok,
+    reason: p.reason,
+    targetZoneId: p.targetZoneId,
+    targetRoute: p.targetRoute,
+    targetUrl: p.targetUrl,
+    currentRoute: p.currentRoute,
+    rollbackRoute: p.rollbackRoute,
+    preflight: p.preflight,
+    commands: p.commands,
+    summary: p.summary,
+    dryRun: p.dryRun,
+    navigated: p.navigated,
+    worldReloaded: p.worldReloaded,
+    performed: p.performed,
+    signed: p.signed,
+    published: p.published,
+    readOnly: p.readOnly,
+    errors: p.errors,
+  };
+}
+
 // updatePreviewReport(release, opts) → the visible-but-inert torii.quest
 // update-check PREVIEW block (LEAN-5) a title/HUD card would draw. Read-only;
 // pins actionable:false so the no-fetch/no-auto-update guarantee is explicit.
@@ -521,6 +558,9 @@ export function buildShellReport(inputs = {}) {
     gatewayEvents = DEMO_GATEWAY_EVENTS,
     travelInput = DEMO_TRAVEL_INPUT,
     travelGrant = null,
+    handoffInput = DEMO_HANDOFF_INPUT,
+    handoffGrant = null,
+    handoffContext = null,
     release = DEMO_RELEASE,
     updateFeed,
   } = inputs;
@@ -538,6 +578,7 @@ export function buildShellReport(inputs = {}) {
     leaderboardSubmit: leaderboardSubmitReport(submitInput, submitGrant),
     gatewayRead: gatewayReadReport(gatewayEvents),
     gatewayTravel: gatewayTravelReport(travelInput, travelGrant),
+    handoffPlan: handoffPlanReport(handoffInput, handoffGrant, handoffContext),
     updatePreview: updatePreviewReport(release),
     updateStatus: updateStatusReport(updateFeed),
     mvpLoop: mvpLoopReport(),

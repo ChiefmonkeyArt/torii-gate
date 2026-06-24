@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 import { resolveAllAnchors } from '../world/anchorTransforms.js';
@@ -209,6 +209,13 @@ export function installToriiDebug(refs) {
       // a grant to preview what WOULD be allowed. Inert; navigated:false/performed:false
       // — never navigates, signs, publishes, sends, or connects.
       gatewayTravel(input, grant) { return gatewayTravelReport(input, grant); },
+      // v0.2.167 — the READ-ONLY host TRAVEL HANDOFF PLAN (GATEWAY / NAP-zone
+      // handoff): shows the INERT dry-run plan a host executor WOULD run for an
+      // allowed gateway:travel intent — target zone/route/url, preflight checks, the
+      // ordered future command names, and the rollback route. Blocked by default; pass
+      // a grant to preview a READY plan. dryRun:true/navigated:false/performed:false —
+      // never navigates, unloads/reloads the world, signs, or publishes.
+      handoffPlan(input, grant, hostContext) { return handoffPlanReport(input, grant, hostContext); },
       // v0.2.142 — the visible-but-inert torii.quest update-check PREVIEW block
       // (LEAN-5) the title/HUD card draws. Read-only; actionable:false — no network
       // fetch, no auto-update, no install, no navigation (deterministic local sample).

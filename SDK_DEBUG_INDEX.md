@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.166-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.167-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no navigation, no signing/publishing, no auto-update.
@@ -39,7 +39,7 @@ frozen `SDK_SURFACE` map; `surfacesByTier(tier)` lists names at a tier.
 `productDisplay`, `productPanel`, `productPanelShell`, `productPreview`,
 `travelIntent`, `gatewayHandoff`, `gatewayPortal`, `gatewayPreview`, `leaderboard`,
 `leaderboardPublisher`, `leaderboardView`, `leaderboardPreview`, `relayRead`, `leaderboardRelayRead`, `profileRead`,
-`consentGate`, `consentView`, `submitIntent`, `gatewayRead`, `travelConfirm`, `updateCheck`,
+`consentGate`, `consentView`, `submitIntent`, `gatewayRead`, `travelConfirm`, `handoffPlan`, `updateCheck`,
 `updatePreview`, `githubReleaseSource`, `updateStatus`, `mvpLoop`, `proofSurfaceSpecs`, `anchorTransforms`.
 
 `relayRead` (NOSTR-READ, v0.2.159) is the pure READ-ONLY Nostr relay adapter
@@ -153,6 +153,25 @@ so no `<`/`>` can inject markup. `consentPromptRows(grants)` → one inert row p
 Exposes NO confirm/sign/publish/send/connect/travel/navigate/apply method — a rendered
 "Travel"/"Publish" label is COPY, not a wired button.
 
+`handoffPlan` (GATEWAY / NAP-zone handoff, v0.2.167) is the pure HOST TRAVEL HANDOFF SEAM —
+it consumes a `gateway:travel` intent (`prepareTravelIntent` output, see [[travelConfirm]]) plus
+an optional injected host context and produces an INERT dry-run handoff/rollback PLAN, the last
+safe seam before v0.2.168 can implement a first controlled local/same-site travel action.
+`HANDOFF_PLAN_VERSION`=1; `HANDOFF_BADGE`='HANDOFF · DRY-RUN · NO NAVIGATION'; `HANDOFF_STATUS`
+(ready/blocked/invalid); `HANDOFF_COMMANDS` names the FUTURE steps (preflight/snapshotState/
+unloadWorld/navigate/loadWorld/spawnPlayer) as STRINGS only — none are executed.
+`safeRoutePath(raw)` allows only a single-segment same-origin `/path` fragment;
+`handoffRouteFor(destination)` yields `/zone/<slug>` or null; `handoffUrlFor(destination)` reuses
+profileRead.safeProfileUrl (https-only external preview string or null). `summariseHandoff(input,
+grant,hostContext)` is the one-line digest. `planHandoff(input,grant,hostContext)` returns the
+inert plan `{action,status,ok,reason,targetZoneId,targetRoute,targetUrl,currentRoute,rollbackRoute,
+preflight:[...],commands,summary,dryRun:true,navigated:false,worldReloaded:false,performed:false,
+signed:false,published:false,readOnly:true,errors}` — status precedence invalid>blocked>ready,
+READY only under a matching consent grant, blocked-by-default otherwise, malformed/unsafe
+route+url fields sanitised to null. Host `window.location` is NEVER read at runtime — currentRoute
+comes from the injected `hostContext` so the module stays node-testable. Exposes NO
+navigate/goto/open/reload/unload/sign/publish/send/connect/apply method.
+
 `githubReleaseSource` (LEAN-5, v0.2.157) is the pure GitHub Releases source adapter:
 `normalizeRelease`/`selectLatestRelease`/`evaluateFromSource` turn a `releases/latest`
 object, a `releases` array, or a manifest into an update verdict; the optional
@@ -218,6 +237,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.gatewayRead(e?)` | **v0.2.164** READ-ONLY gateway DESTINATION-RECORD read proof over a deterministic LOCAL sample — `{title,badge,ok,count,duplicates,filter,gateways,skipped,navigated:false,signed:false,published:false,performed:false,readOnly:true,errors}` (kind-30078 `#t:torii-gateway` filter; extract→sanitise→newest-per-zone; https-only inert URLs + ws/wss relays, no navigation/DOM/relay I/O) |
 | `shells.gatewayTravel(input?,grant?)` | **v0.2.165** READ-ONLY gateway TRAVEL CONFIRMATION/INTENT behind the consent gate over `DEMO_TRAVEL_INPUT` — `{title:'GATEWAY TRAVEL INTENT',badge,action,ok,allowed,blocked,reason,destination,summary,navigated:false,performed:false,signed:false,published:false,readOnly:true,errors}` (sanitise destination → `evaluateConsent('gateway:travel',grant)`; BLOCKED with no grant, allowed-but-never-performed with a matching grant; no navigation/sign/publish/send/connect) |
 | `shells.consentPrompt(o?)` | **v0.2.166** CONSENT UX VIEW-MODEL preview map — `{title:'CONSENT PROMPT PREVIEW',badge:'CONSENT · PREVIEW · NO ACTION',count,writeActions,allowedByDefault,rows:[{action,headline,actionLabel,cancelLabel,severity,requiresExplicitConsent,allowed,blocked,reason,reasonText,actionable:false}],readOnly:true,actionable:false,performed:false}` (the user-facing prompt copy a future confirm dialog WOULD draw for every action; blocked-by-default for writes, pass `{grants}` to preview allow; never confirms/signs/publishes/navigates) |
+| `shells.handoffPlan(input?,grant?,hostContext?)` | **v0.2.167** INERT host TRAVEL HANDOFF PLAN over `DEMO_HANDOFF_INPUT` — `{title:'GATEWAY HANDOFF PLAN',badge:'HANDOFF · DRY-RUN · NO NAVIGATION',action,status,ok,reason,targetZoneId,targetRoute,targetUrl,currentRoute,rollbackRoute,preflight,commands,summary,dryRun:true,navigated:false,worldReloaded:false,performed:false,signed:false,published:false,readOnly:true,errors}` (consumes a `gateway:travel` intent → dry-run handoff/rollback plan; READY only under a matching grant, blocked-by-default; sanitised route/url; future command names are STRINGS only; no navigation/world-reload/sign/publish/send/connect) |
 | `shells.updatePreview(r?,o?)` | LEAN-5 preview block — `{title,badge,status,statusLabel,currentVersion,latestVersion,updateAvailable,prompt,source,lines,readOnly:true,actionable:false}` |
 | `shells.updateStatus(p?,o?)` | **v0.2.158** LEAN-5 in-game UPDATE-STATUS panel — `{title,badge,surface,step,status,statusLabel,currentVersion,latestVersion,updateAvailable,prompt,source:{status,kind,candidates,errors},sourceUrl,lines,readOnly:true,actionable:false}` (defaults to local sample feed) |
 | `shells.mvpLoop(o?)` | loop header block — `{title,badge,flow,note,version,steps,lines,readOnly:true,actionable:false}` |
@@ -535,6 +555,7 @@ PURE/node-safe — composes plain data only; renders and acts on nothing.
 | `submitIntent` | `tests/leaderboard-submit-intent.test.js` |
 | `gatewayRead` | `tests/gateway-read.test.js` |
 | `travelConfirm` | `tests/gateway-travel-confirm.test.js` |
+| `handoffPlan` | `tests/handoff-plan.test.js` |
 | `mvpLoop` | `tests/mvp-loop.test.js` |
 | `ToriiDebug.shells.*` reports + `summary()` | `tests/shell-report.test.js` |
 | `proofSurfaceSpecs` / `shells.surfaceSpecs()` | `tests/proof-surface-specs.test.js` |

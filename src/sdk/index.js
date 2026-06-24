@@ -52,6 +52,7 @@ export * as consentView from '../engine/consent/consentView.js';
 export * as submitIntent from '../engine/leaderboard/submitIntent.js';
 export * as gatewayRead from '../engine/gateway/gatewayRead.js';
 export * as travelConfirm from '../engine/gateway/travelConfirm.js';
+export * as handoffPlan from '../engine/gateway/handoffPlan.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
@@ -156,6 +157,11 @@ export const SDK_SURFACE = Object.freeze({
   // (`gateway:travel`). INERT: blocked without a matching grant; never navigates,
   // signs, publishes, sends, or connects — navigated:false/performed:false on every report.
   travelConfirm:   { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/travelConfirm.js' },
+  // Host TRAVEL HANDOFF SEAM (GATEWAY / NAP-zone handoff, v0.2.167) — turns an
+  // allowed gateway:travel intent into an INERT dry-run handoff + rollback plan.
+  // NO browser navigation, world unload/reload, signing, publishing, or relay I/O —
+  // dryRun:true/navigated:false/performed:false/readOnly:true on every plan.
+  handoffPlan:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/handoffPlan.js' },
   // torii.quest GitHub release/update-check helpers (LEAN-5, v0.2.138) — pure
   // compare + inert view-model; NO network fetch, NO auto-update.
   updateCheck:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateCheck.js' },

@@ -296,8 +296,20 @@ linked by signed spatial events, with **no central router**.
   inert preview row per action. DISPLAY-ONLY — a rendered "Travel" label is COPY, not a wired
   button; it exposes no confirm/navigate/sign/publish method. The clickable confirm dialog
   that MINTS the grant is still the deferred host step.
+- `src/engine/gateway/handoffPlan.js` (v0.2.167) — pure **host travel handoff seam**: the
+  boundary that consumes an allowed `gateway:travel` intent (the `travelConfirm.js` output)
+  plus an injected host context and produces an INERT dry-run handoff/rollback PLAN.
+  `planHandoff(input, grant, hostContext)` returns `{action, status, ok, reason, targetZoneId,
+  targetRoute, targetUrl, currentRoute, rollbackRoute, preflight, commands, summary,
+  dryRun:true, navigated:false, worldReloaded:false, performed:false, …}`; READY only under a
+  matching grant, blocked-by-default otherwise, with sanitised same-origin route fragments and
+  https-only preview URLs. `HANDOFF_COMMANDS` names the FUTURE steps (preflight/snapshotState/
+  unloadWorld/navigate/loadWorld/spawnPlayer) as STRINGS only — none execute. Host
+  `window.location` is never read at runtime (currentRoute is injected). The last safe seam
+  before v0.2.168 can implement a first controlled local/same-site travel action. No
+  navigation/world-reload/signing/publishing/relay I/O.
 - `src/world/handoff.js` — the (skeleton) host seam where a future build will act
-  on a validated intent.
+  on a validated intent (and consume the `handoffPlan.js` plan above).
 
 Component is code. Protocol is agreement. This file is the agreement; the modules
 above are one implementation of it.
