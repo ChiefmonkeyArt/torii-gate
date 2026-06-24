@@ -288,6 +288,14 @@ linked by signed spatial events, with **no central router**.
   `{ok, action, destination, consent, summary, navigated:false, performed:false, …}`
   report. BLOCKED by default; allowed-but-never-performed with a matching grant. No
   navigation/world-unload/signing/publishing/relay I/O.
+- `src/engine/consent/consentView.js` (v0.2.166) — pure **consent UX view-model** over the
+  consent gate: `consentPromptView(input, grant)` re-shapes the `gateway:travel` (and every
+  other) consent decision into INERT, render-ready PROMPT copy (`{title, badge, severity,
+  headline, bodyLines, actionLabel, cancelLabel, allowed, blocked, reason, …,
+  performed:false, actionable:false, readOnly:true}`); `consentPromptRows(grants)` gives one
+  inert preview row per action. DISPLAY-ONLY — a rendered "Travel" label is COPY, not a wired
+  button; it exposes no confirm/navigate/sign/publish method. The clickable confirm dialog
+  that MINTS the grant is still the deferred host step.
 - `src/world/handoff.js` — the (skeleton) host seam where a future build will act
   on a validated intent.
 

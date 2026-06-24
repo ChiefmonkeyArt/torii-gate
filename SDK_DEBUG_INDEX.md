@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.165-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.166-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no navigation, no signing/publishing, no auto-update.
@@ -39,7 +39,7 @@ frozen `SDK_SURFACE` map; `surfacesByTier(tier)` lists names at a tier.
 `productDisplay`, `productPanel`, `productPanelShell`, `productPreview`,
 `travelIntent`, `gatewayHandoff`, `gatewayPortal`, `gatewayPreview`, `leaderboard`,
 `leaderboardPublisher`, `leaderboardView`, `leaderboardPreview`, `relayRead`, `leaderboardRelayRead`, `profileRead`,
-`consentGate`, `submitIntent`, `gatewayRead`, `travelConfirm`, `updateCheck`,
+`consentGate`, `consentView`, `submitIntent`, `gatewayRead`, `travelConfirm`, `updateCheck`,
 `updatePreview`, `githubReleaseSource`, `updateStatus`, `mvpLoop`, `proofSurfaceSpecs`, `anchorTransforms`.
 
 `relayRead` (NOSTR-READ, v0.2.159) is the pure READ-ONLY Nostr relay adapter
@@ -136,6 +136,23 @@ a malformed destination `ok:false` even WITH a grant; an allowed grant marks con
 STILL never navigates/signs/publishes/sends/connects (`navigated:false`/`performed:false` pinned).
 Exposes NO navigate/goto/sign/publish/send/connect/open/apply method.
 
+`consentView` (CONSENT-2, v0.2.166) is the pure CONSENT UX VIEW-MODEL over the v0.2.162
+consent gate — it turns gate requests/decisions into clear, user-facing PROMPT copy + preview
+rows BEFORE any real confirm-button wiring exists. `CONSENT_PROMPT_BADGE`='CONSENT · PREVIEW ·
+NO ACTION'; `CONSENT_SEVERITY` (info/caution/danger); `REASON_TEXT` (human copy per reason);
+`ACTION_COPY` (per-action `{headline,actionLabel,cancelLabel}` for the 5 write actions).
+`copyForAction(id,requiresConsent)` returns the copy bag (read-only + unknown fall back).
+`severityFor(decision)` maps read/no-consent→info, low-danger write→caution, high-danger
+write→danger. `consentPromptView(input,grant)` re-shapes a decision into an INERT render-ready
+view `{title,badge,action,kind,severity,headline,bodyLines:[{label,value}],actionLabel,
+cancelLabel,requiresExplicitConsent,allowed,blocked,reason,reasonText,write,signed,danger,
+statusLine,performed:false,actionable:false,readOnly:true,errors}` — blocked-by-default for
+writes, ALLOWED copy under a matching grant but STILL `performed:false`/`actionable:false`,
+malformed/unknown → a safe blocked view, every free-form string (origin) control/markup-stripped
+so no `<`/`>` can inject markup. `consentPromptRows(grants)` → one inert row per known action.
+Exposes NO confirm/sign/publish/send/connect/travel/navigate/apply method — a rendered
+"Travel"/"Publish" label is COPY, not a wired button.
+
 `githubReleaseSource` (LEAN-5, v0.2.157) is the pure GitHub Releases source adapter:
 `normalizeRelease`/`selectLatestRelease`/`evaluateFromSource` turn a `releases/latest`
 object, a `releases` array, or a manifest into an update verdict; the optional
@@ -200,6 +217,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.leaderboardSubmit(i?,g?)` | **v0.2.163** READ-ONLY leaderboard SUBMIT INTENT/PREVIEW over a deterministic sample — `{title,badge,action,ok,allowed,blocked,reason,kind,identity,tags,summary,signed:false,published:false,performed:false,readOnly:true,errors}` (inert UNSIGNED kind-30000 draft routed through the consent gate; BLOCKED with no grant, pass a grant to preview allow; never signs/publishes/sends/connects) |
 | `shells.gatewayRead(e?)` | **v0.2.164** READ-ONLY gateway DESTINATION-RECORD read proof over a deterministic LOCAL sample — `{title,badge,ok,count,duplicates,filter,gateways,skipped,navigated:false,signed:false,published:false,performed:false,readOnly:true,errors}` (kind-30078 `#t:torii-gateway` filter; extract→sanitise→newest-per-zone; https-only inert URLs + ws/wss relays, no navigation/DOM/relay I/O) |
 | `shells.gatewayTravel(input?,grant?)` | **v0.2.165** READ-ONLY gateway TRAVEL CONFIRMATION/INTENT behind the consent gate over `DEMO_TRAVEL_INPUT` — `{title:'GATEWAY TRAVEL INTENT',badge,action,ok,allowed,blocked,reason,destination,summary,navigated:false,performed:false,signed:false,published:false,readOnly:true,errors}` (sanitise destination → `evaluateConsent('gateway:travel',grant)`; BLOCKED with no grant, allowed-but-never-performed with a matching grant; no navigation/sign/publish/send/connect) |
+| `shells.consentPrompt(o?)` | **v0.2.166** CONSENT UX VIEW-MODEL preview map — `{title:'CONSENT PROMPT PREVIEW',badge:'CONSENT · PREVIEW · NO ACTION',count,writeActions,allowedByDefault,rows:[{action,headline,actionLabel,cancelLabel,severity,requiresExplicitConsent,allowed,blocked,reason,reasonText,actionable:false}],readOnly:true,actionable:false,performed:false}` (the user-facing prompt copy a future confirm dialog WOULD draw for every action; blocked-by-default for writes, pass `{grants}` to preview allow; never confirms/signs/publishes/navigates) |
 | `shells.updatePreview(r?,o?)` | LEAN-5 preview block — `{title,badge,status,statusLabel,currentVersion,latestVersion,updateAvailable,prompt,source,lines,readOnly:true,actionable:false}` |
 | `shells.updateStatus(p?,o?)` | **v0.2.158** LEAN-5 in-game UPDATE-STATUS panel — `{title,badge,surface,step,status,statusLabel,currentVersion,latestVersion,updateAvailable,prompt,source:{status,kind,candidates,errors},sourceUrl,lines,readOnly:true,actionable:false}` (defaults to local sample feed) |
 | `shells.mvpLoop(o?)` | loop header block — `{title,badge,flow,note,version,steps,lines,readOnly:true,actionable:false}` |
@@ -513,6 +531,7 @@ PURE/node-safe — composes plain data only; renders and acts on nothing.
 | `leaderboardRelayRead` | `tests/leaderboard-relay-read.test.js` |
 | `profileRead` | `tests/profile-read.test.js` |
 | `consentGate` | `tests/consent-gate.test.js` |
+| `consentView` | `tests/consent-view.test.js` |
 | `submitIntent` | `tests/leaderboard-submit-intent.test.js` |
 | `gatewayRead` | `tests/gateway-read.test.js` |
 | `travelConfirm` | `tests/gateway-travel-confirm.test.js` |

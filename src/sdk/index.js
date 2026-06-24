@@ -48,6 +48,7 @@ export * as relayRead from '../engine/nostr/relayRead.js';
 export * as leaderboardRelayRead from '../engine/nostr/leaderboardRelayRead.js';
 export * as profileRead from '../engine/nostr/profileRead.js';
 export * as consentGate from '../engine/consent/consentGate.js';
+export * as consentView from '../engine/consent/consentView.js';
 export * as submitIntent from '../engine/leaderboard/submitIntent.js';
 export * as gatewayRead from '../engine/gateway/gatewayRead.js';
 export * as travelConfirm from '../engine/gateway/travelConfirm.js';
@@ -133,6 +134,12 @@ export const SDK_SURFACE = Object.freeze({
   // an explicit matching grant is present. INERT: never signs/publishes/acts; the
   // decision is permission for the host to act later, not an action taken here.
   consentGate:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/consent/consentGate.js' },
+  // CONSENT UX VIEW-MODEL foundation (CONSENT-2, v0.2.166) — turns consentGate
+  // requests/decisions into clear user-facing PROMPT copy + preview rows (title,
+  // badge, severity, body lines, action/cancel labels, allowed/blocked + reason).
+  // DISPLAY-ONLY: every view is performed:false/actionable:false/readOnly:true; it
+  // exposes NO confirm/sign/publish/travel method and never performs an action.
+  consentView:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/consent/consentView.js' },
   // Leaderboard SUBMIT INTENT / PREVIEW (LB-SUBMIT, v0.2.163) — builds a sanitised,
   // unsigned kind-30000 score draft and routes it through consentGate
   // (`leaderboard:submit`). INERT: blocked without a matching grant; never

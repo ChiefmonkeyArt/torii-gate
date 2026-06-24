@@ -18,6 +18,7 @@ import { leaderboardPreviewBlock } from '../nostr/leaderboardPreview.js';
 import { readLeaderboardEvents } from '../nostr/leaderboardRelayRead.js';
 import { readProfiles } from '../nostr/profileRead.js';
 import { CONSENT_ACTIONS, evaluateConsent, summariseConsent } from '../consent/consentGate.js';
+import { consentPromptRows } from '../consent/consentView.js';
 import { prepareSubmitIntent, DEMO_SUBMIT_INPUT } from '../leaderboard/submitIntent.js';
 import { readGateways, DEMO_GATEWAY_EVENTS } from '../gateway/gatewayRead.js';
 import { prepareTravelIntent, DEMO_TRAVEL_INPUT } from '../gateway/travelConfirm.js';
@@ -333,6 +334,29 @@ export function consentGateReport(opts = {}) {
   };
 }
 
+// consentPromptReport(opts) → the CONSENT UX VIEW-MODEL preview map (CONSENT-2,
+// v0.2.166). Shows the user-facing PROMPT copy a future confirm dialog WOULD draw for
+// every known action — headline, action/cancel labels, severity, allowed/blocked +
+// reason — blocked-by-default for writes. DISPLAY-ONLY: every row pins
+// actionable:false; this NEVER confirms/signs/publishes/navigates. The optional
+// `grants` map ({ actionId: true|{granted,...} }) previews what copy WOULD show under
+// a given set of consents — still without performing anything.
+export function consentPromptReport(opts = {}) {
+  const grants = (opts && typeof opts.grants === 'object' && opts.grants) || {};
+  const rows = consentPromptRows(grants);
+  return {
+    title: 'CONSENT PROMPT PREVIEW',
+    badge: 'CONSENT · PREVIEW · NO ACTION',
+    count: rows.length,
+    writeActions: rows.filter((r) => r.requiresExplicitConsent).length,
+    allowedByDefault: rows.filter((r) => r.allowed).length,
+    rows,
+    readOnly: true,
+    actionable: false,
+    performed: false,
+  };
+}
+
 // leaderboardSubmitReport(input, grant) → the READ-ONLY leaderboard SUBMIT INTENT
 // map (LB-SUBMIT, v0.2.163). Shows the inert submit DRAFT a host WOULD sign+publish
 // for a run, and the consent-gate decision for it. With no grant (default) the
@@ -510,6 +534,7 @@ export function buildShellReport(inputs = {}) {
     leaderboardRelayRead: leaderboardRelayReadReport(relayScoreEvents),
     profileRead: profileReadReport(profileEvents),
     consentGate: consentGateReport(consentGrants ? { grants: consentGrants } : {}),
+    consentPrompt: consentPromptReport(consentGrants ? { grants: consentGrants } : {}),
     leaderboardSubmit: leaderboardSubmitReport(submitInput, submitGrant),
     gatewayRead: gatewayReadReport(gatewayEvents),
     gatewayTravel: gatewayTravelReport(travelInput, travelGrant),
