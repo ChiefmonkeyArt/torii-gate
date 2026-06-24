@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.143-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.144-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -10,7 +10,7 @@
 
 ---
 
-## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.143)
+## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.144)
 
 > **The project is refocused onto a 15-hour proof-of-concept.** Build the vision
 > fast, prove the architecture, avoid polish traps — then add retrospective polish
@@ -47,6 +47,14 @@
   cards as **Travel → Market → Score → Update**, and each card title carries its step
   (`1 · TRAVEL` … `4 · UPDATE`). Content/CSS/labelling only — `actionable:false`, no
   network/links/actions; rendered via `textContent`. Read-only at `ToriiDebug.shells.mvpLoop()`.
+- **Host-side self-hosting is now documented** (v0.2.144) — `VPS_INSTALL.md` covers
+  running the static `dist/` build at `torii.quest` on a shared Ubuntu VPS (Caddy or
+  Nginx, HTTPS, DNS checklist, min specs), the **manual** GitHub update sequence
+  (`git pull` → `npm ci` → `npm run build` → publish a versioned release folder →
+  flip the `current` symlink), symlink-based rollback, security notes (no auto-update,
+  no shell endpoint, least-privilege deploy user, UFW/SSH basics, backups), and a
+  deferred guarded "update button" sketch. Docs only — no server touched, no install,
+  no auto-update; aligns with `UPDATE_CHECK.md` §4 and `HANDOFF.md` §7.
 - **Retrospective polish AFTER PoC validation** — once the loop demonstrably works and
   *feels right*, circle back for shooter feel, mesh/material polish, and UX refinement.
   Until then, prefer thin vertical slices that advance the loop over polish.

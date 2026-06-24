@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.143-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.144-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -256,6 +256,13 @@ green source tree and report the version + changes; the maintainer ships it.
 Live currently trails source (see `progress.md` "Deployment" track). Lifting the
 source-built artifact to live is its own tracked task (TQ-MANUAL-113 — manual
 smoke test on real hardware first).
+
+For **self-hosting the static `dist/` build at `torii.quest`** on a shared Ubuntu
+VPS — Caddy/Nginx + HTTPS, DNS checklist, the manual GitHub update sequence,
+symlink-based rollback, and the security posture (no auto-update, no shell
+endpoint, least-privilege deploy user) — see `VPS_INSTALL.md` (v0.2.144, docs
+only; no server is touched). It aligns with the update-check safety boundary in
+`UPDATE_CHECK.md` §4.
 
 ## 8. Active issues / open edges
 

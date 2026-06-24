@@ -3,7 +3,7 @@
 > Lightweight developer/agent index. Keep this practical and update it as systems are touched.
 > Purpose: help future debugging, SDK extraction, FOSS contribution, and AI handoff speed.
 
-Current version: `v0.2.143-alpha`  
+Current version: `v0.2.144-alpha`  
 Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app)  
 **Active focus: 15-hour proof-of-concept route** — shooter is maintenance-only unless demo-breaking; the active MVP is the freedom-tech loop (gateway/NAP-to-NAP preview, Plebeian/Nostr product panel proof, leaderboard preview, torii.quest GitHub update-check). Retrospective polish after PoC validation. See `strategy.md` → "15-Hour Proof-of-Concept Route".
 
@@ -139,6 +139,7 @@ Run on real hardware after publish:
 
 - `strategy.md` — strategic source of truth: vision, decision rules, architecture direction.
 - `HANDOFF.md` — single-page contributor/agent onboarding: repo state, hard constraints, version markers, source-of-truth docs, build/test/check + deploy commands, debug surface, active issues, next-job format (v0.2.130, ARS-7).
+- `VPS_INSTALL.md` — host-side self-hosting guide (v0.2.144): run the static `dist/` build at `torii.quest` on a shared Ubuntu VPS (Caddy/Nginx + HTTPS, DNS checklist, min specs), the manual GitHub update sequence (build → versioned release folder → flip `current` symlink), symlink rollback, security notes (no auto-update / no shell endpoint / least-privilege deploy user / UFW + SSH hardening), and a deferred guarded "update button" sketch. Docs only — no server touched; aligns with `UPDATE_CHECK.md` §4 + `HANDOFF.md` §7.
 - `todo.md` — active task source of truth.
 - `progress.md` — visual execution dashboard: track bars (Foundation/Combat/Rapier/SDK/Nostr/Deployment), active goals, current sprint table, completed-last-24h, archive, and update rules.
 - `torii-source-reconciliation-report.md` — source reconciliation history.

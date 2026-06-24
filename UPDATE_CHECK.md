@@ -55,10 +55,15 @@ NO shell execution, NO auto-update, and NO navigation. Read-only at
   side effect; deferred like the other LEAN view-model meshes.
 - **Any "Update" affordance.** The view-model is display-only by design
   (`actionable:false`); turning it into a real action (open the releases page,
-  trigger a rebuild) is a separate, explicitly-authorised step.
+  trigger a rebuild) is a separate, explicitly-authorised step. The host-side
+  manual update + the sketch of a future guarded update button live in
+  `VPS_INSTALL.md` §7 and §10.
 
 ## 4. Safety boundary
 
 - No `fetch`/XHR/WebSocket in the module — it is a pure compare + view-model.
 - No code download, no `eval`/dynamic import, no install, no `window.location`.
 - Deploying a release remains a manual maintainer action; this flow only *informs*.
+  See `VPS_INSTALL.md` for how a maintainer self-hosts at `torii.quest` and updates
+  by hand from GitHub (§7), the rollback model (§8), and the deferred guarded
+  "update button" architecture (§10).
