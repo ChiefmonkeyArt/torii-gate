@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.155-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.156-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -221,12 +221,15 @@ npm run bundle:report  # advisory built-bundle size baseline (raw+gzip; reads di
 ```
 
 A change is "green" when **build + check + test** all pass. Current baseline:
-**491 tests / 43 files**, all 14 regression checks GREEN, build clean. Built bundle
+**505 tests / 44 files**, all 14 regression checks GREEN, build clean. Built bundle
 sizes are tracked as an advisory baseline — `npm run bundle:report` (full table) or the
 non-failing `[13]` line in `npm run check` (v0.2.153). Docs/status drift is guarded by
 check `[14]` (v0.2.154) — the continuity docs (`todo.md`/`progress.md`/`HANDOFF.md`) must
 carry the current version or `npm run check` fails; its stale-live-version ADVISORY ignores
-quoted/changelog prose (v0.2.155) so it only flags plainly-stated status lines.
+quoted/changelog prose (v0.2.155) so it only flags plainly-stated status lines. For a
+one-glance snapshot of all of the above (VERSION/pkg sync, git commit, live URL, checks,
+core-doc presence, latest reports, bundle baseline) run `npm run handoff:status` (v0.2.156;
+visibility tool, network-free, always exits 0 — not a gate).
 
 Tests run in node (`vite.config.js` → `environment: 'node'`). `WebGLRenderer` is
 created at module load in `scene.js`, so any module importing `scene.js`

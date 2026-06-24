@@ -1,6 +1,6 @@
 {
   "name": "torii-quest",
-  "version": "0.2.155-alpha",
+  "version": "0.2.156-alpha",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -8,6 +8,7 @@
     "preview": "vite preview",
     "check": "node tools/regression-check.mjs",
     "bundle:report": "node tools/bundle-report.mjs",
+    "handoff:status": "node tools/handoff-status.mjs",
     "test": "vitest run"
   },
   "devDependencies": {
