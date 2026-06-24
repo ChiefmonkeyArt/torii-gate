@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, buildShellReport } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, buildShellReport } from './shellReport.js';
 
 export function installToriiDebug(refs) {
   const {
@@ -155,6 +155,10 @@ export function installToriiDebug(refs) {
       // checkout/pay/zap.
       productPreview(product, opts) { return productPreviewReport(product, opts); },
       leaderboard(statsList, opts) { return leaderboardReport(statsList, opts); },
+      // v0.2.141 — the visible-but-inert local/mock leaderboard PREVIEW block
+      // (LEAN-4) the title/HUD card draws. Read-only; signed:false, published:false,
+      // actionable:false — never signs, publishes, or submits.
+      leaderboardPreview(statsList, opts) { return leaderboardPreviewReport(statsList, opts); },
       report(inputs) { return buildShellReport(inputs); },
     },
   };

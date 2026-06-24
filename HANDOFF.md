@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.140-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.141-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -85,7 +85,8 @@ Breaking one should fail CI/the check, not ship.
   v0.2.135 added `registry`, `gatewayHandoff`, `productPanel`, and
   `leaderboardPublisher`; v0.2.136 added `gatewayPortal`, `productPanelShell`,
   and `leaderboardView`; v0.2.138 added `updateCheck`; v0.2.139 added
-  `gatewayPreview`; v0.2.140 added `productPreview` (all experimental).
+  `gatewayPreview`; v0.2.140 added `productPreview`; v0.2.141 added
+  `leaderboardPreview` (all experimental).
 - **`src/engine/components/contract.js`** + **`COMPONENTS.md`** — component
   economy foundation (CMP-1/2, v0.2.132). Pure `validateManifest` /
   `isComponent` / `defineComponent` (idempotent mount/unmount) + the full
@@ -159,6 +160,18 @@ Breaking one should fail CI/the check, not ship.
   `leaderboardView` throws on any non-`mock`/`build` mode (no `live`/relay path);
   `leaderboardPreview` runs through a no-signer/no-publisher adapter → `signed:false`/
   `published:false`.
+- **`src/engine/nostr/leaderboardPreview.js`** (LEAN-4, v0.2.141) — pure
+  visible-but-inert local/mock leaderboard PREVIEW block over `leaderboardView`.
+  `leaderboardPreviewBlock(statsList, opts)` flattens the ranked view into a
+  render-ready block of `{label,value}` rows (Mode/Signer (npub via `shortNpub`)/
+  Status/Event (kind-30000 + #torii-quest proof shape)/ranked `#n` rows) +
+  `modeLabel`/`formatRankRow` helpers + a `LEADERBOARD_PREVIEW_BADGE`
+  ("PREVIEW · LOCAL MOCK · NO PUBLISH"); every block is `signed:false`/
+  `published:false`/`actionable:false`/`readOnly:true`; invalid scores degrade
+  into `skipped`, empty → "NO LOCAL SCORES" (no throw). `main.js` renders it into
+  the title-screen `#leaderboard-preview` card via `textContent` only (no sign, no
+  publish, no submit, no fetch). Read-only at
+  `ToriiDebug.shells.leaderboardPreview()`. SDK `leaderboardPreview` (experimental).
 - **`src/engine/debug/shellReport.js`** (HARD-4, v0.2.137) — read-only DEBUG
   reports over the three v0.2.136 shells (`gatewayReport`/`productReport`/
   `leaderboardReport`/`buildShellReport` + `DEMO_GATEWAY`/`DEMO_PRODUCT`/
@@ -184,7 +197,7 @@ npm run preview  # serve the built dist/ (used for headless smoke)
 ```
 
 A change is "green" when **build + check + test** all pass. Current baseline:
-**305 tests / 28 files**, all 11 regression checks GREEN, build clean.
+**355 tests / 32 files**, all 11 regression checks GREEN, build clean.
 
 Tests run in node (`vite.config.js` → `environment: 'node'`). `WebGLRenderer` is
 created at module load in `scene.js`, so any module importing `scene.js`
@@ -203,10 +216,11 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
 - `.snapshot()` — one JSON-serialisable object: version, phase, run state, player
   pos, combat last shot/hit/miss, physics+crate summary, tuning. Safe anytime.
 - `.combat.report()` / `.physics.report()` — focused JSON sub-reports.
-- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,report}()` —
+- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,report}()` —
   read-only reports over the VIEW shells + visible preview blocks (demo fixtures by
   default; pass overrides). No signer, no relay/publish, no navigation, no checkout
-  (`engine/debug/shellReport.js`; `gatewayPreview` v0.2.139, `productPreview` v0.2.140).
+  (`engine/debug/shellReport.js`; `gatewayPreview` v0.2.139, `productPreview` v0.2.140,
+  `leaderboardPreview` v0.2.141).
 - `.physics.service` — injectable RaycastService facade (`ray`/`rayStatic`/`lineOfSight`).
 - `.bots`, `.player`, `.physics`, `.world`, `.fx`, `.combat`, `.identity`.
 

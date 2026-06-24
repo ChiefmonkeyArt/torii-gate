@@ -43,6 +43,7 @@ export * as gatewayPreview from '../engine/gateway/gatewayPreview.js';
 export * as leaderboard from '../engine/nostr/leaderboard.js';
 export * as leaderboardPublisher from '../engine/nostr/leaderboardPublisher.js';
 export * as leaderboardView from '../engine/nostr/leaderboardView.js';
+export * as leaderboardPreview from '../engine/nostr/leaderboardPreview.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
 export { createRaycastService, raycastService } from '../engine/physics/raycastService.js';
 
@@ -99,6 +100,8 @@ export const SDK_SURFACE = Object.freeze({
   leaderboardPublisher: { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/leaderboardPublisher.js' },
   // Read-only leaderboard display + build-only preview shell (LB-1, v0.2.136).
   leaderboardView: { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/leaderboardView.js' },
+  // Local/mock leaderboard visible PREVIEW block — inert title/HUD card (LEAN-4, v0.2.141).
+  leaderboardPreview: { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/leaderboardPreview.js' },
   // torii.quest GitHub release/update-check helpers (LEAN-5, v0.2.138) — pure
   // compare + inert view-model; NO network fetch, NO auto-update.
   updateCheck:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateCheck.js' },

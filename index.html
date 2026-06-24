@@ -189,6 +189,19 @@
     .pp-row-label { font-size: 8px; letter-spacing: 1px; color: #6b7280; text-transform: uppercase; }
     .pp-row-value { font-size: 9px; color: #ecd9c4; word-break: break-all; }
 
+    /* ── Local/mock leaderboard preview (inert, read-only, no publish, v0.2.141) ── */
+    #leaderboard-preview {
+      margin-top: 10px; width: 240px; text-align: left;
+      border: 1px solid rgba(52,211,153,0.30); border-radius: 6px;
+      background: rgba(10,40,30,0.3); padding: 7px 9px;
+    }
+    #leaderboard-preview-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+    #leaderboard-preview-title { font-size: 9px; letter-spacing: 1.5px; color: #a7f3d0; }
+    #leaderboard-preview-badge { font-size: 7px; letter-spacing: 1px; color: #f7931a; border: 1px solid rgba(247,147,26,0.4); border-radius: 3px; padding: 1px 4px; }
+    #leaderboard-preview-body { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; }
+    .lb-row-label { font-size: 8px; letter-spacing: 1px; color: #6b7280; text-transform: uppercase; }
+    .lb-row-value { font-size: 9px; color: #c4ecd9; word-break: break-all; }
+
     /* ── LEFT: Stats panel ── */
     #stats-identity {
       display: flex; flex-direction: column; align-items: center;
@@ -439,7 +452,7 @@
         <div><span class="ctrl-key">SPACE</span> &nbsp;Jump &nbsp;&nbsp; <span class="ctrl-key">R</span> &nbsp;Reload &nbsp;&nbsp; <span class="ctrl-key">ESC</span> &nbsp;Pause</div>
       </div>
 
-      <div id="version-label">v0.2.140-alpha</div>
+      <div id="version-label">v0.2.141-alpha</div>
 
       <!-- Gateway/NAP-to-NAP PREVIEW (LEAN-2, v0.2.139). Rendered by main.js from
            the pure gatewayPreview block. This is a DISPLAY-ONLY card: it shows a
@@ -465,6 +478,19 @@
           <span id="product-preview-badge">PREVIEW · READ ONLY · NO CHECKOUT</span>
         </div>
         <div id="product-preview-body"><!-- rows injected by main.js --></div>
+      </div>
+
+      <!-- Local/mock leaderboard PREVIEW (LEAN-4, v0.2.141) — an inert, read-only
+           title-screen card showing local/mock rank rows, the Nostr score-event
+           proof shape (kind/topic), and the npub identity that WOULD sign. It does
+           NO NIP-07 signing, NO relay publish, NO live submission, and NEVER
+           fetches. The "PREVIEW · LOCAL MOCK · NO PUBLISH" badge makes that explicit. -->
+      <div id="leaderboard-preview" aria-label="local/mock leaderboard preview (read-only, inert)">
+        <div id="leaderboard-preview-head">
+          <span id="leaderboard-preview-title">🏆 LEADERBOARD PREVIEW</span>
+          <span id="leaderboard-preview-badge">PREVIEW · LOCAL MOCK · NO PUBLISH</span>
+        </div>
+        <div id="leaderboard-preview-body"><!-- rows injected by main.js --></div>
       </div>
     </div>
 
@@ -599,7 +625,7 @@
   <canvas id="minimap" width="110" height="110" style="display:block"></canvas>
   <div id="minimap-wrap"></div>
 
-  <div id="ver">v0.2.140-alpha · torii quest</div>
+  <div id="ver">v0.2.141-alpha · torii quest</div>
 </div>
 
 <!-- Crosshair -->

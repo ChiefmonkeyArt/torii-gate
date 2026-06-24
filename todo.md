@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.140-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.141-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -10,7 +10,7 @@
 
 ---
 
-## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.140)
+## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.141)
 
 > **The project is refocused onto a 15-hour proof-of-concept.** Build the vision
 > fast, prove the architecture, avoid polish traps — then add retrospective polish
@@ -30,7 +30,11 @@
      ownership proof, Plebeian.Market link as TEXT, "PREVIEW · READ ONLY · NO CHECKOUT"
      badge); in-world product panel MESH is the next slice (LEAN-3 / CMP-13).
   3. **Leaderboard preview** — ranked board from (eventually signed) Nostr events,
-     build-only preview today (`leaderboardView.js`) (LEAN-4 / LB1).
+     now VISIBLE on the title screen via the inert `leaderboardPreview.js` card
+     (v0.2.141 — local/mock rank rows, the kind-30000/#torii-quest score-event proof
+     shape, npub signer identity flavour, "PREVIEW · LOCAL MOCK · NO PUBLISH" badge;
+     signed:false / published:false). Real signer/relay read is the next slice
+     (LEAN-4 / LB1, SEC-1).
   4. **torii.quest GitHub update-check architecture** — pure release/update-check helper
      + inert "update available" view-model so a torii.quest instance can tell when a new
      GitHub release exists (LEAN-5, below). Scaffold/architecture only — no server, no
@@ -100,7 +104,7 @@ These tasks build the structural layer that makes the project legible to any age
 | LEAN-1 | TQ | DEPLOY | **Torii.quest live** — publish the current green source (v0.2.135-alpha) as the canonical live instance. Manual smoke (TQ-MANUAL-113) first; deploy is the maintainer's manual step. |
 | LEAN-2 | TQ | NOSTR | **n2n hop** — working spatial handoff between two instances via the Torii Gateway component (cross the gate → arrive in a second zone/node carrying identity). Build on `world/handoff.js` + `toriiGateway.js`; relay-mediated first. **v0.2.134: protocol foundation** (`GATEWAY_PROTOCOL.md` + `travelIntent.js`). **v0.2.135: loader + handoff shell in** — `registry.js` (CMP-7) loads built-in components by id; `gatewayHandoff.js` (CMP-8) turns a gateway component into a validated travel intent / URL (pure return values). **v0.2.136: portal VIEW shell in** — `gatewayPortal.js` (`gatewayPortalView`) produces a render-ready portal view-model (destination label, "Press E to travel" prompt, armed flag, plan errors, display-only URL preview); pure, NO navigation. **v0.2.139: visible preview in** — `gatewayPreview.js` (`gatewayPreviewBlock`) flattens the portal view into an INERT title-screen card (destination/status/relay/intent/URL rows + "PREVIEW · SAFE · INERT" badge); rendered by `main.js` via `textContent` only (no link, no navigation), surfaced read-only at `ToriiDebug.shells.gatewayPreview()`. Still needs the in-world portal MESH + `world/handoff.js` to ACT on the intent (move the player / change the URL) — that step has browser side effects and is the next slice. |
 | LEAN-3 | TQ | MARKET | **Product component** — one real Plebeian.Market product-display component (mountable, manifest-described) as the first in-world commerce surface. Reference component on the CMP contract. **v0.2.134: read-only skeleton** (`productDisplay.js`, links out, no checkout). **v0.2.135: view-model shell in** (`productPanel.js` — flat render-ready bag). **v0.2.136: render shell in** (`productPanelShell.js` — ordered panel layout spec: title, body lines, display-only link footer, empty `actions[]`; read-only, no checkout surface). **v0.2.140: visible preview in** — `productPreview.js` (`productPreviewBlock`) flattens the panel shell into an INERT title-screen card (Product/Price/Seller-npub/reward/Marketplace/Link rows + "PREVIEW · READ ONLY · NO CHECKOUT" badge); rendered by `main.js` via `textContent` only (no link, no checkout, no navigation), surfaced read-only at `ToriiDebug.shells.productPreview()`. Needs the in-world panel MESH over the shell + a real listing. |
-| LEAN-4 | TQ | NOSTR | **Nostr leaderboard** — minimal score/kill leaderboard sourced from signed Nostr events, proving the social/identity layer end-to-end. Overlaps LB1 (kind:30000). **v0.2.134: pure unsigned helpers** (`leaderboard.js`). **v0.2.135: publisher adapter shape in** (`leaderboardPublisher.js` — injected signer/publisher, build-only by default). **v0.2.136: display + preview shell in** (`leaderboardView.js` — `leaderboardView`/`rankScores` deterministic ranked table + `leaderboardPreview` build-only unsigned-template preview; mock/build modes only, no live/relay mode). Needs the real signer + relay publish/read + the title-screen rank board MESH/HUD. |
+| LEAN-4 | TQ | NOSTR | **Nostr leaderboard** — minimal score/kill leaderboard sourced from signed Nostr events, proving the social/identity layer end-to-end. Overlaps LB1 (kind:30000). **v0.2.134: pure unsigned helpers** (`leaderboard.js`). **v0.2.135: publisher adapter shape in** (`leaderboardPublisher.js` — injected signer/publisher, build-only by default). **v0.2.136: display + preview shell in** (`leaderboardView.js` — `leaderboardView`/`rankScores` deterministic ranked table + `leaderboardPreview` build-only unsigned-template preview; mock/build modes only, no live/relay mode). **v0.2.141: visible preview in** — `leaderboardPreview.js` (`leaderboardPreviewBlock`) flattens the ranked view into an INERT title-screen card (Mode/Signer/Status/Event framing rows + ranked `#n` rows + "PREVIEW · LOCAL MOCK · NO PUBLISH" badge; surfaces the kind-30000/#torii-quest score-event proof shape + npub identity flavour; signed:false/published:false/actionable:false); rendered by `main.js` via `textContent` only (no sign, no publish, no submit, no fetch), surfaced read-only at `ToriiDebug.shells.leaderboardPreview()`. Needs the real signer (NIP-07, SEC-1) + relay publish/read + the title-screen rank board MESH/HUD. |
 | LEAN-5 | TQ | INFRA | **torii.quest GitHub update-check** — architecture so a torii.quest instance can detect when a newer GitHub release exists and surface an inert "update available" prompt (the maintainer still ships manually). **v0.2.138: pure helper + view-model + docs landed** — `engine/update/updateCheck.js` (`parseRelease`/`compareVersions`/`evaluateUpdate`/`updateCheckView` + `RELEASE_SOURCE`) parses a GitHub-release-shaped manifest, compares its semver tag against the runtime `VERSION`, and returns an inert `{status, currentVersion, latestVersion, updateAvailable, notesPreview, releaseUrl, ...}` view-model. **No server, no network fetch, no auto-update execution** — pure compare logic only; the actual `fetch` of the releases endpoint + the in-world prompt MESH/HUD are the deferred next step. `tests/update-check.test.js`. See `UPDATE_CHECK.md`. |
 
 ---

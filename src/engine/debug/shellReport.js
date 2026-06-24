@@ -14,6 +14,7 @@ import { gatewayPreviewBlock } from '../gateway/gatewayPreview.js';
 import { productPanelShell } from '../components/productPanelShell.js';
 import { productPreviewBlock } from '../components/productPreview.js';
 import { rankScores } from '../nostr/leaderboardView.js';
+import { leaderboardPreviewBlock } from '../nostr/leaderboardPreview.js';
 import { createToriiGateway } from '../components/toriiGateway.js';
 
 // An ARMED demo gateway (has a `target`, so the travel plan validates) — lets the
@@ -131,6 +132,30 @@ export function leaderboardReport(statsList = DEMO_SCORES, { mode = 'build' } = 
   };
 }
 
+// leaderboardPreviewReport(statsList, opts) → the visible-but-inert local/mock
+// leaderboard PREVIEW block (LEAN-4) a title/HUD card would draw. Read-only;
+// pins signed/published/actionable false so the no-publish guarantee is explicit.
+export function leaderboardPreviewReport(statsList = DEMO_SCORES, opts = {}) {
+  const b = leaderboardPreviewBlock(statsList, opts);
+  return {
+    title: b.title,
+    mode: b.mode,
+    modeLabel: b.modeLabel,
+    badge: b.badge,
+    signed: b.signed,
+    published: b.published,
+    signer: b.signer,
+    count: b.count,
+    shown: b.shown,
+    skipped: b.skipped,
+    proof: b.proof,
+    rows: b.rows,
+    lines: b.lines,
+    readOnly: b.readOnly,
+    actionable: b.actionable,
+  };
+}
+
 // buildShellReport(inputs) → { gateway, product, leaderboard }. One-call composite
 // for ToriiDebug; each section overridable via inputs for testing. Read-only.
 export function buildShellReport(inputs = {}) {
@@ -148,5 +173,6 @@ export function buildShellReport(inputs = {}) {
     product: productReport(product),
     productPreview: productPreviewReport(product),
     leaderboard: leaderboardReport(scores, { mode }),
+    leaderboardPreview: leaderboardPreviewReport(scores),
   };
 }

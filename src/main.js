@@ -27,6 +27,7 @@ import { applyPhaseScreens } from './engine/ui/phaseScreens.js';
 import { gatewayPreviewBlock } from './engine/gateway/gatewayPreview.js';
 import { createToriiGateway } from './engine/components/toriiGateway.js';
 import { productPreviewBlock } from './engine/components/productPreview.js';
+import { leaderboardPreviewBlock } from './engine/nostr/leaderboardPreview.js';
 import { VERSION, TUNING } from './config.js';
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -165,6 +166,36 @@ function renderProductPreview() {
   }));
 }
 renderProductPreview();
+
+// Local/mock leaderboard PREVIEW (LEAN-4, v0.2.141) — render the inert,
+// read-only title-screen leaderboard card ONCE from the pure leaderboardPreview
+// block. This is display-only: it ranks a handful of LOCAL/MOCK scores and shows
+// the Nostr score-event proof shape (kind/topic) plus the npub that WOULD sign,
+// so the freedom-tech leaderboard proof is visible on the title screen. It does
+// NO NIP-07 signing, NO relay publish, NO live submission, and NEVER fetches —
+// signed:false / published:false by construction (SEC-1 consent gate is deferred).
+function renderLeaderboardPreview() {
+  const body = document.getElementById('leaderboard-preview-body');
+  if (!body) return;
+  const block = leaderboardPreviewBlock(
+    [
+      { runId: 'plebshot', score: 240, kills: 20, headshots: 11, accuracy: 0.71 },
+      { runId: 'nostrich', score: 180, kills: 16, headshots: 7, accuracy: 0.64 },
+      { runId: 'chiefmonkey', score: 120, kills: 12, headshots: 5, accuracy: 0.58 },
+    ],
+    { signerNpub: 'npub1demo0player0fixture0torii0quest0xxxxxxxxxxxxxxxxxxxx', limit: 3 },
+  );
+  body.replaceChildren(...block.lines.flatMap(({ label, value }) => {
+    const l = document.createElement('div');
+    l.className = 'lb-row-label';
+    l.textContent = label;
+    const v = document.createElement('div');
+    v.className = 'lb-row-value';
+    v.textContent = value; // textContent only — no HTML, no sign, no publish, no submit
+    return [l, v];
+  }));
+}
+renderLeaderboardPreview();
 
 // Character selector
 document.querySelectorAll('.char-btn').forEach(btn => {
