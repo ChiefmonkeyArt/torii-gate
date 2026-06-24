@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, updatePreviewReport, buildShellReport } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, updatePreviewReport, mvpLoopReport, buildShellReport } from './shellReport.js';
 
 export function installToriiDebug(refs) {
   const {
@@ -163,6 +163,10 @@ export function installToriiDebug(refs) {
       // (LEAN-5) the title/HUD card draws. Read-only; actionable:false — no network
       // fetch, no auto-update, no install, no navigation (deterministic local sample).
       updatePreview(release, opts) { return updatePreviewReport(release, opts); },
+      // v0.2.143 — the inert MVP loop header block the title-screen card draws to
+      // frame the four previews as one Travel→Market→Score→Update loop. Read-only;
+      // actionable:false — content/labelling only, no navigation/fetch/sign/publish.
+      mvpLoop(opts) { return mvpLoopReport(opts); },
       report(inputs) { return buildShellReport(inputs); },
     },
   };

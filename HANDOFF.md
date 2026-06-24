@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.142-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.143-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -86,7 +86,8 @@ Breaking one should fail CI/the check, not ship.
   `leaderboardPublisher`; v0.2.136 added `gatewayPortal`, `productPanelShell`,
   and `leaderboardView`; v0.2.138 added `updateCheck`; v0.2.139 added
   `gatewayPreview`; v0.2.140 added `productPreview`; v0.2.141 added
-  `leaderboardPreview`; v0.2.142 added `updatePreview` (all experimental).
+  `leaderboardPreview`; v0.2.142 added `updatePreview`; v0.2.143 added `mvpLoop`
+  (all experimental).
 - **`src/engine/components/contract.js`** + **`COMPONENTS.md`** — component
   economy foundation (CMP-1/2, v0.2.132). Pure `validateManifest` /
   `isComponent` / `defineComponent` (idempotent mount/unmount) + the full
@@ -194,6 +195,15 @@ Breaking one should fail CI/the check, not ship.
   `#update-preview` card via `textContent` only from a DETERMINISTIC LOCAL SAMPLE
   release (no GitHub fetch, no install, no auto-update, no navigation). Read-only at
   `ToriiDebug.shells.updatePreview()`. SDK `updatePreview` (experimental).
+- **`src/engine/mvpLoop.js`** (v0.2.143) — pure node-safe header that frames the
+  four title-screen preview cards as ONE proof-of-concept loop. `mvpLoopSummary(opts)`
+  → a render-ready block: title "TORII QUEST · MVP LOOP", flow "Travel → Market →
+  Score → Update", an inert-previews note, the four ordered steps mapped to their
+  cards, and an `MVP_LOOP_BADGE` ("PREVIEW · READ ONLY · MANUAL"); `actionable:false`/
+  `readOnly:true`. Content/labelling ONLY — no network/links/actions. `main.js`
+  `renderMvpLoop()` writes the flow + note into the `#mvp-loop` card via `textContent`,
+  and each card title carries its step (`1 · TRAVEL` … `4 · UPDATE`). Read-only at
+  `ToriiDebug.shells.mvpLoop()`. SDK `mvpLoop` (experimental).
 
 ## 5. Build / test / check commands
 
@@ -207,7 +217,7 @@ npm run preview  # serve the built dist/ (used for headless smoke)
 ```
 
 A change is "green" when **build + check + test** all pass. Current baseline:
-**366 tests / 33 files**, all 11 regression checks GREEN, build clean.
+**373 tests / 34 files**, all 11 regression checks GREEN, build clean.
 
 Tests run in node (`vite.config.js` → `environment: 'node'`). `WebGLRenderer` is
 created at module load in `scene.js`, so any module importing `scene.js`
@@ -226,7 +236,7 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
 - `.snapshot()` — one JSON-serialisable object: version, phase, run state, player
   pos, combat last shot/hit/miss, physics+crate summary, tuning. Safe anytime.
 - `.combat.report()` / `.physics.report()` — focused JSON sub-reports.
-- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,report}()` —
+- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,report}()` —
   read-only reports over the VIEW shells + visible preview blocks (demo fixtures by
   default; pass overrides). No signer, no relay/publish, no navigation, no checkout,
   no fetch/auto-update

@@ -16,6 +16,7 @@ import { productPreviewBlock } from '../components/productPreview.js';
 import { rankScores } from '../nostr/leaderboardView.js';
 import { leaderboardPreviewBlock } from '../nostr/leaderboardPreview.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
+import { mvpLoopSummary } from '../mvpLoop.js';
 import { createToriiGateway } from '../components/toriiGateway.js';
 
 // An ARMED demo gateway (has a `target`, so the travel plan validates) — lets the
@@ -191,6 +192,24 @@ export function updatePreviewReport(release = DEMO_RELEASE, opts = {}) {
   };
 }
 
+// mvpLoopReport(opts) → the inert MVP loop header block (v0.2.143) the title-screen
+// card draws to frame the four previews as one Travel→Market→Score→Update loop.
+// Read-only; pins actionable:false so the content-only guarantee is explicit.
+export function mvpLoopReport(opts = {}) {
+  const b = mvpLoopSummary(opts);
+  return {
+    title: b.title,
+    badge: b.badge,
+    flow: b.flow,
+    note: b.note,
+    version: b.version,
+    steps: b.steps,
+    lines: b.lines,
+    readOnly: b.readOnly,
+    actionable: b.actionable,
+  };
+}
+
 // buildShellReport(inputs) → { gateway, product, leaderboard }. One-call composite
 // for ToriiDebug; each section overridable via inputs for testing. Read-only.
 export function buildShellReport(inputs = {}) {
@@ -211,5 +230,6 @@ export function buildShellReport(inputs = {}) {
     leaderboard: leaderboardReport(scores, { mode }),
     leaderboardPreview: leaderboardPreviewReport(scores),
     updatePreview: updatePreviewReport(release),
+    mvpLoop: mvpLoopReport(),
   };
 }

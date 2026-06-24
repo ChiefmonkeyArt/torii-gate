@@ -29,6 +29,7 @@ import { createToriiGateway } from './engine/components/toriiGateway.js';
 import { productPreviewBlock } from './engine/components/productPreview.js';
 import { leaderboardPreviewBlock } from './engine/nostr/leaderboardPreview.js';
 import { updatePreviewBlock } from './engine/update/updatePreview.js';
+import { mvpLoopSummary } from './engine/mvpLoop.js';
 import { VERSION, TUNING } from './config.js';
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -113,6 +114,21 @@ const elEnterBtn = document.getElementById('btn-enter');
 // this just reacts to it. Behaviour-preserving: phaseVisibility() reproduces the
 // exact toggles the call sites used (see engine/ui/phaseScreens.js).
 on(EV.PHASE_CHANGE, ({ to }) => applyPhaseScreens(to, { elTitle, elHud, elPause }));
+
+// MVP loop header (v0.2.143) — render the inert title-screen header that frames
+// the four preview cards below as one proof-of-concept loop (Travel → Market →
+// Score → Update) from the pure mvpLoopSummary block. Content/labelling ONLY: it
+// writes the flow + note via textContent and NEVER navigates, fetches, signs,
+// publishes, or updates — actionable:false by construction.
+function renderMvpLoop() {
+  const flowEl = document.getElementById('mvp-loop-flow');
+  const noteEl = document.getElementById('mvp-loop-note');
+  if (!flowEl || !noteEl) return;
+  const block = mvpLoopSummary();
+  flowEl.textContent = block.flow; // textContent only — labelling, no action/link
+  noteEl.textContent = block.note;
+}
+renderMvpLoop();
 
 // Gateway/NAP-to-NAP PREVIEW (LEAN-2, v0.2.139) — render the inert title-screen
 // preview card ONCE from the pure gatewayPreview block. This is display-only: it

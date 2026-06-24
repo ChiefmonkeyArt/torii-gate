@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.142-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.143-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -10,7 +10,7 @@
 
 ---
 
-## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.142)
+## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.143)
 
 > **The project is refocused onto a 15-hour proof-of-concept.** Build the vision
 > fast, prove the architecture, avoid polish traps — then add retrospective polish
@@ -42,6 +42,11 @@
      MANUAL · NO AUTO-UPDATE" badge; `actionable:false`, deterministic LOCAL sample, no
      fetch). Real read-only GitHub fetch + the in-world prompt MESH are the next slice
      (LEAN-5). Architecture only — no server, no auto-update, no network execution.
+- **The four preview cards now read as ONE loop** (v0.2.143) — a title-screen MVP loop
+  header (`engine/mvpLoop.js` → `mvpLoopSummary`, SDK `mvpLoop`) frames the four inert
+  cards as **Travel → Market → Score → Update**, and each card title carries its step
+  (`1 · TRAVEL` … `4 · UPDATE`). Content/CSS/labelling only — `actionable:false`, no
+  network/links/actions; rendered via `textContent`. Read-only at `ToriiDebug.shells.mvpLoop()`.
 - **Retrospective polish AFTER PoC validation** — once the loop demonstrably works and
   *feels right*, circle back for shooter feel, mesh/material polish, and UX refinement.
   Until then, prefer thin vertical slices that advance the loop over polish.
