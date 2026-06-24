@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.151-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.152-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -10,7 +10,7 @@
 
 ---
 
-## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.151)
+## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.152)
 
 > **The project is refocused onto a 15-hour proof-of-concept.** Build the vision
 > fast, prove the architecture, avoid polish traps — then add retrospective polish
@@ -96,6 +96,17 @@
   live nodes, no click/raycast/navigation/payments/Nostr/live-data; no per-frame allocation.
   +10 tests. **Next:** fold `surfaceRender().ok`/`surfaceBindings().ok` into promotion review /
   regression check, and (only once promotion is sanctioned) the first live proof-surface read.
+- **Proof-surface promotion/regression GATE landed** (v0.2.152) — added the PURE
+  `engine/debug/proofSurfaceGate.js` (`proofSurfaceGate(opts?)`) folding the three pure
+  layers that must ALL hold before the in-world proof boards may be built (or, later,
+  before any preview→live promotion): the spec↔registry cross-check, the render plan, and
+  the scene-graph parent binding → one fail-fast `{ok,gates,counts,reasons}`. Wired into
+  `tools/regression-check.mjs` as RUNTIME check [12] (imports the pure gate, fails with the
+  gate's own `reasons` if any layer is broken) and exposed read-only at
+  `ToriiDebug.shells.surfaceGate()`. Each gate input is injectable so tests prove the gate
+  CATCHES a broken spec-check / render plan / parent binding. Pure/node-safe — no
+  Three/DOM/network. +7 tests. **Next:** (only once promotion is sanctioned) the first live
+  proof-surface read (NIP-07 signer / relay).
 - **Proof surfaces are now review-symmetric + diffable** (v0.2.146) — the gateway
   preview gained `readOnly:true` so all four MVP proof surfaces expose the same
   `readOnly`+`actionable` invariant pair. Added a pure read-only

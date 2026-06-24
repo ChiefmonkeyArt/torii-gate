@@ -1,4 +1,4 @@
-// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.151).
+// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.152).
 // No external deps. Run with: node tools/regression-check.mjs  (or: npm run check)
 //
 // Catches the regressions the Strategy doc calls out, without needing a browser:
@@ -17,6 +17,9 @@
 //      (tickFoliage/getGrassMat/getFlowerMat) / mirror getMirror() instead
 //  11. unit-test scaffold present (v0.2.120) — `test` script + tests/*.test.js
 //      exist (static only; run the suite with `npm test`)
+//  12. proof-surface promotion gate (v0.2.152) — imports the pure proofSurfaceGate()
+//      and fails if the in-world proof boards' spec-check, render plan, or scene-graph
+//      parent binding is broken/unsafe (fail-fast before a browser/promotion)
 //
 // Exit code 0 = all green; non-zero = at least one FAIL.
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
@@ -24,7 +27,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.151-alpha';
+const EXPECTED_VERSION = 'v0.2.152-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -108,7 +111,7 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   const count = (html.match(new RegExp(EXPECTED_VERSION.replace(/\./g, '\\.'), 'g')) || []).length;
   if (count < 2) fail(`index.html has ${count} ${EXPECTED_VERSION} markers (expected >=2)`);
   else pass(`index.html has ${count} version markers`);
-  if (/v0\.2\.150-alpha/.test(html)) fail('index.html still references v0.2.150-alpha');
+  if (/v0\.2\.151-alpha/.test(html)) fail('index.html still references v0.2.151-alpha');
   // package.json `version` must be valid semver (no leading 'v'), so it carries
   // the EXPECTED_VERSION with the 'v' stripped. Ties package metadata to the
   // runtime VERSION so the two can't drift (security-review finding, v0.2.137).
@@ -232,6 +235,27 @@ console.log('[11] unit-test scaffold present (npm test)');
     : [];
   if (testFiles.length === 0) { fail('no tests/**/*.test.js found'); bad = true; }
   if (!bad) pass(`${testFiles.length} test file(s) + npm test script present`);
+}
+
+// 12. proof-surface promotion gate (v0.2.152) — RUN the pure gate that folds the
+// spec cross-check, render plan, and scene-graph parent binding for the display-only
+// proof boards. Fails fast (with the gate's own `reasons`) if any layer is broken or
+// unsafe, so a regression can't slip through to the browser or a preview→live promotion.
+// The gate chain is pure/node-safe (no THREE/DOM), so it imports cleanly here.
+console.log('[12] proof-surface promotion gate (proofSurfaceGate)');
+{
+  try {
+    const { proofSurfaceGate } = await import('../src/engine/debug/proofSurfaceGate.js');
+    const g = proofSurfaceGate();
+    if (g && g.ok === true) {
+      pass(`gate ok — specCheck/renderPlan/parentBinding all pass (${g.counts.bound} bound, ${g.counts.groups} group(s))`);
+    } else {
+      const reasons = g && Array.isArray(g.reasons) ? g.reasons.join('; ') : 'unknown';
+      fail(`proof-surface gate NOT ok: ${reasons}`);
+    }
+  } catch (e) {
+    fail(`proof-surface gate threw: ${e.message}`);
+  }
 }
 
 console.log(fails === 0 ? '\nALL GREEN' : `\n${fails} FAILURE(S)`);

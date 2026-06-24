@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.151-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.152-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no navigation, no signing/publishing, no auto-update.
@@ -96,6 +96,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.anchorTransforms(specs?)` | **v0.2.149** pure anchor→transform resolution — binds each spec's `anchor` id to a plain transform descriptor (origin/position/offset/size/yawRad) + lists unresolved anchors — `{ok,badge,count,resolved,unresolved}` (see §4.4) |
 | `shells.surfaceRender()` | **v0.2.150** render state of the FIRST display-only in-world proof-surface mesh pass — `{rendered,count,ok,badge,reasons,parents}`; `rendered` true only after the inert panels build (both gates pass), else `reasons` carries the failures (see §4.5) |
 | `shells.surfaceBindings(opts?)` | **v0.2.151** scene-graph PARENT BINDING — groups the render plan's panels by their `parent` hint, mapping each to the live scene-node name + per-parent display-only group name (`proof-surfaces::<parent>`) the mesh adapter mounts them under — `{ok,badge,group,count,groups,unbound}` (see §4.6) |
+| `shells.surfaceGate(opts?)` | **v0.2.152** promotion/regression GATE — folds the spec cross-check + render plan + parent binding into one fail-fast `{ok,gates:{specCheck,renderPlan,parentBinding},counts,reasons}`; the single gate a reviewer/CI asserts before the proof boards build or any preview→live promotion. RUN by `tools/regression-check.mjs` check [12] (see §4.7) |
 
 Other namespaces on `ToriiDebug`: `snapshot()` / `combat.report()` / `physics.report()`
 (JSON-serialisable status), `bots`, `player`, `physics`, `world`, `identity`, `fx`.
@@ -346,6 +347,43 @@ change, not a placement or visual change, and adds NO behaviour (still display-o
 
 ---
 
+## 4.7. `ToriiDebug.shells.surfaceGate()` — promotion/regression gate (v0.2.152)
+
+`shells.surfaceGate(opts?)` (pure `proofSurfaceGate()` in
+`engine/debug/proofSurfaceGate.js`) is the single fail-fast gate that answers "are the
+display-only proof boards + their bindings safe and complete?" It folds the three pure
+layers that must ALL hold before the in-world boards may be built — and, in the future,
+before any preview→live promotion:
+
+1. spec↔registry cross-check — `checkProofSurfaceSpecs().ok` (§4.3)
+2. render plan — `buildProofSurfaceRenderPlan().ok` (§4.5)
+3. scene-graph parent binding — `resolveParentBindings(plan).ok` (§4.6)
+
+Shape:
+
+```js
+{
+  badge: 'PROOF-GATE · READ-ONLY · PROMOTION',
+  ok,                              // true iff all three sub-gates pass
+  gates: { specCheck, renderPlan, parentBinding },  // per-layer booleans
+  counts: { panels, groups, bound, unbound },
+  reasons: [                       // concrete failures (empty iff ok), e.g.
+    // 'render-plan-not-ok', 'render-plan: anchors-unresolved',
+    // 'parent-binding-not-ok', 'parent-binding: unbound <id>'
+  ],
+  rendered: false, actionable: false,
+}
+```
+
+Each input (`check` / `anchors` / `plan` / `binding`) is INJECTABLE, so a test can drive
+a deliberately-broken layer and prove the gate catches it (`tests/proof-surface-gate.test.js`).
+`tools/regression-check.mjs` **check [12]** RUNS this gate (`await import` of the pure,
+THREE/DOM-free module) and fails the build with the gate's own `reasons` if any layer is
+broken — so a broken board or binding can never reach the browser or a promotion unnoticed.
+PURE/node-safe — composes plain data only; renders and acts on nothing.
+
+---
+
 ## 5. Where the tests live
 
 | Surface | Test file |
@@ -363,6 +401,7 @@ change, not a placement or visual change, and adds NO behaviour (still display-o
 | `proofSurfaceRenderPlan` (pure plan) | `tests/proof-surface-render-plan.test.js` |
 | `shells.surfaceRender()` adapter guards | `tests/proof-surface-meshes.test.js` |
 | `proofSurfaceParentBinding` / `shells.surfaceBindings()` | `tests/proof-surface-parent-binding.test.js` |
+| `proofSurfaceGate` / `shells.surfaceGate()` (regression check [12]) | `tests/proof-surface-gate.test.js` |
 | underlying view/shell modules | `tests/gateway-portal.test.js`, `tests/product-panel-shell.test.js`, `tests/leaderboard-view.test.js`, `tests/update-check.test.js` |
 
 Run all with `npm test` (Vitest, node env). `npm run check` separately guards the

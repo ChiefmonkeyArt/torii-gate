@@ -45,6 +45,7 @@ import { resolveAllAnchors } from '../world/anchorTransforms.js';
 import { proofSurfaceRenderState } from '../world/proofSurfaceMeshes.js';
 import { buildProofSurfaceRenderPlan } from '../world/proofSurfaceRenderPlan.js';
 import { resolveParentBindings } from '../world/proofSurfaceParentBinding.js';
+import { proofSurfaceGate } from './proofSurfaceGate.js';
 
 export function installToriiDebug(refs) {
   const {
@@ -218,6 +219,12 @@ export function installToriiDebug(refs) {
       // adapter mounts them under — `{ok,badge,group,count,groups,unbound}`. Pure,
       // read-only; builds nothing. See SDK_DEBUG_INDEX.md.
       surfaceBindings(opts) { return resolveParentBindings(buildProofSurfaceRenderPlan(opts)); },
+      // v0.2.152 — PROMOTION/REGRESSION GATE: folds the spec cross-check, render plan,
+      // and parent binding into one fail-fast `{ok,gates,counts,reasons}`. `ok` is true
+      // iff all three layers hold, so a reviewer (or regression-check [12]) can confirm
+      // the proof boards + bindings are safe/complete BEFORE any preview→live promotion.
+      // Pure, read-only; builds nothing. See SDK_DEBUG_INDEX.md.
+      surfaceGate(opts) { return proofSurfaceGate(opts); },
     },
   };
 

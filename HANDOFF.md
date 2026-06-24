@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.151-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.152-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -220,7 +220,7 @@ npm run preview  # serve the built dist/ (used for headless smoke)
 ```
 
 A change is "green" when **build + check + test** all pass. Current baseline:
-**445 tests / 40 files**, all 11 regression checks GREEN, build clean.
+**452 tests / 41 files**, all 12 regression checks GREEN, build clean.
 
 Tests run in node (`vite.config.js` → `environment: 'node'`). `WebGLRenderer` is
 created at module load in `scene.js`, so any module importing `scene.js`
@@ -239,7 +239,7 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
 - `.snapshot()` — one JSON-serialisable object: version, phase, run state, player
   pos, combat last shot/hit/miss, physics+crate summary, tuning. Safe anytime.
 - `.combat.report()` / `.physics.report()` — focused JSON sub-reports.
-- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,report,summary,diff,surfaceSpecs,surfaceSpecCheck,anchorTransforms,surfaceRender,surfaceBindings}()` —
+- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,report,summary,diff,surfaceSpecs,surfaceSpecCheck,anchorTransforms,surfaceRender,surfaceBindings,surfaceGate}()` —
   read-only reports over the VIEW shells + visible preview blocks (demo fixtures by
   default; pass overrides). No signer, no relay/publish, no navigation, no checkout,
   no fetch/auto-update
@@ -276,7 +276,12 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
   display-only group name the adapter mounts the boards under (`proof-surfaces::<parent>`).
   Boards keep their world positions (subgroups sit at the origin), so the binding is a
   structural/discoverability change only; the live `torii-gate` / `nap-zone-floor` nodes are
-  now `.name`d in `arena.js` so `scene.getObjectByName` finds them. See `SDK_DEBUG_INDEX.md`.
+  now `.name`d in `arena.js` so `scene.getObjectByName` finds them. `surfaceGate()` (v0.2.152,
+  pure `proofSurfaceGate()` in `engine/debug/proofSurfaceGate.js`) folds the spec cross-check +
+  render plan + parent binding into one fail-fast `{ok,gates:{specCheck,renderPlan,parentBinding},
+  counts,reasons}` — the single gate a reviewer/CI asserts before the proof boards are built or
+  any preview→live promotion; it is RUN by `tools/regression-check.mjs` check [12]. See
+  `SDK_DEBUG_INDEX.md`.
 - `.physics.service` — injectable RaycastService facade (`ray`/`rayStatic`/`lineOfSight`).
 - `.bots`, `.player`, `.physics`, `.world`, `.fx`, `.combat`, `.identity`.
 
