@@ -34,10 +34,13 @@ export * as registry from '../engine/components/registry.js';
 export * as toriiGateway from '../engine/components/toriiGateway.js';
 export * as productDisplay from '../engine/components/productDisplay.js';
 export * as productPanel from '../engine/components/productPanel.js';
+export * as productPanelShell from '../engine/components/productPanelShell.js';
 export * as travelIntent from '../engine/gateway/travelIntent.js';
 export * as gatewayHandoff from '../engine/gateway/gatewayHandoff.js';
+export * as gatewayPortal from '../engine/gateway/gatewayPortal.js';
 export * as leaderboard from '../engine/nostr/leaderboard.js';
 export * as leaderboardPublisher from '../engine/nostr/leaderboardPublisher.js';
+export * as leaderboardView from '../engine/nostr/leaderboardView.js';
 export { createRaycastService, raycastService } from '../engine/physics/raycastService.js';
 
 // ---- Metadata --------------------------------------------------------------
@@ -75,14 +78,20 @@ export const SDK_SURFACE = Object.freeze({
   productDisplay:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/components/productDisplay.js' },
   // Product panel view-model shell (CMP-13 continuation, v0.2.135).
   productPanel:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/components/productPanel.js' },
+  // Product panel render shell — read-only layout spec (CMP-13, v0.2.136).
+  productPanelShell: { tier: STABILITY.EXPERIMENTAL, module: '../engine/components/productPanelShell.js' },
   // Gateway protocol URL-handoff / travel-intent helpers (GWPROTO-1, v0.2.134).
   travelIntent:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/travelIntent.js' },
   // Gateway portal/handoff shell — component → travel intent (CMP-8, v0.2.135).
   gatewayHandoff:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/gatewayHandoff.js' },
+  // Gateway portal VIEW shell — render-ready portal view-model (CMP-8, v0.2.136).
+  gatewayPortal:   { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/gatewayPortal.js' },
   // Nostr leaderboard score-event helpers (LB-1 skeleton, v0.2.134).
   leaderboard:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/leaderboard.js' },
   // Leaderboard publisher adapter shape (LB-1 continuation, v0.2.135).
   leaderboardPublisher: { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/leaderboardPublisher.js' },
+  // Read-only leaderboard display + build-only preview shell (LB-1, v0.2.136).
+  leaderboardView: { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/leaderboardView.js' },
   // Forward-declared internals — public story, not safe/ready to re-export yet:
   physicsBodies:   { tier: STABILITY.INTERNAL,     module: null },
   physicsRaycast:  { tier: STABILITY.INTERNAL,     module: null },

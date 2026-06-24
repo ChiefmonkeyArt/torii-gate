@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.135-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.136-alpha (see §3 for every place the version string lives)
 - **Live:** https://torii-quest.pplx.app (a Perplexity Space — deploy is a separate manual step, see §7)
 - **License:** GPL-3.0
 
@@ -76,7 +76,8 @@ Breaking one should fail CI/the check, not ship.
   v0.2.132 added the `component` namespace; v0.2.133 added the `toriiGateway`
   namespace; v0.2.134 added `productDisplay`, `travelIntent`, and `leaderboard`;
   v0.2.135 added `registry`, `gatewayHandoff`, `productPanel`, and
-  `leaderboardPublisher` (all experimental).
+  `leaderboardPublisher`; v0.2.136 added `gatewayPortal`, `productPanelShell`,
+  and `leaderboardView` (all experimental).
 - **`src/engine/components/contract.js`** + **`COMPONENTS.md`** — component
   economy foundation (CMP-1/2, v0.2.132). Pure `validateManifest` /
   `isComponent` / `defineComponent` (idempotent mount/unmount) + the full
@@ -114,6 +115,22 @@ Breaking one should fail CI/the check, not ship.
   publisher adapter shape (`createLeaderboardPublisher({sign,publish})`).
   INJECTED signer/publisher deps; build-only by default; captures sign/publish
   failures without throwing. No keys/relay/secrets.
+- **`src/engine/gateway/gatewayPortal.js`** (CMP-8 cont., v0.2.136) — pure portal
+  VIEW shell over `gatewayHandoff` (`gatewayPortalView`/`destinationLabel`/
+  `shortKey`). Returns a render-ready portal view-model (status/armed/destination/
+  prompt/relay/URL preview); `armed = plan.valid`, prompt+URL blank unless armed.
+  DISPLAY-ONLY — never assigns `window.location` / contacts a relay / signs.
+- **`src/engine/components/productPanelShell.js`** (CMP-13 cont., v0.2.136) —
+  read-only product panel RENDER shell over `productPanel`. `productPanelShell`
+  returns an ordered panel layout (`lines` Price/Seller/reward, link `footer`
+  `actionable:false`, empty `actions[]`, `readOnly:true`); invalid → `panel:null`.
+  No checkout/pay/zap/buy surface.
+- **`src/engine/nostr/leaderboardView.js`** (LB-1 cont., v0.2.136) — read-only
+  leaderboard display + build-only preview (`rankScores`/`leaderboardView`/
+  `leaderboardPreview`/`accuracyLabel`/`VIEW_MODES`). Deterministic desc rank;
+  `leaderboardView` throws on any non-`mock`/`build` mode (no `live`/relay path);
+  `leaderboardPreview` runs through a no-signer/no-publisher adapter → `signed:false`/
+  `published:false`.
 
 ## 5. Build / test / check commands
 
@@ -127,7 +144,7 @@ npm run preview  # serve the built dist/ (used for headless smoke)
 ```
 
 A change is "green" when **build + check + test** all pass. Current baseline:
-**274 tests / 24 files**, all 11 regression checks GREEN, build clean.
+**297 tests / 27 files**, all 11 regression checks GREEN, build clean.
 
 Tests run in node (`vite.config.js` → `environment: 'node'`). `WebGLRenderer` is
 created at module load in `scene.js`, so any module importing `scene.js`
@@ -183,7 +200,13 @@ smoke test on real hardware first).
   `registry` (local built-in component loader/registry), CMP-8 `gatewayHandoff`
   (gateway component → validated travel intent/URL), `productPanel` view-model,
   and LB-1 `leaderboardPublisher` adapter shape — all pure/node-safe, no deploy
-  needed.** Next: act on a validated travel intent in `world/handoff.js` + the
+  needed.** **v0.2.136 turned that infrastructure into pure render-ready VIEW
+  shells: CMP-8 `gatewayPortal` (portal view-model — armed/destination/prompt/URL
+  preview, never navigates), CMP-13 `productPanelShell` (read-only panel layout,
+  `actionable:false` footer + empty `actions[]`), and LB-1 `leaderboardView`
+  (read-only display + build-only preview, no signer/relay) — all pure/node-safe,
+  SEC gates intact, no deploy needed.** Next: act on a validated travel intent in
+  `world/handoff.js` + the
   gateway's portal mesh (actually move the player), the real leaderboard
   signer/publisher + relay read, the in-world product panel mesh, and the
   loader's remote/Nostr-event path with signature/hash/capability enforcement.

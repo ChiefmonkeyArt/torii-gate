@@ -66,6 +66,19 @@ gate.unmount();                                       // symmetric teardown
   module header, not yet built. The skeleton exists to prove the
   mount/unmount lifecycle end-to-end and give the SDK a discoverable first
   droppable component.
+- **Handoff shell (v0.2.135):** `src/engine/gateway/gatewayHandoff.js` (SDK
+  `gatewayHandoff`) maps a gateway component's destination block onto a validated
+  travel intent / URL string (`gatewayDestination`/`planGatewayTravel`/
+  `gatewayTravelUrl`) — pure return values, NO navigation/relay/signing. See
+  `GATEWAY_PROTOCOL.md` §10.
+- **Portal VIEW shell (v0.2.136):** `src/engine/gateway/gatewayPortal.js` (SDK
+  `gatewayPortal`) layers a render-ready portal view-model over the handoff shell:
+  `gatewayPortalView(component, context, {base,prompt})` returns
+  `{ status, isGateway, armed, destination, destinationLabel, relay, prompt, plan,
+  urlPreview, errors }` (`armed = plan.valid`; `prompt`+`urlPreview` blank unless
+  armed). `destinationLabel`/`shortKey` format the destination for display.
+  DISPLAY-ONLY — it never assigns `window.location`, contacts a relay, or signs;
+  a future portal mesh renders this view-model. Tested by `tests/gateway-portal.test.js`.
 
 > **v0.2.133 reconciliation note.** This component and this spec are built on the
 > **published v0.2.132 contract** (`defineComponent` / `validateManifest` →
@@ -111,6 +124,16 @@ card.mount(scene); card.unmount();                    // idempotent, symmetric
   `priceLabel`, `seller`, `linkUrl`, `linkLabel`, `reward`, `hasReward`) for a
   future panel mesh to consume. Still read-only — NO checkout/pay/zap/publish key
   is emitted (asserted by `tests/product-panel.test.js`).
+- **Render shell (v0.2.136):** `src/engine/components/productPanelShell.js`
+  (`productPanelShell`, SDK `productPanelShell`) layers a read-only RENDER layout
+  over the view-model: `{ ok, errors, panel }` where `panel = { title, imageUrl,
+  lines:[{label:'Price',…},{label:'Seller',…},(optional){label:'In-game reward',…}],
+  footer:{ kind:'link', label, url, actionable:false }, actions:[], readOnly:true }`.
+  An invalid product degrades to `panel:null`. The footer is DISPLAY-ONLY
+  (`actionable:false`) and `actions[]` is always empty — `tests/product-panel-shell.test.js`
+  asserts the serialised panel carries no `checkout`/`pay`/`zap`/`buy`/`publish`
+  surface. A future panel mesh binds over this shell (SEC-3 still gates the URL
+  before it becomes clickable).
 
 ### Component loader / registry (CMP-7, v0.2.135)
 

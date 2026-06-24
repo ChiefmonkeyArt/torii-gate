@@ -238,6 +238,14 @@ linked by signed spatial events, with **no central router**.
   spawn/return/zoneType/state) onto a validated travel intent, and
   `gatewayTravelUrl(component, context, {base})` serialises a valid plan to a URL.
   Pure return values — still NO `window.location` / relay / signing.
+- `src/engine/gateway/gatewayPortal.js` (v0.2.136) — pure **view shell** over the
+  handoff: `gatewayPortalView(component, context, {base,prompt})` returns a
+  render-ready portal view-model `{ status, isGateway, armed, destination,
+  destinationLabel, relay, prompt, plan, urlPreview, errors }` for a portal mesh to
+  display. `armed = plan.valid`; `prompt` and `urlPreview` are blank unless armed,
+  so an invalid/unconfigured gate shows no actionable travel affordance.
+  DISPLAY-ONLY — it never assigns `window.location`, contacts a relay, or signs;
+  crossing the gate is still the deferred host step in `world/handoff.js`.
 - `src/world/handoff.js` — the (skeleton) host seam where a future build will act
   on a validated intent.
 
