@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.154-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.155-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -10,7 +10,7 @@
 
 ---
 
-## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.154)
+## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.155)
 
 > **The project is refocused onto a 15-hour proof-of-concept.** Build the vision
 > fast, prove the architecture, avoid polish traps — then add retrospective polish
@@ -96,6 +96,12 @@
   live nodes, no click/raycast/navigation/payments/Nostr/live-data; no per-frame allocation.
   +10 tests. **Next:** fold `surfaceRender().ok`/`surfaceBindings().ok` into promotion review /
   regression check, and (only once promotion is sanctioned) the first live proof-surface read.
+- **Doc-guard noise cleanup landed** (v0.2.155) — the v0.2.154 stale-live-line advisory
+  was firing on changelog/prose lines that merely QUOTE the pattern they describe.
+  `staleLiveVersionLines` now blanks out markdown inline-code spans (backticks) and
+  double-quoted spans before scanning, so a genuine plainly-stated `Live published
+  version: vX` status line is still flagged while quoted/explanatory prose is ignored.
+  Pure/node-safe, advisory-only, no runtime change; +5 tests.
 - **Docs/status consistency guard landed** (v0.2.154) — reduced drift between the
   version markers and the cross-model handoff docs. New PURE node-safe
   `tools/docConsistency.mjs` (`versionInText`/`findVersionMarkers`/`staleLiveVersionLines`/
@@ -105,8 +111,7 @@
   advisory-doc lag (`SDK_DEBUG_INDEX.md`/`CODE_INDEX.md`) and stale "live/published
   version: vX" status lines (also removed the stale `Live published version: v0.2.113-alpha`
   contradiction in `progress.md`). Reporting-first, low-maintenance — no archaeology.
-  +18 tests. **Next:** extend the guard opportunistically (e.g. cross-check the test-count
-  claim) only if drift recurs.
+  +18 tests.
 - **Bundle-size tracking baseline landed** (v0.2.153) — turned the recurring Vite
   "large chunk" build warning into a measurable LOCAL baseline without touching the
   runtime or the existing `manualChunks` splitting. New PURE node-safe

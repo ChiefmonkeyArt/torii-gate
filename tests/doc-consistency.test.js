@@ -1,14 +1,15 @@
 // tests/doc-consistency.test.js — pure docs/status consistency checks (tools/
-// docConsistency.mjs, v0.2.154). Covers versionInText, findVersionMarkers,
-// staleLiveVersionLines, and the checkDocConsistency hard-fail/advisory split. No fs —
-// every input is a plain {name → content} string map, fully node-deterministic.
+// docConsistency.mjs, v0.2.155). Covers versionInText, findVersionMarkers,
+// staleLiveVersionLines (incl. the v0.2.155 quoted/changelog-prose suppression), and the
+// checkDocConsistency hard-fail/advisory split. No fs — every input is a plain
+// {name → content} string map, fully node-deterministic.
 import { describe, it, expect } from 'vitest';
 import {
   CONTINUITY_DOCS, ADVISORY_DOCS,
   versionInText, findVersionMarkers, staleLiveVersionLines, checkDocConsistency,
 } from '../tools/docConsistency.mjs';
 
-const V = 'v0.2.154-alpha';
+const V = 'v0.2.155-alpha';
 // A minimal set of "good" docs that all reference the current version.
 const goodFiles = () => ({
   'todo.md': `# TODO\nCurrent version: ${V}\n- do things`,
@@ -54,6 +55,28 @@ describe('staleLiveVersionLines', () => {
   });
   it('does not flag a deploy task line that mentions "live"+a version but no "version:" assertion', () => {
     expect(staleLiveVersionLines('**Torii.quest live** — publish the current green source (v0.2.135-alpha)', V)).toEqual([]);
+  });
+  it('ignores a changelog line that QUOTES the stale marker in backticks (v0.2.155)', () => {
+    const line = '- removed the stale `Live published version: v0.2.113-alpha` contradiction';
+    expect(staleLiveVersionLines(line, V)).toEqual([]);
+  });
+  it('ignores an explanatory line that double-quotes the pattern (v0.2.155)', () => {
+    const line = 'ADVISORY warn for stale "live/published version: vX" lines, never fails';
+    expect(staleLiveVersionLines(line, V)).toEqual([]);
+  });
+  it('ignores prose that backtick-quotes the marker even alongside live/published words', () => {
+    const line = 'guard flags a `live published version: v0.2.113-alpha` status line worth a glance';
+    expect(staleLiveVersionLines(line, V)).toEqual([]);
+  });
+  it('still flags a genuine plainly-stated stale live assertion (no quoting)', () => {
+    const out = staleLiveVersionLines('Live published version: v0.2.113-alpha', V);
+    expect(out).toHaveLength(1);
+    expect(out[0].markers).toEqual(['v0.2.113-alpha']);
+  });
+  it('still flags a genuine deployed-version assertion with an = separator', () => {
+    const out = staleLiveVersionLines('deployed version = v0.1.0-alpha', V);
+    expect(out).toHaveLength(1);
+    expect(out[0].markers).toEqual(['v0.1.0-alpha']);
   });
   it('is safe on bad input', () => {
     expect(staleLiveVersionLines(null, V)).toEqual([]);

@@ -1,4 +1,4 @@
-// tools/docConsistency.mjs — PURE, node-safe docs/status consistency checks (v0.2.154).
+// tools/docConsistency.mjs — PURE, node-safe docs/status consistency checks (v0.2.155).
 // Keeps the continuity docs that AI/dev handoffs rely on (todo.md, progress.md,
 // HANDOFF.md, SDK_DEBUG_INDEX.md) from drifting away from the live runtime VERSION. Build-
 // time only — never imported by the game; NO fs/network/THREE/DOM in here (the CLI/guard in
@@ -40,6 +40,19 @@ export function findVersionMarkers(text) {
 // actually assert a live/published version are.
 const LIVE_VERSION_ASSERTION = /\bversion\b[^\n]{0,12}?(v\d+\.\d+\.\d+-[a-z]+)/i;
 
+// Explanatory/changelog prose in these docs QUOTES the pattern it is describing — the
+// version marker (or the `live/published version: vX` phrase) is wrapped in markdown inline
+// code (backticks) or double quotes. A genuine STATUS line states the version plainly. So
+// before scanning a line for a live-version assertion we blank out backtick-delimited and
+// double-quoted spans: a real `Live published version: v0.2.113-alpha` survives and is
+// flagged, while a changelog line that merely *mentions* `` `Live published version: …` ``
+// or "live/published version: vX" loses its marker and is correctly ignored. (v0.2.155)
+function stripQuotedSpans(line) {
+  return line
+    .replace(/`[^`]*`/g, ' ') // markdown inline-code spans
+    .replace(/"[^"]*"/g, ' '); // double-quoted spans
+}
+
 // staleLiveVersionLines(text, version) → lines that ASSERT a "live"/"published"/"deployed"
 // version marker that ISN'T the current one (e.g. a leftover `Live published version:
 // v0.2.113-alpha`). ADVISORY: the deployed/live version can legitimately lag the dev
@@ -50,7 +63,7 @@ export function staleLiveVersionLines(text, version) {
   for (const raw of text.split('\n')) {
     const line = raw.trim();
     if (!/\b(live|published|deployed)\b/i.test(line)) continue;
-    const m = line.match(LIVE_VERSION_ASSERTION);
+    const m = stripQuotedSpans(line).match(LIVE_VERSION_ASSERTION);
     if (m && version && m[1] !== version) out.push({ line, markers: [m[1]] });
   }
   return out;

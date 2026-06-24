@@ -1,4 +1,4 @@
-// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.154).
+// tools/regression-check.mjs — static smoke/regression guardrails (v0.2.155).
 // No external deps. Run with: node tools/regression-check.mjs  (or: npm run check)
 //
 // Catches the regressions the Strategy doc calls out, without needing a browser:
@@ -23,7 +23,8 @@
 //  13. bundle size advisory (v0.2.153) — ADVISORY ONLY (never fails): reports built
 //      chunk sizes (app/three/rapier/total JS, raw+gzip) so the Vite large-chunk
 //      warning becomes a tracked baseline. Full table: `npm run bundle:report`
-//  14. docs/status consistency guard (v0.2.154) — FAILS on clear current-version drift in
+//  14. docs/status consistency guard (v0.2.154; v0.2.155 quiets quoted/changelog prose) —
+//      FAILS on clear current-version drift in
 //      the core continuity docs (todo.md/progress.md/HANDOFF.md) or a missing core doc;
 //      ADVISORY warnings (never fail) for advisory-doc lag (SDK_DEBUG_INDEX/CODE_INDEX) and
 //      stale "live/published version: vX" contradiction lines. Pure helpers in
@@ -35,7 +36,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.154-alpha';
+const EXPECTED_VERSION = 'v0.2.155-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -119,7 +120,7 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   const count = (html.match(new RegExp(EXPECTED_VERSION.replace(/\./g, '\\.'), 'g')) || []).length;
   if (count < 2) fail(`index.html has ${count} ${EXPECTED_VERSION} markers (expected >=2)`);
   else pass(`index.html has ${count} version markers`);
-  if (/v0\.2\.153-alpha/.test(html)) fail('index.html still references v0.2.153-alpha');
+  if (/v0\.2\.154-alpha/.test(html)) fail('index.html still references v0.2.154-alpha');
   // package.json `version` must be valid semver (no leading 'v'), so it carries
   // the EXPECTED_VERSION with the 'v' stripped. Ties package metadata to the
   // runtime VERSION so the two can't drift (security-review finding, v0.2.137).
