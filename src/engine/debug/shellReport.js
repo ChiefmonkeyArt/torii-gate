@@ -12,6 +12,7 @@
 import { gatewayPortalView } from '../gateway/gatewayPortal.js';
 import { gatewayPreviewBlock } from '../gateway/gatewayPreview.js';
 import { productPanelShell } from '../components/productPanelShell.js';
+import { productPreviewBlock } from '../components/productPreview.js';
 import { rankScores } from '../nostr/leaderboardView.js';
 import { createToriiGateway } from '../components/toriiGateway.js';
 
@@ -96,6 +97,25 @@ export function productReport(product = DEMO_PRODUCT) {
   };
 }
 
+// productPreviewReport(product, opts) → the visible-but-inert Plebeian/Nostr
+// product/market PREVIEW block (LEAN-3) a title/HUD card would draw. Read-only;
+// pins actionable:false + readOnly so the no-checkout guarantee is explicit.
+export function productPreviewReport(product = DEMO_PRODUCT, opts = {}) {
+  const b = productPreviewBlock(product, opts);
+  return {
+    title: b.title,
+    ok: b.ok,
+    seller: b.seller,
+    sellerFull: b.sellerFull,
+    marketplace: b.marketplace,
+    badge: b.badge,
+    lines: b.lines,
+    readOnly: b.readOnly,
+    actionable: b.actionable,
+    errors: b.errors,
+  };
+}
+
 // leaderboardReport(statsList, { mode }) → a compact ranked summary. Uses
 // rankScores (pure, no signer/publisher), and pins signed/published to false to
 // make the no-transmit guarantee explicit in the report itself.
@@ -126,6 +146,7 @@ export function buildShellReport(inputs = {}) {
     gateway: gatewayReport(gateway, gatewayContext, gatewayOpts),
     gatewayPreview: gatewayPreviewReport(gateway, gatewayContext, gatewayOpts),
     product: productReport(product),
+    productPreview: productPreviewReport(product),
     leaderboard: leaderboardReport(scores, { mode }),
   };
 }

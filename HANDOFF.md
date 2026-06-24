@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.139-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.140-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -85,7 +85,7 @@ Breaking one should fail CI/the check, not ship.
   v0.2.135 added `registry`, `gatewayHandoff`, `productPanel`, and
   `leaderboardPublisher`; v0.2.136 added `gatewayPortal`, `productPanelShell`,
   and `leaderboardView`; v0.2.138 added `updateCheck`; v0.2.139 added
-  `gatewayPreview` (all experimental).
+  `gatewayPreview`; v0.2.140 added `productPreview` (all experimental).
 - **`src/engine/components/contract.js`** + **`COMPONENTS.md`** — component
   economy foundation (CMP-1/2, v0.2.132). Pure `validateManifest` /
   `isComponent` / `defineComponent` (idempotent mount/unmount) + the full
@@ -142,6 +142,17 @@ Breaking one should fail CI/the check, not ship.
   returns an ordered panel layout (`lines` Price/Seller/reward, link `footer`
   `actionable:false`, empty `actions[]`, `readOnly:true`); invalid → `panel:null`.
   No checkout/pay/zap/buy surface.
+- **`src/engine/components/productPreview.js`** (LEAN-3, v0.2.140) — pure
+  visible-but-inert Plebeian/Nostr product/market PREVIEW block over
+  `productPanelShell`. `productPreviewBlock(product, opts)` flattens the panel
+  shell into a render-ready block of `{label,value}` rows (Product/Price/Seller
+  npub (shortened via `shortNpub`)/reward/Marketplace/Link) + `previewUrl` helper
+  + a `PRODUCT_PREVIEW_BADGE` ("PREVIEW · READ ONLY · NO CHECKOUT"); every block
+  is `actionable:false`/`readOnly:true`; invalid products degrade to `ok:false`
+  with errors (no throw). `main.js` renders it into the title-screen
+  `#product-preview` card via `textContent` only (no link, no checkout, no
+  navigation, no fetch). Read-only at `ToriiDebug.shells.productPreview()`. SDK
+  `productPreview` (experimental).
 - **`src/engine/nostr/leaderboardView.js`** (LB-1 cont., v0.2.136) — read-only
   leaderboard display + build-only preview (`rankScores`/`leaderboardView`/
   `leaderboardPreview`/`accuracyLabel`/`VIEW_MODES`). Deterministic desc rank;
@@ -192,9 +203,10 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
 - `.snapshot()` — one JSON-serialisable object: version, phase, run state, player
   pos, combat last shot/hit/miss, physics+crate summary, tuning. Safe anytime.
 - `.combat.report()` / `.physics.report()` — focused JSON sub-reports.
-- `.shells.{gateway,product,leaderboard,report}()` — read-only reports over the
-  v0.2.136 VIEW shells (demo fixtures by default; pass overrides). No signer, no
-  relay/publish, no navigation (`engine/debug/shellReport.js`, v0.2.137).
+- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,report}()` —
+  read-only reports over the VIEW shells + visible preview blocks (demo fixtures by
+  default; pass overrides). No signer, no relay/publish, no navigation, no checkout
+  (`engine/debug/shellReport.js`; `gatewayPreview` v0.2.139, `productPreview` v0.2.140).
 - `.physics.service` — injectable RaycastService facade (`ray`/`rayStatic`/`lineOfSight`).
 - `.bots`, `.player`, `.physics`, `.world`, `.fx`, `.combat`, `.identity`.
 

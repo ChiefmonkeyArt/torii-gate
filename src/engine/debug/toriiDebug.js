@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, leaderboardReport, buildShellReport } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, buildShellReport } from './shellReport.js';
 
 export function installToriiDebug(refs) {
   const {
@@ -150,6 +150,10 @@ export function installToriiDebug(refs) {
       // the title/HUD card draws. Read-only; actionable:false, never navigates.
       gatewayPreview(component, context, opts) { return gatewayPreviewReport(component, context, opts); },
       product(product) { return productReport(product); },
+      // v0.2.140 — the visible-but-inert Plebeian/Nostr product/market PREVIEW
+      // block (LEAN-3) the title/HUD card draws. Read-only; actionable:false, no
+      // checkout/pay/zap.
+      productPreview(product, opts) { return productPreviewReport(product, opts); },
       leaderboard(statsList, opts) { return leaderboardReport(statsList, opts); },
       report(inputs) { return buildShellReport(inputs); },
     },

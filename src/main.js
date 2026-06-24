@@ -26,6 +26,7 @@ import { installToriiDebug } from './engine/debug/toriiDebug.js';
 import { applyPhaseScreens } from './engine/ui/phaseScreens.js';
 import { gatewayPreviewBlock } from './engine/gateway/gatewayPreview.js';
 import { createToriiGateway } from './engine/components/toriiGateway.js';
+import { productPreviewBlock } from './engine/components/productPreview.js';
 import { VERSION, TUNING } from './config.js';
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -136,6 +137,34 @@ function renderGatewayPreview() {
   }));
 }
 renderGatewayPreview();
+
+// Plebeian/Nostr product/market PREVIEW (LEAN-3, v0.2.140) — render the inert,
+// read-only title-screen product card ONCE from the pure productPreview block.
+// This is display-only: it shows a sample listing's identity, price, Nostr
+// seller (npub) ownership proof, and the Plebeian.Market link as TEXT, so the
+// freedom-tech commerce proof is visible on the title screen. It has NO
+// checkout/pay/zap and NEVER navigates, fetches, signs, or publishes.
+function renderProductPreview() {
+  const body = document.getElementById('product-preview-body');
+  if (!body) return;
+  const block = productPreviewBlock({
+    title: 'Sticker Gun Skin',
+    sellerNpub: 'npub1demo0seller0fixture0pleb0market0xxxxxxxxxxxxxxxxxxxx',
+    priceSats: 2100,
+    url: 'https://plebeian.market/listing/sticker-gun',
+    reward: 'Sticker Gun skin',
+  });
+  body.replaceChildren(...block.lines.flatMap(({ label, value }) => {
+    const l = document.createElement('div');
+    l.className = 'pp-row-label';
+    l.textContent = label;
+    const v = document.createElement('div');
+    v.className = 'pp-row-value';
+    v.textContent = value; // textContent only — no HTML, no link, no checkout, no navigation
+    return [l, v];
+  }));
+}
+renderProductPreview();
 
 // Character selector
 document.querySelectorAll('.char-btn').forEach(btn => {

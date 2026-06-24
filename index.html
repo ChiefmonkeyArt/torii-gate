@@ -176,6 +176,19 @@
     .gw-row-label { font-size: 8px; letter-spacing: 1px; color: #6b7280; text-transform: uppercase; }
     .gw-row-value { font-size: 9px; color: #d1c4ec; word-break: break-all; }
 
+    /* ── Plebeian/Nostr product/market preview (inert, read-only, v0.2.140) ── */
+    #product-preview {
+      margin-top: 10px; width: 240px; text-align: left;
+      border: 1px solid rgba(247,147,26,0.35); border-radius: 6px;
+      background: rgba(46,30,10,0.3); padding: 7px 9px;
+    }
+    #product-preview-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+    #product-preview-title { font-size: 9px; letter-spacing: 1.5px; color: #fcd9a0; }
+    #product-preview-badge { font-size: 7px; letter-spacing: 1px; color: #f7931a; border: 1px solid rgba(247,147,26,0.4); border-radius: 3px; padding: 1px 4px; }
+    #product-preview-body { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; }
+    .pp-row-label { font-size: 8px; letter-spacing: 1px; color: #6b7280; text-transform: uppercase; }
+    .pp-row-value { font-size: 9px; color: #ecd9c4; word-break: break-all; }
+
     /* ── LEFT: Stats panel ── */
     #stats-identity {
       display: flex; flex-direction: column; align-items: center;
@@ -426,7 +439,7 @@
         <div><span class="ctrl-key">SPACE</span> &nbsp;Jump &nbsp;&nbsp; <span class="ctrl-key">R</span> &nbsp;Reload &nbsp;&nbsp; <span class="ctrl-key">ESC</span> &nbsp;Pause</div>
       </div>
 
-      <div id="version-label">v0.2.139-alpha</div>
+      <div id="version-label">v0.2.140-alpha</div>
 
       <!-- Gateway/NAP-to-NAP PREVIEW (LEAN-2, v0.2.139). Rendered by main.js from
            the pure gatewayPreview block. This is a DISPLAY-ONLY card: it shows a
@@ -438,6 +451,20 @@
           <span id="gateway-preview-badge">PREVIEW · SAFE · INERT</span>
         </div>
         <div id="gateway-preview-body"><!-- rows injected by main.js --></div>
+      </div>
+
+      <!-- Plebeian/Nostr product/market PREVIEW (LEAN-3, v0.2.140). Rendered by
+           main.js from the pure productPreview block. This is a READ-ONLY card:
+           it shows a sample listing's identity, price, Nostr seller (npub)
+           ownership proof, and the Plebeian.Market link as DISPLAY text. It has
+           NO checkout/pay/zap and NEVER navigates, fetches, signs, or publishes.
+           The "PREVIEW · READ ONLY · NO CHECKOUT" badge makes that explicit. -->
+      <div id="product-preview" aria-label="product/market listing preview (read-only, inert)">
+        <div id="product-preview-head">
+          <span id="product-preview-title">🛒 PRODUCT PREVIEW</span>
+          <span id="product-preview-badge">PREVIEW · READ ONLY · NO CHECKOUT</span>
+        </div>
+        <div id="product-preview-body"><!-- rows injected by main.js --></div>
       </div>
     </div>
 
@@ -572,7 +599,7 @@
   <canvas id="minimap" width="110" height="110" style="display:block"></canvas>
   <div id="minimap-wrap"></div>
 
-  <div id="ver">v0.2.139-alpha · torii quest</div>
+  <div id="ver">v0.2.140-alpha · torii quest</div>
 </div>
 
 <!-- Crosshair -->

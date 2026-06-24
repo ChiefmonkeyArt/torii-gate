@@ -35,6 +35,7 @@ export * as toriiGateway from '../engine/components/toriiGateway.js';
 export * as productDisplay from '../engine/components/productDisplay.js';
 export * as productPanel from '../engine/components/productPanel.js';
 export * as productPanelShell from '../engine/components/productPanelShell.js';
+export * as productPreview from '../engine/components/productPreview.js';
 export * as travelIntent from '../engine/gateway/travelIntent.js';
 export * as gatewayHandoff from '../engine/gateway/gatewayHandoff.js';
 export * as gatewayPortal from '../engine/gateway/gatewayPortal.js';
@@ -82,6 +83,8 @@ export const SDK_SURFACE = Object.freeze({
   productPanel:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/components/productPanel.js' },
   // Product panel render shell — read-only layout spec (CMP-13, v0.2.136).
   productPanelShell: { tier: STABILITY.EXPERIMENTAL, module: '../engine/components/productPanelShell.js' },
+  // Plebeian/Nostr product/market visible PREVIEW block — inert title/HUD card (LEAN-3, v0.2.140).
+  productPreview:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/components/productPreview.js' },
   // Gateway protocol URL-handoff / travel-intent helpers (GWPROTO-1, v0.2.134).
   travelIntent:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/travelIntent.js' },
   // Gateway portal/handoff shell — component → travel intent (CMP-8, v0.2.135).
