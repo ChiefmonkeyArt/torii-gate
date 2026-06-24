@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, updatePreviewReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 import { resolveAllAnchors } from '../world/anchorTransforms.js';
@@ -170,6 +170,12 @@ export function installToriiDebug(refs) {
       // (LEAN-5) the title/HUD card draws. Read-only; actionable:false — no network
       // fetch, no auto-update, no install, no navigation (deterministic local sample).
       updatePreview(release, opts) { return updatePreviewReport(release, opts); },
+      // v0.2.158 — the inert in-game UPDATE-STATUS panel (LEAN-5): the v0.2.157
+      // release source folded with the inert preview into one render-ready,
+      // display-only update-status view (verdict + source diagnostics). Read-only;
+      // actionable:false — no network fetch, no auto-update, no install, no
+      // navigation (deterministic local sample feed by default).
+      updateStatus(payload, opts) { return updateStatusReport(payload, opts); },
       // v0.2.143 — the inert MVP loop header block the title-screen card draws to
       // frame the four previews as one Travel→Market→Score→Update loop. Read-only;
       // actionable:false — content/labelling only, no navigation/fetch/sign/publish.

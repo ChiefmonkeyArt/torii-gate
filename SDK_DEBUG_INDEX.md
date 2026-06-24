@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.157-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.158-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no navigation, no signing/publishing, no auto-update.
@@ -39,12 +39,20 @@ frozen `SDK_SURFACE` map; `surfacesByTier(tier)` lists names at a tier.
 `productDisplay`, `productPanel`, `productPanelShell`, `productPreview`,
 `travelIntent`, `gatewayHandoff`, `gatewayPortal`, `gatewayPreview`, `leaderboard`,
 `leaderboardPublisher`, `leaderboardView`, `leaderboardPreview`, `updateCheck`,
-`updatePreview`, `githubReleaseSource`, `mvpLoop`, `proofSurfaceSpecs`, `anchorTransforms`.
+`updatePreview`, `githubReleaseSource`, `updateStatus`, `mvpLoop`, `proofSurfaceSpecs`, `anchorTransforms`.
 
 `githubReleaseSource` (LEAN-5, v0.2.157) is the pure GitHub Releases source adapter:
 `normalizeRelease`/`selectLatestRelease`/`evaluateFromSource` turn a `releases/latest`
 object, a `releases` array, or a manifest into an update verdict; the optional
 `fetchLatestRelease` is host-only and requires an injected `fetcher` (no auto-fetch).
+
+`updateStatus` (LEAN-5, v0.2.158) is the pure in-game UPDATE-STATUS panel:
+`updateStatusPanel(payload?,opts?)` folds the release source + the inert preview into
+one render-ready, display-only view (`{title,badge,surface,step,status,statusLabel,
+currentVersion,latestVersion,updateAvailable,prompt,notesPreview,source:{status,kind,
+candidates,errors},sourceUrl,lines,readOnly:true,actionable:false}`); defaults to a
+deterministic local `SAMPLE_RELEASE_FEED` (no wire), degrades draft/empty/malformed to
+UNKNOWN, and exposes NO fetch/install/update/navigate/href/onClick/autoUpdate key.
 
 ### INTERNAL (forward-declared, `module:null` — do NOT depend on yet)
 
@@ -92,6 +100,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.leaderboard(s?,o?)` | ranked summary — `{mode,count,skipped,rows,signed:false,published:false}` |
 | `shells.leaderboardPreview(s?,o?)` | LEAN-4 preview block — `{title,mode,modeLabel,badge,signed:false,published:false,signer,count,shown,skipped,proof,rows,lines,readOnly:true,actionable:false}` |
 | `shells.updatePreview(r?,o?)` | LEAN-5 preview block — `{title,badge,status,statusLabel,currentVersion,latestVersion,updateAvailable,prompt,source,lines,readOnly:true,actionable:false}` |
+| `shells.updateStatus(p?,o?)` | **v0.2.158** LEAN-5 in-game UPDATE-STATUS panel — `{title,badge,surface,step,status,statusLabel,currentVersion,latestVersion,updateAvailable,prompt,source:{status,kind,candidates,errors},sourceUrl,lines,readOnly:true,actionable:false}` (defaults to local sample feed) |
 | `shells.mvpLoop(o?)` | loop header block — `{title,badge,flow,note,version,steps,lines,readOnly:true,actionable:false}` |
 | `shells.report(inputs?)` | composite of all of the above (each section overridable via `inputs`) |
 | `shells.summary(inputs?)` | **v0.2.145** discoverability aggregate (see §4) |
@@ -398,6 +407,7 @@ PURE/node-safe — composes plain data only; renders and acts on nothing.
 | `productPreview` | `tests/product-preview.test.js` |
 | `leaderboardPreview` | `tests/leaderboard-preview.test.js` |
 | `updatePreview` | `tests/update-preview.test.js` |
+| `updateStatus` | `tests/update-status.test.js` |
 | `mvpLoop` | `tests/mvp-loop.test.js` |
 | `ToriiDebug.shells.*` reports + `summary()` | `tests/shell-report.test.js` |
 | `proofSurfaceSpecs` / `shells.surfaceSpecs()` | `tests/proof-surface-specs.test.js` |

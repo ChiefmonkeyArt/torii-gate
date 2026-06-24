@@ -47,6 +47,7 @@ export * as leaderboardPreview from '../engine/nostr/leaderboardPreview.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
+export * as updateStatus from '../engine/update/updateStatus.js';
 export * as mvpLoop from '../engine/mvpLoop.js';
 export * as proofSurfaceSpecs from '../engine/world/proofSurfaceSpecs.js';
 export * as anchorTransforms from '../engine/world/anchorTransforms.js';
@@ -116,6 +117,10 @@ export const SDK_SURFACE = Object.freeze({
   // of a releases-latest/array/manifest payload into evaluateUpdate()'s shape; an
   // optional host-only fetch helper that requires an injected fetcher (no auto-fetch).
   githubReleaseSource: { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/githubReleaseSource.js' },
+  // torii.quest in-game UPDATE-STATUS panel (LEAN-5, v0.2.158) — folds the release
+  // source + inert preview into one render-ready, display-only update-status view;
+  // NO network, NO auto-update, NO action surface.
+  updateStatus:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateStatus.js' },
   // MVP loop header — frames the four PoC preview cards as one Travel→Market→Score→Update loop (v0.2.143).
   mvpLoop:         { tier: STABILITY.EXPERIMENTAL, module: '../engine/mvpLoop.js' },
   // In-world proof-mesh LAYOUT/SPEC contracts for the four MVP proof surfaces — pure

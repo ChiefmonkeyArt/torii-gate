@@ -16,6 +16,7 @@ import { productPreviewBlock } from '../components/productPreview.js';
 import { rankScores } from '../nostr/leaderboardView.js';
 import { leaderboardPreviewBlock } from '../nostr/leaderboardPreview.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
+import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
 import { createToriiGateway } from '../components/toriiGateway.js';
 
@@ -194,6 +195,32 @@ export function updatePreviewReport(release = DEMO_RELEASE, opts = {}) {
   };
 }
 
+// updateStatusReport(payload, opts) → the inert in-game UPDATE-STATUS panel
+// (LEAN-5, v0.2.158): the v0.2.157 release source folded with the inert preview
+// into one render-ready update-status view (verdict + source diagnostics). Defaults
+// to the deterministic LOCAL sample feed (no network). Read-only; pins
+// actionable:false so the no-fetch/no-auto-update guarantee is explicit.
+export function updateStatusReport(payload, opts = {}) {
+  const p = updateStatusPanel(payload, opts);
+  return {
+    title: p.title,
+    badge: p.badge,
+    surface: p.surface,
+    step: p.step,
+    status: p.status,
+    statusLabel: p.statusLabel,
+    currentVersion: p.currentVersion,
+    latestVersion: p.latestVersion,
+    updateAvailable: p.updateAvailable,
+    prompt: p.prompt,
+    source: p.source,
+    sourceUrl: p.sourceUrl,
+    lines: p.lines,
+    readOnly: p.readOnly,
+    actionable: p.actionable,
+  };
+}
+
 // mvpLoopReport(opts) → the inert MVP loop header block (v0.2.143) the title-screen
 // card draws to frame the four previews as one Travel→Market→Score→Update loop.
 // Read-only; pins actionable:false so the content-only guarantee is explicit.
@@ -223,6 +250,7 @@ export function buildShellReport(inputs = {}) {
     scores = DEMO_SCORES,
     mode = 'build',
     release = DEMO_RELEASE,
+    updateFeed,
   } = inputs;
   return {
     gateway: gatewayReport(gateway, gatewayContext, gatewayOpts),
@@ -232,6 +260,7 @@ export function buildShellReport(inputs = {}) {
     leaderboard: leaderboardReport(scores, { mode }),
     leaderboardPreview: leaderboardPreviewReport(scores),
     updatePreview: updatePreviewReport(release),
+    updateStatus: updateStatusReport(updateFeed),
     mvpLoop: mvpLoopReport(),
   };
 }

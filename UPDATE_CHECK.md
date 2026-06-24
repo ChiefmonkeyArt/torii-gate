@@ -65,6 +65,26 @@ Surfaced on the SDK as `githubReleaseSource` (tier: experimental). Covered by
 `fetchLatestRelease()` can reach the wire, and only when a host explicitly injects a
 fetcher — importing the module can never silently fetch.
 
+### In-game update-status panel (v0.2.158)
+
+`src/engine/update/updateStatus.js` — pure, node-safe panel that folds the
+v0.2.157 source adapter and the v0.2.142 inert preview into ONE render-ready,
+display-only update-status view for the in-world UPDATE proof surface
+(`update-prompt-board`) / a HUD card. It reflects both the update verdict AND the
+source diagnostics.
+
+| Export | Shape | Notes |
+|---|---|---|
+| `UPDATE_STATUS_BADGE` | `'STATUS · MANUAL · NO AUTO-UPDATE'` | Makes the manual/no-auto-update contract explicit on the panel. |
+| `UPDATE_SURFACE_ID` | `'update-prompt-board'` | Display-only string reference to the proof surface (does NOT bind/render/act). |
+| `SAMPLE_RELEASE_FEED` | frozen `releases` array | Deterministic LOCAL fixture (two `-alpha` prereleases; newest `v0.2.999-alpha` wins). Never reaches the wire. |
+| `updateStatusPanel(payload, opts)` | `{ title, badge, surface, step, status, statusLabel, currentVersion, latestVersion, updateAvailable, prompt, notesPreview, source:{status,kind,candidates,errors}, sourceUrl, lines:[{label,value}], readOnly:true, actionable:false }` | `selectLatestRelease`s the newest eligible release (defaults to `SAMPLE_RELEASE_FEED`), reuses `updatePreviewBlock` for the verdict; `lines` are Version/Latest/Status/Source/Releases; draft/empty/malformed degrade to UNKNOWN without throwing. Exposes NO fetch/install/update/navigate/href/onClick/autoUpdate key. |
+
+Surfaced on the SDK as `updateStatus` (tier: experimental) and read-only at
+`ToriiDebug.shells.updateStatus()`. Covered by `tests/update-status.test.js`. The
+panel does NO network and exposes NO action surface — the audited host fetch + the
+in-world prompt MESH/HUD remain deferred (below).
+
 ## 3. What is deferred (the host step — NOT in this module)
 
 - **The actual read-only fetch** of the GitHub releases endpoint
