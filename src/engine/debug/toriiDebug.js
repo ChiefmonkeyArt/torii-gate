@@ -39,6 +39,7 @@ import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
 import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, updatePreviewReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
+import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 
 export function installToriiDebug(refs) {
   const {
@@ -180,6 +181,12 @@ export function installToriiDebug(refs) {
       // that LOOSEN inertness, so a promotion can be reviewed mechanically. No
       // network/actions/DOM/THREE — only compares the two summaries already computed.
       diff(a, b) { return shellsDiff(a, b); },
+      // v0.2.147 — read-only LAYOUT/SPEC summary for the four future in-world proof
+      // meshes (gateway portal panel, product stall panel, leaderboard board, update
+      // prompt board): where each will sit in the NAP zone + its inert invariants,
+      // as PLAIN data. Spec layer only — no Three/render/gameplay. `allInert` reads
+      // from the specs' own invariants. See SDK `proofSurfaceSpecs` + SDK_DEBUG_INDEX.md.
+      surfaceSpecs() { return proofSurfaceLayout(); },
     },
   };
 

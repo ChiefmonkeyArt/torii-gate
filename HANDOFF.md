@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.146-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.147-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -86,7 +86,8 @@ Breaking one should fail CI/the check, not ship.
   `leaderboardPublisher`; v0.2.136 added `gatewayPortal`, `productPanelShell`,
   and `leaderboardView`; v0.2.138 added `updateCheck`; v0.2.139 added
   `gatewayPreview`; v0.2.140 added `productPreview`; v0.2.141 added
-  `leaderboardPreview`; v0.2.142 added `updatePreview`; v0.2.143 added `mvpLoop`
+  `leaderboardPreview`; v0.2.142 added `updatePreview`; v0.2.143 added `mvpLoop`;
+  v0.2.147 added `proofSurfaceSpecs` (pure in-world proof-mesh layout/spec data)
   (all experimental). **`SDK_DEBUG_INDEX.md`** (v0.2.145) is the compact
   discoverability map over this surface + the `ToriiDebug.shells` reports for AI
   handoffs / FOSS devs.
@@ -219,7 +220,7 @@ npm run preview  # serve the built dist/ (used for headless smoke)
 ```
 
 A change is "green" when **build + check + test** all pass. Current baseline:
-**383 tests / 34 files**, all 11 regression checks GREEN, build clean.
+**393 tests / 35 files**, all 11 regression checks GREEN, build clean.
 
 Tests run in node (`vite.config.js` → `environment: 'node'`). `WebGLRenderer` is
 created at module load in `scene.js`, so any module importing `scene.js`
@@ -238,7 +239,7 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
 - `.snapshot()` — one JSON-serialisable object: version, phase, run state, player
   pos, combat last shot/hit/miss, physics+crate summary, tuning. Safe anytime.
 - `.combat.report()` / `.physics.report()` — focused JSON sub-reports.
-- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,report,summary,diff}()` —
+- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,report,summary,diff,surfaceSpecs}()` —
   read-only reports over the VIEW shells + visible preview blocks (demo fixtures by
   default; pass overrides). No signer, no relay/publish, no navigation, no checkout,
   no fetch/auto-update
@@ -248,7 +249,11 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
   surfaces + MVP loop with an `allInert` gate. `diff(a,b)` (v0.2.146, pure
   `shellsDiff()`) compares two `summary()` outputs and flags invariant flips that
   loosen inertness (`loosened[]` checklist for preview→live promotions); all four
-  previews now expose symmetric `readOnly`+`actionable`. See `SDK_DEBUG_INDEX.md`.
+  previews now expose symmetric `readOnly`+`actionable`. `surfaceSpecs()` (v0.2.147,
+  pure `proofSurfaceLayout()` from `engine/world/proofSurfaceSpecs.js`) is the
+  read-only LAYOUT/SPEC summary for the four FUTURE in-world proof meshes (plain
+  position/size data in the NAP zone + `allInert` gate; no Three/render). See
+  `SDK_DEBUG_INDEX.md`.
 - `.physics.service` — injectable RaycastService facade (`ray`/`rayStatic`/`lineOfSight`).
 - `.bots`, `.player`, `.physics`, `.world`, `.fx`, `.combat`, `.identity`.
 

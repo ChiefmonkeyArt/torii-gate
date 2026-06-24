@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.146-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.147-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -10,7 +10,7 @@
 
 ---
 
-## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.146)
+## ACTIVE FOCUS — 15-Hour Proof-of-Concept Route (v0.2.147)
 
 > **The project is refocused onto a 15-hour proof-of-concept.** Build the vision
 > fast, prove the architecture, avoid polish traps — then add retrospective polish
@@ -47,6 +47,15 @@
   cards as **Travel → Market → Score → Update**, and each card title carries its step
   (`1 · TRAVEL` … `4 · UPDATE`). Content/CSS/labelling only — `actionable:false`, no
   network/links/actions; rendered via `textContent`. Read-only at `ToriiDebug.shells.mvpLoop()`.
+- **In-world proof meshes have a pure spec layer** (v0.2.147) — `engine/world/proofSurfaceSpecs.js`
+  defines plain-data LAYOUT/SPEC contracts for the four future proof meshes (gateway
+  portal panel, product stall panel, leaderboard board, update prompt board): id,
+  loop step + LEAN, the feeding SDK preview namespace + `ToriiDebug.shells` report,
+  an in-world anchor in the NAP zone, approximate `{x,y,z}` position + `{w,h,d}` size +
+  `yawRad` (PLAIN data, no THREE), and inert invariants. SDK `proofSurfaceSpecs` +
+  read-only `ToriiDebug.shells.surfaceSpecs()` (with an `allInert` gate + NAP-zone
+  bounds). Spec layer only — no Three/render/gameplay; +9 tests. The mesh pass that
+  reads these specs is the next (isolated, non-hot-path) slice.
 - **Proof surfaces are now review-symmetric + diffable** (v0.2.146) — the gateway
   preview gained `readOnly:true` so all four MVP proof surfaces expose the same
   `readOnly`+`actionable` invariant pair. Added a pure read-only

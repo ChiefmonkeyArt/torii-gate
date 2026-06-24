@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.146-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.147-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no navigation, no signing/publishing, no auto-update.
@@ -91,6 +91,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.report(inputs?)` | composite of all of the above (each section overridable via `inputs`) |
 | `shells.summary(inputs?)` | **v0.2.145** discoverability aggregate (see §4) |
 | `shells.diff(a?,b?)` | **v0.2.146** pure diff of two `summary()` outputs, flagging invariant flips that loosen inertness (see §4.1) |
+| `shells.surfaceSpecs()` | **v0.2.147** pure in-world proof-surface LAYOUT/SPEC layer — `{badge,anchorZone,count,bounds,specs,allInert,rendered:false,actionable:false}` (see §4.2) |
 
 Other namespaces on `ToriiDebug`: `snapshot()` / `combat.report()` / `physics.report()`
 (JSON-serialisable status), `bots`, `player`, `physics`, `world`, `identity`, `fx`.
@@ -156,6 +157,41 @@ reviewer wants before approving a promotion. Untracked keys never count as loose
 
 ---
 
+## 4.2. `ToriiDebug.shells.surfaceSpecs()` — in-world layout/spec layer (v0.2.147)
+
+`shells.surfaceSpecs()` (pure `proofSurfaceLayout()` in
+`engine/world/proofSurfaceSpecs.js`) returns the spec/contract layer for the FUTURE
+in-world proof meshes — placement data for the four MVP proof surfaces as PLAIN data
+only. It builds NO Three.js objects, touches NO DOM/renderer, and integrates NO
+gameplay: `position`/`size` are `{x,y,z}`/`{width,height,depth}` plain objects and
+facing is a plain `yawRad` number, so the module stays node-testable. Shape:
+
+```js
+{
+  badge,               // "SPEC · INERT · LAYOUT-ONLY"
+  anchorZone: 'nap-zone',
+  count: 4,
+  bounds: { minX, maxX, minZ, maxZ },   // all within the NAP zone (x in [NAP_X, NAP_FAR_X])
+  specs: [             // PROOF_SURFACE_SPECS — 4 frozen specs in loop order
+    { id, step, lean, title, kind, previewSdk, shell, anchor,
+      position:{x,y,z}, size:{width,height,depth}, yawRad,
+      invariants:{ readOnly:true, actionable:false, signed?, published? } },
+    ...
+  ],
+  allInert,            // true iff no spec is actionable and none claim signed/published
+  rendered: false,     // nothing is in-world yet — spec/contract layer only
+  actionable: false,
+}
+```
+
+The four specs are `gateway-portal-panel` (TRAVEL/LEAN-2), `product-stall-panel`
+(MARKET/LEAN-3), `leaderboard-board` (SCORE/LEAN-4), `update-prompt-board`
+(UPDATE/LEAN-5). `getProofSurfaceSpec(id)` returns one spec or null. This is the
+contract a future mesh pass binds against; `rendered:false`/`allInert` are the gates
+a reviewer asserts to confirm nothing has gone live yet.
+
+---
+
 ## 5. Where the tests live
 
 | Surface | Test file |
@@ -167,6 +203,7 @@ reviewer wants before approving a promotion. Untracked keys never count as loose
 | `updatePreview` | `tests/update-preview.test.js` |
 | `mvpLoop` | `tests/mvp-loop.test.js` |
 | `ToriiDebug.shells.*` reports + `summary()` | `tests/shell-report.test.js` |
+| `proofSurfaceSpecs` / `shells.surfaceSpecs()` | `tests/proof-surface-specs.test.js` |
 | underlying view/shell modules | `tests/gateway-portal.test.js`, `tests/product-panel-shell.test.js`, `tests/leaderboard-view.test.js`, `tests/update-check.test.js` |
 
 Run all with `npm test` (Vitest, node env). `npm run check` separately guards the
