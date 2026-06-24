@@ -154,6 +154,28 @@ Recommendation:
 
 ## Now / Next / Later Roadmap
 
+### Lean Prototype Sprint (15-hour target)
+
+A tight, time-boxed sprint to stand up the end-to-end freedom-tech loop as a
+*demonstrable* prototype — proving the architecture, not polishing it. Four
+deliverables, each a thin vertical slice on the foundations already in place:
+
+1. **Torii.quest live** — get the current green source (v0.2.133-alpha) published
+   and reachable as the canonical live instance (separate manual deploy step; not
+   done by task agents).
+2. **n2n hop** — a working spatial handoff between two instances via the Torii
+   Gateway component: cross the gate → arrive in a second zone/node carrying
+   identity. Builds on `world/handoff.js` + `toriiGateway.js`; relay-mediated
+   first (see Nostr Spatial Gateway Protocol).
+3. **Product component** — one real Plebeian.Market product-display component
+   (mountable, manifest-described) as the first commerce surface in-world.
+4. **Nostr leaderboard** — a minimal score/kill leaderboard sourced from signed
+   Nostr events, proving the social/identity layer end-to-end.
+
+Scope discipline: each slice is "thin but real" — a demonstrable path through the
+whole stack beats any one polished subsystem. Anything that balloons stops at a
+green checkpoint and is logged in `todo.md`. Track status in `progress.md`.
+
 ### Now
 
 - **Source reconciliation**: ✅ DONE (2026-06-23) — v0.2.100 through v0.2.108 reverse-ported into clean source. See `torii-source-reconciliation-report.md`.
@@ -191,7 +213,10 @@ Recommendation:
 - **User-decorated NAP zones**: let players decorate their own zone with wallpapers, objects, GLBs, signs, stalls, and art.
 - **Plebeian.Market spatial layer**: map shops, stalls, product displays, auctions, community boards, and galleries into the world — delivered as mountable components.
 - **Bitcoin/Cashu/Nutzap economy**: rewards, tips, paid events, trade, and local circular economies without custodial accounts.
-- **Reusable components library**: ship the first reference components (n2n node jumper, art frame, live chat, product display) and the component manifest format.
+- **Reusable components library**: ship the first reference components (n2n node jumper, art frame, live chat, product display) and the component manifest format. (First reference component — the Torii Gateway skeleton — landed v0.2.133; next is its portal mesh + the handoff, then `GATEWAY_PROTOCOL.md` and the interop demo per the Nostr Spatial Gateway Protocol path.)
+- **Open-protocol gateway**: extract the spatial handoff into `GATEWAY_PROTOCOL.md`, prove it cross-world with an interop demo, and propose it as a NIP (see Nostr Spatial Gateway Protocol under NAP-to-NAP Travel).
+- **Torii Asset Forge**: validator-first prompt-to-game-ready asset pipeline (external AI presets + routstr/NIP-60 credits + `torii.asset` validator/converter; not a rigging engine).
+- **Torii Environment Kit**: budgeted lightweight GLB scenery + WebP/JPG skies + illusion-grass building blocks.
 - **Community marketplace**: open Nostr-native listing layer where builders publish components for free or for sats.
 
 ## Engineering Plan
@@ -463,6 +488,39 @@ Important trade-off:
 - Relay-mediated handoff is easier and more Nostr-native.
 - Start relay-mediated, design so node-to-node can be added later.
 
+### Nostr Spatial Gateway Protocol (n2n spatial hop as an open protocol)
+
+The NAP-to-NAP handoff above should be lifted from a Torii-internal mechanism
+into an **open, documented protocol** so any Nostr/Bitcoin world — not just Torii
+Quest — can interoperate. The handoff is fundamentally a *spatial* Nostr event
+(cross a gate in world A, arrive in world B carrying your identity and state), so
+it belongs to the commons, not to one client.
+
+Staged path (each stage is independently useful):
+
+1. **Reference component (landed v0.2.133):** the Torii Gateway
+   (`src/engine/components/toriiGateway.js`) is the concrete reference
+   implementation — a droppable gate whose manifest carries the destination
+   (`gateway: { npub, relay, target, position }`). Today it is a skeleton; the
+   mount-time portal mesh + the handoff trigger are the next build.
+2. **`GATEWAY_PROTOCOL.md`:** extract the wire format from that working component
+   into a standalone spec — the signed spatial-handoff event (player npub, source
+   zone, destination npub/relay/zone, display + state pointer, timestamp,
+   signature), destination verification rules, and the relay-mediated-first /
+   node-to-node-later trade-off. Keep it implementation-independent.
+3. **Interop demo:** prove the protocol across two independent instances (a Torii
+   gate handing off to a second world that only implements `GATEWAY_PROTOCOL.md`),
+   so the spec is validated by a non-Torii consumer, not just our own client.
+4. **Possible NIP:** once the format is stable and demonstrated cross-world,
+   propose it as a NIP (spatial hop / world handoff) so the wider Nostr ecosystem
+   can adopt it. Attribution travels with the npub; integrity with the event
+   signature — consistent with the component economy's provenance rules.
+
+This makes the gateway a freedom-tech primitive: the metaverse layer is a graph
+of independently-owned worlds linked by signed spatial events, with no central
+router. See `COMPONENTS.md` (CMP-8 reference component) and the CMP loader/handoff
+tasks in `todo.md`.
+
 ## Multiplayer, Events, and Duels
 
 The shoot'em up should remain excellent fun.
@@ -506,6 +564,49 @@ Minimum manifest shape:
   "name": "Chiefmonkey Stall Sign"
 }
 ```
+
+### Torii Asset Forge (prompt-to-game-ready assets, validator-first)
+
+A pipeline that turns a text prompt into a **game-ready, compatibility-validated**
+asset — *not* a full in-house rigging/generation engine. We orchestrate external
+AI, then own the part that makes assets actually usable in-world: validation and
+conversion.
+
+Principles:
+
+- **Validator-first, not generator-first.** The valuable, durable piece is a
+  `torii.asset`-aware **validator + converter** (geometry sanity, scale/units,
+  poly/texture budgets, MIME/format, GLB draco/meshopt, npub provenance + hash) —
+  the same manifest shape as Digital Assets above. Generation is swappable; the
+  compatibility contract is ours.
+- **External AI via presets.** Drive third-party prompt-to-3D / texture services
+  through curated presets (style, budget, target slot) rather than building a
+  model. Treat their output as untrusted input that must pass the validator.
+- **Paid with freedom-tech credits.** Pay for generation via **routstr** /
+  **NIP-60 (Cashu) credits** so the forge stays self-sovereign and has no
+  platform account dependency.
+- **Scope guard.** No rigging/animation engine, no bespoke trainer. If an asset
+  needs rig/animation it is out of v1 scope; v1 is static/prop/scenery assets
+  that pass the validator and drop straight into the component/asset economy.
+
+### Torii Environment Kit (lightweight scenery + skies + illusion-grass)
+
+A small kit of performance-budgeted environment building blocks so worlds look
+good cheaply on the web:
+
+- **Lightweight GLB scenery forms** — a curated set of low-poly primitives/props
+  (rocks, fences, stalls, torii forms, foliage clumps) with declared poly/texture
+  budgets, usable as `mountTarget: 'scene'`/`'zone'` components or raw assets.
+- **WebP/JPG sky + backdrops** — image-based skies/backdrops (not heavy cubemap
+  pipelines) for fast load and low memory; declared resolution budgets.
+- **Grass as a layered illusion** — density/distance/performance-budgeted grass
+  built as layered billboard/illusion techniques (cf. the existing arena foliage
+  shader) rather than per-blade geometry, with explicit density, draw-distance,
+  and frame-budget knobs.
+
+All three kit pillars carry explicit budgets so a dropped-in environment can't
+silently wreck frame rate — the budgets are part of the manifest/validator
+contract, consistent with the Asset Forge.
 
 ## Community, Chat, and Commerce
 

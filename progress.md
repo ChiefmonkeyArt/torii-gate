@@ -69,13 +69,26 @@ Blocked on: SDK Layer 1 close-out, identity boundary, kind:0 profile sync.
 ### Deployment / VPS / Update System
 
 Source reconciliation: done | Source is build truth: yes | Live published version: v0.2.113-alpha
-Clean source ahead of live by: 16 versions (v0.2.129 source vs v0.2.113 live)
+Clean source ahead of live by: 20 versions (v0.2.133 source vs v0.2.113 live)
 
 ```
 [#########################.........................] source clean, live behind
 ```
 
-Next: manual smoke test v0.2.113+ → publish source-built artifact to `torii-quest.pplx.app`.
+Next: manual smoke test v0.2.133 → publish source-built artifact to `torii-quest.pplx.app`.
+
+---
+
+## Lean Prototype Sprint (15-hour target)
+
+Time-boxed sprint to demonstrate the end-to-end freedom-tech loop (thin vertical slices, not polish). See `strategy.md`/`todo.md` → "Lean Prototype Sprint".
+
+| # | Slice | Status |
+|---|-------|--------|
+| LEAN-1 | Torii.quest live (publish v0.2.133-alpha — manual maintainer deploy) | pending (smoke first) |
+| LEAN-2 | n2n hop via Torii Gateway component (relay-mediated) | pending (needs CMP-7 loader + CMP-8 portal/handoff) |
+| LEAN-3 | Product component (Plebeian.Market product display) | pending |
+| LEAN-4 | Nostr leaderboard (signed events) | pending |
 
 ---
 

@@ -56,6 +56,23 @@ These tasks build the structural layer that makes the project legible to any age
 
 ---
 
+## Lean Prototype Sprint (15-hour target)
+
+> Time-boxed sprint to stand up the end-to-end freedom-tech loop as a
+> *demonstrable* prototype — thin vertical slices proving the architecture, not
+> polish. See `strategy.md` → "Lean Prototype Sprint (15-hour target)". Each slice
+> stops at a green checkpoint if it balloons. **Deploy/publish remains a separate
+> manual maintainer step — not done by task agents.**
+
+| # | Codebase | Category | Task |
+|---|----------|----------|------|
+| LEAN-1 | TQ | DEPLOY | **Torii.quest live** — publish the current green source (v0.2.133-alpha) as the canonical live instance. Manual smoke (TQ-MANUAL-113) first; deploy is the maintainer's manual step. |
+| LEAN-2 | TQ | NOSTR | **n2n hop** — working spatial handoff between two instances via the Torii Gateway component (cross the gate → arrive in a second zone/node carrying identity). Build on `world/handoff.js` + `toriiGateway.js`; relay-mediated first. Depends on CMP-7 loader + CMP-8 portal/handoff. |
+| LEAN-3 | TQ | MARKET | **Product component** — one real Plebeian.Market product-display component (mountable, manifest-described) as the first in-world commerce surface. Reference component on the CMP contract. |
+| LEAN-4 | TQ | NOSTR | **Nostr leaderboard** — minimal score/kill leaderboard sourced from signed Nostr events, proving the social/identity layer end-to-end. Overlaps LB1 (kind:30000). |
+
+---
+
 ## Next — SDK Layer 1: Core Engine Boundaries
 
 | # | Codebase | Category | Task |
@@ -111,6 +128,8 @@ These tasks build the structural layer that makes the project legible to any age
 | 12 | TQ/NA | PERFORMANCE | **WebGPU renderer** — Three.js WebGPU backend behind feature flag. |
 | 13 | TQ/NA | BUNDLE | **Bundle treemap audit** — rollup visualizer, unused Three.js extras, asset-size review. |
 | 22 | TQ/NA | INFRA | **GitHub weekday scan** — optional scheduled scan of open issues/PRs when the project has enough contributor activity to justify it. |
+| FORGE-1 | TQ | ASSET | **Torii Asset Forge (validator-first)** — prompt-to-game-ready asset pipeline. Build the durable piece first: a `torii.asset`-aware **validator + converter** (geometry/scale/units sanity, poly/texture budgets, MIME/format, GLB draco/meshopt, npub provenance + hash — same manifest as Digital Assets). Drive generation via curated **external AI presets** (treated as untrusted input that must pass the validator); pay with **routstr / NIP-60 (Cashu) credits**. **Scope guard:** NOT a rigging/animation/training engine — v1 is static/prop/scenery assets only. See `strategy.md` → "Torii Asset Forge". |
+| ENVKIT-1 | TQ | ASSET | **Torii Environment Kit** — budgeted environment building blocks: (a) lightweight low-poly **GLB scenery forms** (rocks/fences/stalls/torii/foliage clumps) with declared poly/texture budgets, droppable as scene/zone components; (b) **WebP/JPG sky + backdrops** (image-based, not heavy cubemaps) with resolution budgets; (c) **grass as a layered illusion** (billboard/illusion technique like the arena foliage shader, with explicit density / draw-distance / frame-budget knobs). Budgets are part of the manifest/validator contract so a dropped-in environment can't silently wreck frame rate. See `strategy.md` → "Torii Environment Kit". |
 
 ---
 
@@ -138,6 +157,7 @@ These tasks build the structural layer that makes the project legible to any age
 | CMP-14 | TQ | ECASH | **Marketplace listing + sats pricing** — signed Nostr listing events for components with sats pricing (Lightning / Cashu / Nutzap); relay-based marketplace discovery reuses CMP-6. |
 | CMP-15 | TQ | ECASH | **Revenue-share via Zap splits** — optional author/host revenue-share using Zap splits (NIP-57 / NIP-61) encoded in the listing. |
 | CMP-16 | TQ | NOSTR | **Versioning, forks & remixes** — new events supersede prior versions (latest-wins by hash), forks/remixes carry original-author `npub` attribution, all bundle hashes verified. |
+| GWPROTO-1 | TQ | NOSTR | **Nostr Spatial Gateway Protocol (open protocol path)** — lift the spatial handoff out of the Torii client into a commons spec. Stages: (1) build out the CMP-8 gateway's portal mesh + handoff trigger; (2) extract `GATEWAY_PROTOCOL.md` — the signed spatial-handoff event (player npub, source/destination npub/relay/zone, display + state pointer, timestamp, signature), destination verification, relay-mediated-first/n2n-later; (3) interop demo across two independent instances (one non-Torii consumer); (4) propose as a NIP (spatial hop / world handoff). See `strategy.md` → "Nostr Spatial Gateway Protocol". Feeds LEAN-2. |
 
 ---
 
