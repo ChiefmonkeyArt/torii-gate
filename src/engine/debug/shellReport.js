@@ -16,6 +16,7 @@ import { productPreviewBlock } from '../components/productPreview.js';
 import { rankScores } from '../nostr/leaderboardView.js';
 import { leaderboardPreviewBlock } from '../nostr/leaderboardPreview.js';
 import { readLeaderboardEvents } from '../nostr/leaderboardRelayRead.js';
+import { readProfiles } from '../nostr/profileRead.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -78,6 +79,42 @@ export const DEMO_RELAY_SCORE_EVENTS = Object.freeze([
     id: '4'.repeat(64), pubkey: 'c'.repeat(64), created_at: 1200, kind: 30000,
     tags: [['d', 'run-c'], ['t', 'torii-quest']],
     content: JSON.stringify({ runId: 'run-c', score: 90, kills: 2, headshots: 9, accuracy: 0.5, version: 'v0.2.160-alpha' }),
+    sig: 'c'.repeat(128),
+  },
+]);
+
+// A deterministic LOCAL sample of kind:0 profile events — the shape a read-only
+// relay transport WOULD return — so the profile-read report can prove the kind:0
+// READ→sanitise path without ever touching a relay. Includes a superseded older
+// profile (same pubkey, older created_at), a profile with an UNSAFE picture URL
+// (must sanitise to null), and a malformed-JSON content (must degrade safely).
+// Display-only; no network, no signing, no publish, no DOM <img src> assignment.
+export const DEMO_PROFILE_EVENTS = Object.freeze([
+  {
+    id: '1'.repeat(64), pubkey: 'a'.repeat(64), created_at: 2000, kind: 0,
+    tags: [],
+    content: JSON.stringify({ name: 'satoshi', display_name: 'Satoshi N', about: 'freedom tech', picture: 'https://example.com/sat.png', nip05: 'satoshi@example.com', lud16: 'satoshi@wos.com', website: 'https://example.com' }),
+    sig: 'f'.repeat(128),
+  },
+  {
+    // Superseded older profile for pubkey a — newest-per-author should drop this.
+    id: '2'.repeat(64), pubkey: 'a'.repeat(64), created_at: 1000, kind: 0,
+    tags: [],
+    content: JSON.stringify({ name: 'satoshi-old', display_name: 'Old Name' }),
+    sig: 'e'.repeat(128),
+  },
+  {
+    // Unsafe picture URL (javascript:) — must sanitise to null, profile still valid.
+    id: '3'.repeat(64), pubkey: 'b'.repeat(64), created_at: 1500, kind: 0,
+    tags: [],
+    content: JSON.stringify({ name: 'nostrich', picture: 'javascript:alert(1)', website: 'http://no.tls' }),
+    sig: 'd'.repeat(128),
+  },
+  {
+    // Malformed JSON content — must degrade to an empty-but-valid profile.
+    id: '4'.repeat(64), pubkey: 'c'.repeat(64), created_at: 1200, kind: 0,
+    tags: [],
+    content: 'not json{',
     sig: 'c'.repeat(128),
   },
 ]);
@@ -231,6 +268,29 @@ export function leaderboardRelayReadReport(events = DEMO_RELAY_SCORE_EVENTS, opt
   };
 }
 
+// profileReadReport(events, opts) → the READ-ONLY Nostr identity/profile PROOF
+// (NOSTR-READ / IDENTITY, v0.2.161) over a deterministic LOCAL sample of kind:0
+// events. Proves the READ→parse→sanitise→newest-per-author path WITHOUT any relay
+// I/O: defaults to DEMO_PROFILE_EVENTS (incl. a superseded duplicate, an unsafe
+// picture URL, and malformed JSON). Pins signed/published false + readOnly true so
+// the no-publish, no-network guarantee is explicit; avatar/website URLs are inert
+// https-only data strings (never assigned to a DOM <img src> here).
+export function profileReadReport(events = DEMO_PROFILE_EVENTS, opts = {}) {
+  const r = readProfiles(events, opts);
+  return {
+    ok: r.ok,
+    filter: r.filter,
+    count: r.count,
+    profiles: r.profiles,
+    skipped: r.skipped.length,
+    duplicates: r.duplicates,
+    signed: r.signed,
+    published: r.published,
+    readOnly: r.readOnly,
+    errors: r.errors,
+  };
+}
+
 // updatePreviewReport(release, opts) → the visible-but-inert torii.quest
 // update-check PREVIEW block (LEAN-5) a title/HUD card would draw. Read-only;
 // pins actionable:false so the no-fetch/no-auto-update guarantee is explicit.
@@ -307,6 +367,7 @@ export function buildShellReport(inputs = {}) {
     scores = DEMO_SCORES,
     mode = 'build',
     relayScoreEvents = DEMO_RELAY_SCORE_EVENTS,
+    profileEvents = DEMO_PROFILE_EVENTS,
     release = DEMO_RELEASE,
     updateFeed,
   } = inputs;
@@ -318,6 +379,7 @@ export function buildShellReport(inputs = {}) {
     leaderboard: leaderboardReport(scores, { mode }),
     leaderboardPreview: leaderboardPreviewReport(scores),
     leaderboardRelayRead: leaderboardRelayReadReport(relayScoreEvents),
+    profileRead: profileReadReport(profileEvents),
     updatePreview: updatePreviewReport(release),
     updateStatus: updateStatusReport(updateFeed),
     mvpLoop: mvpLoopReport(),

@@ -46,6 +46,7 @@ export * as leaderboardView from '../engine/nostr/leaderboardView.js';
 export * as leaderboardPreview from '../engine/nostr/leaderboardPreview.js';
 export * as relayRead from '../engine/nostr/relayRead.js';
 export * as leaderboardRelayRead from '../engine/nostr/leaderboardRelayRead.js';
+export * as profileRead from '../engine/nostr/profileRead.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
@@ -118,6 +119,10 @@ export const SDK_SURFACE = Object.freeze({
   // kind-30000 score filter, extracts/validates/dedupes score objects from injected
   // relay events, ranks them via leaderboardView; NO signing/publishing/socket.
   leaderboardRelayRead: { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/leaderboardRelayRead.js' },
+  // READ-ONLY Nostr identity/profile PROOF (NOSTR-READ / IDENTITY, v0.2.161) — builds the
+  // kind:0 profile filter, parses + sanitises (https-only URLs) metadata into a display-only
+  // identity view-model, selects the newest profile per author; NO signing/publishing/socket/DOM.
+  profileRead:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/profileRead.js' },
   // torii.quest GitHub release/update-check helpers (LEAN-5, v0.2.138) — pure
   // compare + inert view-model; NO network fetch, NO auto-update.
   updateCheck:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateCheck.js' },
