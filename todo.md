@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.162-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.163-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -33,8 +33,13 @@
      now VISIBLE on the title screen via the inert `leaderboardPreview.js` card
      (v0.2.141 — local/mock rank rows, the kind-30000/#torii-quest score-event proof
      shape, npub signer identity flavour, "PREVIEW · LOCAL MOCK · NO PUBLISH" badge;
-     signed:false / published:false). Real signer/relay read is the next slice
-     (LEAN-4 / LB1, SEC-1).
+     signed:false / published:false). The relay-read path landed (v0.2.160
+     `leaderboardRelayRead.js`); the submit path now has its INTENT/PREVIEW behind the
+     v0.2.162 consent gate (v0.2.163 `submitIntent.js` — `prepareSubmitIntent` builds a
+     sanitised, UNSIGNED kind-30000 draft and routes it through `consentGate`
+     `leaderboard:submit`: BLOCKED without a matching grant, allowed-but-never-performed
+     with one; `signed:false`/`published:false`/`performed:false`). Real signer/relay
+     publish (NIP-07 + relay write) remains the deferred next slice (LEAN-4 / LB1, SEC-1).
   4. **torii.quest GitHub update-check** — pure release/update-check helper + inert
      "update available" view-model (v0.2.138), now VISIBLE on the title screen via the
      inert `updatePreview.js` card (v0.2.142 — running version, sampled latest release,

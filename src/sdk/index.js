@@ -48,6 +48,7 @@ export * as relayRead from '../engine/nostr/relayRead.js';
 export * as leaderboardRelayRead from '../engine/nostr/leaderboardRelayRead.js';
 export * as profileRead from '../engine/nostr/profileRead.js';
 export * as consentGate from '../engine/consent/consentGate.js';
+export * as submitIntent from '../engine/leaderboard/submitIntent.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
@@ -130,6 +131,11 @@ export const SDK_SURFACE = Object.freeze({
   // an explicit matching grant is present. INERT: never signs/publishes/acts; the
   // decision is permission for the host to act later, not an action taken here.
   consentGate:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/consent/consentGate.js' },
+  // Leaderboard SUBMIT INTENT / PREVIEW (LB-SUBMIT, v0.2.163) — builds a sanitised,
+  // unsigned kind-30000 score draft and routes it through consentGate
+  // (`leaderboard:submit`). INERT: blocked without a matching grant; never
+  // signs/publishes/sends/connects — performed:false on every report.
+  submitIntent:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/leaderboard/submitIntent.js' },
   // torii.quest GitHub release/update-check helpers (LEAN-5, v0.2.138) — pure
   // compare + inert view-model; NO network fetch, NO auto-update.
   updateCheck:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateCheck.js' },

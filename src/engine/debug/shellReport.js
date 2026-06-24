@@ -18,6 +18,7 @@ import { leaderboardPreviewBlock } from '../nostr/leaderboardPreview.js';
 import { readLeaderboardEvents } from '../nostr/leaderboardRelayRead.js';
 import { readProfiles } from '../nostr/profileRead.js';
 import { CONSENT_ACTIONS, evaluateConsent, summariseConsent } from '../consent/consentGate.js';
+import { prepareSubmitIntent, DEMO_SUBMIT_INPUT } from '../leaderboard/submitIntent.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -330,6 +331,34 @@ export function consentGateReport(opts = {}) {
   };
 }
 
+// leaderboardSubmitReport(input, grant) → the READ-ONLY leaderboard SUBMIT INTENT
+// map (LB-SUBMIT, v0.2.163). Shows the inert submit DRAFT a host WOULD sign+publish
+// for a run, and the consent-gate decision for it. With no grant (default) the
+// decision is BLOCKED (consent-required); an optional `grant` previews what WOULD be
+// allowed — still without performing anything (`performed:false` pinned, the draft is
+// never signed/published). Defaults to deterministic DEMO sample data.
+export function leaderboardSubmitReport(input = DEMO_SUBMIT_INPUT, grant = null) {
+  const r = prepareSubmitIntent(input, grant);
+  return {
+    title: 'LEADERBOARD SUBMIT INTENT',
+    badge: 'PREVIEW · INERT · NO SIGN/PUBLISH',
+    action: r.action,
+    ok: r.ok,
+    allowed: r.consent.allowed,
+    blocked: r.consent.blocked,
+    reason: r.consent.reason,
+    kind: r.draft ? r.draft.kind : null,
+    identity: r.draft ? r.draft.identity : null,
+    tags: r.draft ? r.draft.event.tags : null,
+    summary: r.summary,
+    signed: r.signed,
+    published: r.published,
+    performed: r.performed,
+    readOnly: r.readOnly,
+    errors: r.errors,
+  };
+}
+
 // updatePreviewReport(release, opts) → the visible-but-inert torii.quest
 // update-check PREVIEW block (LEAN-5) a title/HUD card would draw. Read-only;
 // pins actionable:false so the no-fetch/no-auto-update guarantee is explicit.
@@ -408,6 +437,8 @@ export function buildShellReport(inputs = {}) {
     relayScoreEvents = DEMO_RELAY_SCORE_EVENTS,
     profileEvents = DEMO_PROFILE_EVENTS,
     consentGrants = null,
+    submitInput = DEMO_SUBMIT_INPUT,
+    submitGrant = null,
     release = DEMO_RELEASE,
     updateFeed,
   } = inputs;
@@ -421,6 +452,7 @@ export function buildShellReport(inputs = {}) {
     leaderboardRelayRead: leaderboardRelayReadReport(relayScoreEvents),
     profileRead: profileReadReport(profileEvents),
     consentGate: consentGateReport(consentGrants ? { grants: consentGrants } : {}),
+    leaderboardSubmit: leaderboardSubmitReport(submitInput, submitGrant),
     updatePreview: updatePreviewReport(release),
     updateStatus: updateStatusReport(updateFeed),
     mvpLoop: mvpLoopReport(),

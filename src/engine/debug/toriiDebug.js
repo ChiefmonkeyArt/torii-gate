@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, leaderboardSubmitReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 import { resolveAllAnchors } from '../world/anchorTransforms.js';
@@ -184,6 +184,12 @@ export function installToriiDebug(refs) {
       // Pass { grants } to preview what WOULD be allowed. Inert; performed:false —
       // never signs, publishes, or acts.
       consentGate(opts) { return consentGateReport(opts); },
+      // v0.2.163 — the READ-ONLY leaderboard SUBMIT INTENT / PREVIEW (LB-SUBMIT):
+      // shows the inert, unsigned kind-30000 score draft a host WOULD submit and the
+      // consent-gate decision for it. Blocked by default (consent-required); pass a
+      // grant to preview what WOULD be allowed. Inert; performed:false — never signs,
+      // publishes, sends, or connects.
+      leaderboardSubmit(input, grant) { return leaderboardSubmitReport(input, grant); },
       // v0.2.142 — the visible-but-inert torii.quest update-check PREVIEW block
       // (LEAN-5) the title/HUD card draws. Read-only; actionable:false — no network
       // fetch, no auto-update, no install, no navigation (deterministic local sample).
