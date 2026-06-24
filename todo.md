@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.163-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.164-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -24,6 +24,12 @@
   1. **Gateway / NAP-to-NAP preview** — the Torii Gateway portal view + travel-intent
      preview (`gatewayPortal.js`), now VISIBLE on the title screen via the inert
      `gatewayPreview.js` card (v0.2.139); cross-the-gate handoff (LEAN-2 / CMP-8).
+     The destination-record READ path now has its PROOF (v0.2.164 `gatewayRead.js` —
+     `readGateways` builds the kind-30078 + `torii-gateway` topic filter and extracts +
+     sanitises injected/sample relay events into a safe travel-preview model, deduped to
+     the newest record per addressable zone; `navigated`/`signed`/`published`/`performed:false`,
+     `readOnly:true`). Real relay read transport + the in-world gateway/destination MESH
+     remain the deferred next slice.
   2. **Plebeian / Nostr product panel proof** — read-only product surface over
      `productPanelShell.js`, now VISIBLE on the title screen via the inert
      `productPreview.js` card (v0.2.140 — product identity, price, Nostr seller npub

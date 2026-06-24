@@ -19,6 +19,7 @@ import { readLeaderboardEvents } from '../nostr/leaderboardRelayRead.js';
 import { readProfiles } from '../nostr/profileRead.js';
 import { CONSENT_ACTIONS, evaluateConsent, summariseConsent } from '../consent/consentGate.js';
 import { prepareSubmitIntent, DEMO_SUBMIT_INPUT } from '../leaderboard/submitIntent.js';
+import { readGateways, DEMO_GATEWAY_EVENTS } from '../gateway/gatewayRead.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -359,6 +360,32 @@ export function leaderboardSubmitReport(input = DEMO_SUBMIT_INPUT, grant = null)
   };
 }
 
+// gatewayReadReport(input) → the READ-ONLY gateway destination relay-read map
+// (GATEWAY / NAP-zone handoff, v0.2.164). Shows the sanitised travel-preview records
+// a host's read-only transport WOULD return for the torii-gateway topic, deduped to
+// the newest record per addressable zone. INERT: never navigates/signs/publishes
+// (`navigated`/`signed`/`published`/`performed:false` pinned). Defaults to the
+// deterministic DEMO sample (no network).
+export function gatewayReadReport(input = DEMO_GATEWAY_EVENTS) {
+  const r = readGateways(input);
+  return {
+    title: 'GATEWAY DESTINATION READ',
+    badge: 'PREVIEW · INERT · NO NAVIGATION',
+    ok: r.ok,
+    count: r.count,
+    duplicates: r.duplicates,
+    filter: r.filter,
+    gateways: r.gateways,
+    skipped: r.skipped.length,
+    navigated: r.navigated,
+    signed: r.signed,
+    published: r.published,
+    performed: r.performed,
+    readOnly: r.readOnly,
+    errors: r.errors,
+  };
+}
+
 // updatePreviewReport(release, opts) → the visible-but-inert torii.quest
 // update-check PREVIEW block (LEAN-5) a title/HUD card would draw. Read-only;
 // pins actionable:false so the no-fetch/no-auto-update guarantee is explicit.
@@ -439,6 +466,7 @@ export function buildShellReport(inputs = {}) {
     consentGrants = null,
     submitInput = DEMO_SUBMIT_INPUT,
     submitGrant = null,
+    gatewayEvents = DEMO_GATEWAY_EVENTS,
     release = DEMO_RELEASE,
     updateFeed,
   } = inputs;
@@ -453,6 +481,7 @@ export function buildShellReport(inputs = {}) {
     profileRead: profileReadReport(profileEvents),
     consentGate: consentGateReport(consentGrants ? { grants: consentGrants } : {}),
     leaderboardSubmit: leaderboardSubmitReport(submitInput, submitGrant),
+    gatewayRead: gatewayReadReport(gatewayEvents),
     updatePreview: updatePreviewReport(release),
     updateStatus: updateStatusReport(updateFeed),
     mvpLoop: mvpLoopReport(),

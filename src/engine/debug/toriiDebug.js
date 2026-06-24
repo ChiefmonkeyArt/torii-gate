@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, leaderboardSubmitReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, leaderboardSubmitReport, gatewayReadReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 import { resolveAllAnchors } from '../world/anchorTransforms.js';
@@ -190,6 +190,12 @@ export function installToriiDebug(refs) {
       // grant to preview what WOULD be allowed. Inert; performed:false — never signs,
       // publishes, sends, or connects.
       leaderboardSubmit(input, grant) { return leaderboardSubmitReport(input, grant); },
+      // v0.2.164 — the READ-ONLY gateway destination relay-read PROOF (GATEWAY /
+      // NAP-zone handoff): shows the sanitised travel-preview records a read-only
+      // transport WOULD return for the torii-gateway topic, deduped to the newest per
+      // zone. Inert; navigated:false — never navigates, signs, publishes, or connects
+      // (deterministic local sample).
+      gatewayRead(input) { return gatewayReadReport(input); },
       // v0.2.142 — the visible-but-inert torii.quest update-check PREVIEW block
       // (LEAN-5) the title/HUD card draws. Read-only; actionable:false — no network
       // fetch, no auto-update, no install, no navigation (deterministic local sample).

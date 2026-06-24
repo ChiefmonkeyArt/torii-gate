@@ -65,6 +65,22 @@ world know a traveller is coming?
    resolves its destination `npub` → current `relay` + entry data by querying
    relays. This is the Nostr-native path: no central server, censorship-resistant,
    and it lets a destination move relays without breaking inbound gates.
+
+   > **Read-proof (v0.2.164, `src/engine/gateway/gatewayRead.js`).** The READ side
+   > of this path now has a pure, inert proof: `readGateways(input,options)`
+   > consumes injected/sample relay events (whatever a read-only transport WOULD
+   > return), builds a NIP-01 filter for kind **30078** (NIP-78 app data — the
+   > read-proof choice while the registry kind is TBD) carrying the discovery topic
+   > tag `['t','torii-gateway']`, and extracts each event into a SANITISED travel-
+   > preview model (`zoneId` from the `d` tag, `title`/`description`/`zoneType`,
+   > `npub`/`pubkey`, https-only `website`/`banner`, ws/wss `relays`, `topics`,
+   > `created_at`, `trust:'unverified'`), deduped to the newest record per
+   > addressable `pubkey+zoneId` (parameterised-replaceable semantics). It NEVER
+   > navigates, queries the network, signs, or publishes — the report pins
+   > `navigated:false`/`signed:false`/`published:false`/`performed:false`/
+   > `readOnly:true`. This proves how a gate would read + validate a destination
+   > descriptor into a safe preview; the live relay query + the act of travelling
+   > remain deferred (§6).
 2. **Direct hint fallback.** The gate's manifest already carries a `relay` hint
    and (in the URL-handoff MVP) a destination URL. If relays are unavailable or
    the destination has not published a descriptor, the gate uses these static

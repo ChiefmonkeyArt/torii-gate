@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.163-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.164-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no navigation, no signing/publishing, no auto-update.
@@ -39,7 +39,7 @@ frozen `SDK_SURFACE` map; `surfacesByTier(tier)` lists names at a tier.
 `productDisplay`, `productPanel`, `productPanelShell`, `productPreview`,
 `travelIntent`, `gatewayHandoff`, `gatewayPortal`, `gatewayPreview`, `leaderboard`,
 `leaderboardPublisher`, `leaderboardView`, `leaderboardPreview`, `relayRead`, `leaderboardRelayRead`, `profileRead`,
-`consentGate`, `submitIntent`, `updateCheck`,
+`consentGate`, `submitIntent`, `gatewayRead`, `updateCheck`,
 `updatePreview`, `githubReleaseSource`, `updateStatus`, `mvpLoop`, `proofSurfaceSpecs`, `anchorTransforms`.
 
 `relayRead` (NOSTR-READ, v0.2.159) is the pure READ-ONLY Nostr relay adapter
@@ -104,6 +104,22 @@ grant (a grant for a different action → `consent-mismatch`), and a malformed s
 `ok:false` even WITH a grant; with a matching grant consent is marked allowed but the
 flow STILL never signs/publishes/sends/connects/writes (`performed:false` pinned).
 
+`gatewayRead` (GATEWAY / NAP-zone handoff, v0.2.164) is the pure READ-ONLY gateway
+DESTINATION-RECORD read proof on top of the v0.2.159 relay boundary. `buildGatewayFilter`
+builds the kind-30078 `#t:torii-gateway` NIP-01 filter. `extractGatewayFromEvent(event)→{ok,gateway?|errors?}`
+reconstructs a sanitised travel-preview model (`zoneId`/`title`/`description`/`zoneType`/
+`npub`/`pubkey`/`shortPubkey`/`website`/`banner`/`relays`/`topics`/`created_at`/`trust`) from a
+NORMALISED gateway event — zone id anchored to the `d` tag (rejects records with none); all
+text control/markup-stripped; website/banner https-only via `safeProfileUrl`; relays ws/wss-only
++ credential-free + deduped via `validateRelayUrl`; npub via `looksLikeNpub`; zoneType ∈
+nap/arena/shop/gallery; `trust:'unverified'`. `dedupeGateways` keeps the newest record per
+addressable `pubkey+zoneId`. `readGateways(input,options)` accepts a relayRead `read()` result /
+bare events array / `{events}` / local sample, runs each item normalise→validate→extract
+(failures land in `skipped`), dedupes newest-per-zone, and returns a read-only
+`{ok,filter,count,gateways,skipped,duplicates,navigated:false,signed:false,published:false,performed:false,readOnly:true,errors}`
+— degrading an unusable shape to `ok:false` with an empty list and NEVER throwing/navigating/
+signing/publishing/opening a socket.
+
 `githubReleaseSource` (LEAN-5, v0.2.157) is the pure GitHub Releases source adapter:
 `normalizeRelease`/`selectLatestRelease`/`evaluateFromSource` turn a `releases/latest`
 object, a `releases` array, or a manifest into an update verdict; the optional
@@ -166,6 +182,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.profileRead(e?,o?)` | **v0.2.161** READ-ONLY identity/profile PROOF over a deterministic LOCAL sample — `{ok,filter,count,profiles,skipped,duplicates,signed:false,published:false,readOnly:true,errors}` (kind:0 parse→sanitise→newest-per-author; https-only inert URLs, no DOM/relay I/O) |
 | `shells.consentGate(o?)` | **v0.2.162** READ-ONLY CONSENT-GATE foundation map — `{title,badge,count,writeActions,allowedByDefault,actions:[{action,kind,write,signed,requiresConsent,danger,allowed,blocked,reason,performed:false,summary}],readOnly:true,performed:false}` (reads allowed, writes blocked until an explicit grant; pass `{grants}` to preview; never signs/publishes/acts) |
 | `shells.leaderboardSubmit(i?,g?)` | **v0.2.163** READ-ONLY leaderboard SUBMIT INTENT/PREVIEW over a deterministic sample — `{title,badge,action,ok,allowed,blocked,reason,kind,identity,tags,summary,signed:false,published:false,performed:false,readOnly:true,errors}` (inert UNSIGNED kind-30000 draft routed through the consent gate; BLOCKED with no grant, pass a grant to preview allow; never signs/publishes/sends/connects) |
+| `shells.gatewayRead(e?)` | **v0.2.164** READ-ONLY gateway DESTINATION-RECORD read proof over a deterministic LOCAL sample — `{title,badge,ok,count,duplicates,filter,gateways,skipped,navigated:false,signed:false,published:false,performed:false,readOnly:true,errors}` (kind-30078 `#t:torii-gateway` filter; extract→sanitise→newest-per-zone; https-only inert URLs + ws/wss relays, no navigation/DOM/relay I/O) |
 | `shells.updatePreview(r?,o?)` | LEAN-5 preview block — `{title,badge,status,statusLabel,currentVersion,latestVersion,updateAvailable,prompt,source,lines,readOnly:true,actionable:false}` |
 | `shells.updateStatus(p?,o?)` | **v0.2.158** LEAN-5 in-game UPDATE-STATUS panel — `{title,badge,surface,step,status,statusLabel,currentVersion,latestVersion,updateAvailable,prompt,source:{status,kind,candidates,errors},sourceUrl,lines,readOnly:true,actionable:false}` (defaults to local sample feed) |
 | `shells.mvpLoop(o?)` | loop header block — `{title,badge,flow,note,version,steps,lines,readOnly:true,actionable:false}` |
@@ -480,6 +497,7 @@ PURE/node-safe — composes plain data only; renders and acts on nothing.
 | `profileRead` | `tests/profile-read.test.js` |
 | `consentGate` | `tests/consent-gate.test.js` |
 | `submitIntent` | `tests/leaderboard-submit-intent.test.js` |
+| `gatewayRead` | `tests/gateway-read.test.js` |
 | `mvpLoop` | `tests/mvp-loop.test.js` |
 | `ToriiDebug.shells.*` reports + `summary()` | `tests/shell-report.test.js` |
 | `proofSurfaceSpecs` / `shells.surfaceSpecs()` | `tests/proof-surface-specs.test.js` |
