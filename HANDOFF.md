@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.145-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.146-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -219,7 +219,7 @@ npm run preview  # serve the built dist/ (used for headless smoke)
 ```
 
 A change is "green" when **build + check + test** all pass. Current baseline:
-**377 tests / 34 files**, all 11 regression checks GREEN, build clean.
+**383 tests / 34 files**, all 11 regression checks GREEN, build clean.
 
 Tests run in node (`vite.config.js` → `environment: 'node'`). `WebGLRenderer` is
 created at module load in `scene.js`, so any module importing `scene.js`
@@ -238,14 +238,17 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
 - `.snapshot()` — one JSON-serialisable object: version, phase, run state, player
   pos, combat last shot/hit/miss, physics+crate summary, tuning. Safe anytime.
 - `.combat.report()` / `.physics.report()` — focused JSON sub-reports.
-- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,report,summary}()` —
+- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,report,summary,diff}()` —
   read-only reports over the VIEW shells + visible preview blocks (demo fixtures by
   default; pass overrides). No signer, no relay/publish, no navigation, no checkout,
   no fetch/auto-update
   (`engine/debug/shellReport.js`; `gatewayPreview` v0.2.139, `productPreview` v0.2.140,
   `leaderboardPreview` v0.2.141, `updatePreview` v0.2.142). `summary()` (v0.2.145,
   pure `shellsSummary()`) is a one-call discoverability aggregate of the four proof
-  surfaces + MVP loop with an `allInert` gate; see `SDK_DEBUG_INDEX.md`.
+  surfaces + MVP loop with an `allInert` gate. `diff(a,b)` (v0.2.146, pure
+  `shellsDiff()`) compares two `summary()` outputs and flags invariant flips that
+  loosen inertness (`loosened[]` checklist for preview→live promotions); all four
+  previews now expose symmetric `readOnly`+`actionable`. See `SDK_DEBUG_INDEX.md`.
 - `.physics.service` — injectable RaycastService facade (`ray`/`rayStatic`/`lineOfSight`).
 - `.bots`, `.player`, `.physics`, `.world`, `.fx`, `.combat`, `.identity`.
 

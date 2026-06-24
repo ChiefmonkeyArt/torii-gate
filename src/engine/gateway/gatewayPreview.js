@@ -53,6 +53,7 @@ export function previewUrl(url, max = 48) {
 //     prompt:      string,             // '' unless armed
 //     badge:       'PREVIEW · SAFE · INERT',
 //     lines:       [{ label, value }], // ready-to-draw rows for a DOM/HUD card
+//     readOnly:    true,               // ALWAYS true — describes a hop, never performs one
 //     actionable:  false,              // ALWAYS false — never a live action
 //   }
 //
@@ -88,6 +89,7 @@ export function gatewayPreviewBlock(component, context = {}, { base = '', prompt
     prompt: view.prompt,
     badge: GATEWAY_PREVIEW_BADGE,
     lines,
+    readOnly: true,    // symmetry with the other three previews; describes, never acts
     actionable: false, // display-only; crossing the gate stays a host decision
   };
 }

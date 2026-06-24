@@ -77,7 +77,8 @@ export function gatewayReport(component = DEMO_GATEWAY, context = {}, opts = {})
 
 // gatewayPreviewReport(component, context, opts) → the visible-but-inert gateway
 // PREVIEW block (LEAN-2) a title/HUD card would draw. Read-only; pins
-// actionable:false so the no-navigation guarantee is explicit in the report.
+// readOnly:true + actionable:false so the no-navigation guarantee is explicit in
+// the report and symmetric with the other three proof surfaces.
 export function gatewayPreviewReport(component = DEMO_GATEWAY, context = {}, opts = {}) {
   const b = gatewayPreviewBlock(component, context, opts);
   return {
@@ -91,6 +92,7 @@ export function gatewayPreviewReport(component = DEMO_GATEWAY, context = {}, opt
     urlPreview: b.urlPreview,
     badge: b.badge,
     lines: b.lines,
+    readOnly: b.readOnly,
     actionable: b.actionable,
   };
 }
@@ -249,7 +251,7 @@ export function shellsSummary(inputs = {}) {
       key: 'gatewayPreview', lean: 'LEAN-2', step: 'TRAVEL',
       sdk: 'gatewayPreview', shell: 'gatewayPreview',
       title: r.gatewayPreview.title,
-      invariants: { actionable: r.gatewayPreview.actionable },
+      invariants: { readOnly: r.gatewayPreview.readOnly, actionable: r.gatewayPreview.actionable },
     },
     {
       key: 'productPreview', lean: 'LEAN-3', step: 'MARKET',
@@ -303,5 +305,82 @@ export function shellsSummary(inputs = {}) {
     // these modules never fetch, navigate, sign, publish, or auto-update.
     network: false,
     autoUpdate: false,
+  };
+}
+
+// The SAFE (inert) value for every invariant/flag the summary tracks. A flip that
+// moves an invariant AWAY from its safe value LOOSENS inertness — exactly the kind
+// of change a preview→live promotion must make consciously, and the kind a
+// reviewer must sign off on. Used by shellsDiff to classify each flip.
+const SAFE_VALUE = Object.freeze({
+  readOnly: true,
+  actionable: false,
+  signed: false,
+  published: false,
+  allInert: true,
+  network: false,
+  autoUpdate: false,
+});
+
+// loosensInert(key, to) → true when setting `key` to `to` moves it to its UNSAFE
+// value (e.g. actionable→true, readOnly→false). Untracked keys never loosen. Pure.
+function loosensInert(key, to) {
+  if (!(key in SAFE_VALUE)) return false;
+  return to === !SAFE_VALUE[key];
+}
+
+// shellsDiff(a, b) → a pure, JSON-serialisable diff of two shellsSummary outputs
+// (a = before/preview, b = after/promoted). It identifies INTENDED invariant flips
+// so a preview→live promotion can be reviewed mechanically: which surface changed,
+// which invariant flipped, from what to what, and whether that flip loosens the
+// inert guarantee. No network/actions/DOM/THREE/Rapier — it only compares the two
+// already-computed summaries.
+//
+//   {
+//     changed:     boolean,            // any flip at all
+//     safe:        boolean,            // true when NO flip loosens inertness
+//     fromVersion, toVersion,          // the two summaries' versions
+//     flips:       [{ scope, key, ... from, to, loosens }],
+//     loosened:    [...flips where loosens === true],  // the review checklist
+//   }
+//
+// `scope` is 'summary' for top-level safety flags (allInert/network/autoUpdate) or
+// 'surface' for a per-surface invariant (key = surface key, invariant = field).
+// A surface present in only one side is reported as added/removed.
+export function shellsDiff(a = shellsSummary(), b = shellsSummary()) {
+  const flips = [];
+
+  // Top-level safety flags.
+  for (const key of ['allInert', 'network', 'autoUpdate']) {
+    if (a[key] !== b[key]) {
+      flips.push({ scope: 'summary', key, from: a[key], to: b[key], loosens: loosensInert(key, b[key]) });
+    }
+  }
+
+  // Per-surface invariants.
+  const aBy = new Map((a.surfaces || []).map((s) => [s.key, s]));
+  const bBy = new Map((b.surfaces || []).map((s) => [s.key, s]));
+  for (const key of new Set([...aBy.keys(), ...bBy.keys()])) {
+    const sa = aBy.get(key);
+    const sb = bBy.get(key);
+    if (!sa) { flips.push({ scope: 'surface', key, change: 'added', loosens: false }); continue; }
+    if (!sb) { flips.push({ scope: 'surface', key, change: 'removed', loosens: false }); continue; }
+    const ia = sa.invariants || {};
+    const ib = sb.invariants || {};
+    for (const inv of new Set([...Object.keys(ia), ...Object.keys(ib)])) {
+      if (ia[inv] !== ib[inv]) {
+        flips.push({ scope: 'surface', key, invariant: inv, from: ia[inv], to: ib[inv], loosens: loosensInert(inv, ib[inv]) });
+      }
+    }
+  }
+
+  const loosened = flips.filter((f) => f.loosens === true);
+  return {
+    changed: flips.length > 0,
+    safe: loosened.length === 0,
+    fromVersion: a.version,
+    toVersion: b.version,
+    flips,
+    loosened,
   };
 }

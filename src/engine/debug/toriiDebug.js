@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, updatePreviewReport, mvpLoopReport, buildShellReport, shellsSummary } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, updatePreviewReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 
 export function installToriiDebug(refs) {
   const {
@@ -175,6 +175,11 @@ export function installToriiDebug(refs) {
       // reports. `allInert` is the single gate a reviewer can assert. Read-only;
       // no network/actions. For AI handoffs + FOSS devs (see SDK_DEBUG_INDEX.md).
       summary(inputs) { return shellsSummary(inputs); },
+      // v0.2.146 — pure read-only DIFF of two shells.summary() outputs (before/after
+      // a preview→live promotion). Classifies each invariant flip and flags the ones
+      // that LOOSEN inertness, so a promotion can be reviewed mechanically. No
+      // network/actions/DOM/THREE — only compares the two summaries already computed.
+      diff(a, b) { return shellsDiff(a, b); },
     },
   };
 

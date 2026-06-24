@@ -3,7 +3,8 @@
 // output, is deterministic, and exposes NO commerce/signer/publish/navigation.
 import { describe, it, expect } from 'vitest';
 import {
-  gatewayReport, productReport, leaderboardReport, buildShellReport, shellsSummary,
+  gatewayReport, gatewayPreviewReport, productReport, leaderboardReport,
+  buildShellReport, shellsSummary, shellsDiff,
   DEMO_GATEWAY, DEMO_PRODUCT, DEMO_SCORES,
 } from '../src/engine/debug/shellReport.js';
 import { VERSION } from '../src/config.js';
@@ -128,6 +129,70 @@ describe('shellReport — shellsSummary', () => {
     const s = shellsSummary();
     for (const k of ['fetch', 'navigate', 'href', 'sign', 'publish', 'update', 'checkout', 'onClick']) {
       expect(s).not.toHaveProperty(k);
+    }
+  });
+
+  it('exposes symmetric readOnly+actionable invariants on all four surfaces', () => {
+    const s = shellsSummary();
+    for (const x of s.surfaces) {
+      expect(x.invariants.readOnly).toBe(true);
+      expect(x.invariants.actionable).toBe(false);
+    }
+    // The gateway preview now reports readOnly explicitly (v0.2.146 symmetry).
+    expect(gatewayPreviewReport().readOnly).toBe(true);
+  });
+});
+
+describe('shellReport — shellsDiff', () => {
+  it('reports no flips for two identical summaries (safe, unchanged)', () => {
+    const d = shellsDiff(shellsSummary(), shellsSummary());
+    expect(d.changed).toBe(false);
+    expect(d.safe).toBe(true);
+    expect(d.flips).toEqual([]);
+    expect(d.loosened).toEqual([]);
+    expect(d.fromVersion).toBe(d.toVersion);
+  });
+
+  it('flags a surface invariant flip that LOOSENS inertness (actionable→true)', () => {
+    const before = shellsSummary();
+    const after = structuredClone(before);
+    const upd = after.surfaces.find((x) => x.key === 'updatePreview');
+    upd.invariants.actionable = true; // simulate a preview→live promotion
+    after.allInert = false;           // the summary would recompute this too
+    const d = shellsDiff(before, after);
+    expect(d.changed).toBe(true);
+    expect(d.safe).toBe(false);
+    const flip = d.loosened.find((f) => f.scope === 'surface' && f.key === 'updatePreview');
+    expect(flip).toMatchObject({ invariant: 'actionable', from: false, to: true, loosens: true });
+    // The top-level allInert flip is also flagged as loosening.
+    expect(d.loosened.some((f) => f.key === 'allInert' && f.from === true && f.to === false)).toBe(true);
+  });
+
+  it('treats a TIGHTENING flip (actionable→false) as safe', () => {
+    const before = shellsSummary();
+    const loosened = structuredClone(before);
+    loosened.surfaces.find((x) => x.key === 'productPreview').invariants.actionable = true;
+    // Diffing loosened → original tightens it back: a change, but not a loosening.
+    const d = shellsDiff(loosened, before);
+    expect(d.changed).toBe(true);
+    expect(d.safe).toBe(true);
+    expect(d.loosened).toEqual([]);
+  });
+
+  it('reports added/removed surfaces without loosening', () => {
+    const before = shellsSummary();
+    const after = structuredClone(before);
+    after.surfaces.pop(); // drop updatePreview
+    const d = shellsDiff(before, after);
+    const removed = d.flips.find((f) => f.change === 'removed');
+    expect(removed).toMatchObject({ scope: 'surface', key: 'updatePreview', loosens: false });
+    expect(d.safe).toBe(true);
+  });
+
+  it('exposes NO live-action keys on the diff', () => {
+    const d = shellsDiff(shellsSummary(), shellsSummary());
+    for (const k of ['fetch', 'navigate', 'href', 'sign', 'publish', 'checkout', 'onClick']) {
+      expect(d).not.toHaveProperty(k);
     }
   });
 });
