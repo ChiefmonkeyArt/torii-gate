@@ -41,6 +41,7 @@ export * as gatewayPortal from '../engine/gateway/gatewayPortal.js';
 export * as leaderboard from '../engine/nostr/leaderboard.js';
 export * as leaderboardPublisher from '../engine/nostr/leaderboardPublisher.js';
 export * as leaderboardView from '../engine/nostr/leaderboardView.js';
+export * as updateCheck from '../engine/update/updateCheck.js';
 export { createRaycastService, raycastService } from '../engine/physics/raycastService.js';
 
 // ---- Metadata --------------------------------------------------------------
@@ -92,6 +93,9 @@ export const SDK_SURFACE = Object.freeze({
   leaderboardPublisher: { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/leaderboardPublisher.js' },
   // Read-only leaderboard display + build-only preview shell (LB-1, v0.2.136).
   leaderboardView: { tier: STABILITY.EXPERIMENTAL, module: '../engine/nostr/leaderboardView.js' },
+  // torii.quest GitHub release/update-check helpers (LEAN-5, v0.2.138) — pure
+  // compare + inert view-model; NO network fetch, NO auto-update.
+  updateCheck:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateCheck.js' },
   // Forward-declared internals — public story, not safe/ready to re-export yet:
   physicsBodies:   { tier: STABILITY.INTERNAL,     module: null },
   physicsRaycast:  { tier: STABILITY.INTERNAL,     module: null },

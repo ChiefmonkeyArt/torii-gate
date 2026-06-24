@@ -14,7 +14,13 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.137-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.138-alpha (see §3 for every place the version string lives)
+- **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
+  Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
+  maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
+  loop — gateway/NAP-to-NAP preview, Plebeian/Nostr product panel proof, leaderboard
+  preview, and the torii.quest GitHub update-check (LEAN-1..LEAN-5). Retrospective
+  polish comes AFTER proof-of-concept validation.
 - **Live:** https://torii-quest.pplx.app (a Perplexity Space — deploy is a separate manual step, see §7)
 - **License:** GPL-3.0
 
@@ -137,6 +143,13 @@ Breaking one should fail CI/the check, not ship.
   `leaderboardReport`/`buildShellReport` + `DEMO_GATEWAY`/`DEMO_PRODUCT`/
   `DEMO_SCORES` fixtures). Surfaced on `ToriiDebug.shells.*`. Only reads the
   shells' pure return values — NO signer, NO relay/publish, NO navigation.
+- **`src/engine/update/updateCheck.js`** (LEAN-5, v0.2.138) — pure torii.quest
+  GitHub update-check architecture (`compareVersions`/`parseRelease`/
+  `evaluateUpdate`/`updateCheckView` + `RELEASE_SOURCE`/`UPDATE_STATUS`). Compares
+  a GitHub-release-shaped manifest's semver tag against the runtime `VERSION` and
+  returns an INERT "update available" view-model (`actionable:false`). NO network
+  fetch, NO auto-update, NO install — the actual fetch + the prompt MESH are
+  deferred host steps. SDK `updateCheck` (experimental). See `UPDATE_CHECK.md`.
 
 ## 5. Build / test / check commands
 
