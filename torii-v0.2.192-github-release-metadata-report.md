@@ -127,4 +127,4 @@ active + completed slices; oldest v0.2.188 rolled off completed-24h to keep the 
   `public/continuum.html`, `public/continuum-data.json`, `todo.md`, `progress.md`, `HANDOFF.md`,
   `CODE_INDEX.md`, `SDK_DEBUG_INDEX.md`, `UPDATE_CHECK.md`, `VPS_INSTALL.md`.
 
-**Commit:** _(local-only; not pushed — recorded after commit below)_
+**Commit:** `628497f` — `v0.2.192-alpha: prepare GitHub release update metadata` (local-only; not pushed).
