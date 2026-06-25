@@ -147,4 +147,4 @@ newest report's filename carries the current version token (it did, on report cr
 
 **No gameplay/runtime/physics/Nostr/portal code touched.**
 
-**Follow-up commit:** _(local-only; not pushed — recorded below)_
+**Follow-up commit:** `db328b6` — _v0.2.191-alpha: link latest report in HANDOFF.md so docs:stale is clean (WARN-3)_ (local-only; not pushed)
