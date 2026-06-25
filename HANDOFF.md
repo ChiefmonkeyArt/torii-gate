@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.196-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.197-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -334,7 +334,30 @@ Breaking one should fail CI/the check, not ship.
   `buildShellReport`). `tests/update-flow-smoke.test.js` (+17). NOT an updater — performs no real
   update; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write;
   `godMode` stays false.
-  Latest slice report: `torii-v0.2.196-update-flow-smoke-report.md`.
+  **v0.2.197** added a HOST ROUTE + ASSET SMOKE harness — a pure, node-safe read-only smoke harness
+  (`src/engine/host/hostRouteSmoke.js`) that folds the torii.quest static-host route + asset
+  readiness contracts into ONE fail-fast report so future VPS/static-host work can be regression-
+  checked locally without a server, shell, or network. `runHostRouteSmoke(opts?)` →
+  `{version,badge,ok,signals,summary,safety,reasons,rendered:false,actionable:false}` over TEN
+  signals: root `index.html` present in the dist path set; the `DIST_SPEC.expectedArtifacts`
+  (`index.html`+`assets`) present; the `/continuum.html` dashboard asset present; the
+  `release-metadata.json` update asset present; the `REQUIRED_FILES` floor documented; the `/zone/*`
+  SPA fallback documented in `VPS_INSTALL.md`/`HANDOFF.md` (reuses `checkFallbackDocs`); NO built file
+  shadows the `/zone/<slug>` fallback (`zonePathsInDist` empty); an unknown `/zone/<slug>` is served
+  `index.html` by host config while NOT a built file; the app route parser keeps the slug SAFE
+  (`parseZoneRoute`→`ZONE`, `isValidZoneSlug` true) and rejects the whole `HOSTILE_ZONE_PATHS` fixture
+  (absolute scheme / protocol-relative / dot-dot / sub-path / uppercase+underscore / empty slug /
+  percent-encoding / `javascript:`); no host-side action (every report pins `served/deployed/
+  navigated/performed/external/network/wrote/fetched=false` and exposes NO `serve`/`deploy`/`publish`/
+  `upload`/`fetch`/`write`/`navigate`/`exec`/`spawn`/`run`/`ssh`/`connect` CALLABLE). It composes only
+  the already-pure readiness helpers (`zoneFallbackReadiness`, `zoneRoute`, `releaseMeta`) over
+  deterministic LOCAL fixtures — it serves/deploys/touches NOTHING and never reaches a server or the
+  wire; every check is wrapped (malformed input degrades to a fail, never throws). Surfaced via the
+  SDK (`hostRouteSmoke`, EXPERIMENTAL), the debug shell (`ToriiDebug.shells.hostRouteSmoke` /
+  `hostRouteSmokeReport()` folded into `buildShellReport`). `tests/host-route-smoke.test.js` (+17).
+  NOT a VPS deployment — touches no real server/DNS/SSH/remote command/network; no gameplay/physics/
+  shooter/Rapier change; no Nostr signing/publishing/live network write; `godMode` stays false.
+  Latest slice report: `torii-v0.2.197-host-route-smoke-report.md`.
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc

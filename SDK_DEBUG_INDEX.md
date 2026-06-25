@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.196-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.197-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no signing/publishing, no auto-update, and no navigation —
@@ -46,7 +46,7 @@ frozen `SDK_SURFACE` map; `surfacesByTier(tier)` lists names at a tier.
 `travelIntent`, `gatewayHandoff`, `gatewayPortal`, `gatewayPreview`, `leaderboard`,
 `leaderboardPublisher`, `leaderboardView`, `leaderboardPreview`, `relayRead`, `leaderboardRelayRead`, `profileRead`,
 `consentGate`, `consentView`, `submitIntent`, `gatewayRead`, `travelConfirm`, `handoffPlan`, `handoffExecute`, `hostTransport`, `gatewayActivation`, `gatewayPortalActivation`, `portalTrigger`, `zoneRoute`, `portalMeshPlan`, `zoneLabel`, `updateCheck`,
-`updatePreview`, `githubReleaseSource`, `updateStatus`, `updateFlowSmoke`, `mvpLoop`, `proofSurfaceSpecs`, `anchorTransforms`, `nostrReadHealth`, `travelSmoke`.
+`updatePreview`, `githubReleaseSource`, `updateStatus`, `updateFlowSmoke`, `mvpLoop`, `proofSurfaceSpecs`, `anchorTransforms`, `nostrReadHealth`, `travelSmoke`, `hostRouteSmoke`.
 
 `relayRead` (NOSTR-READ, v0.2.159) is the pure READ-ONLY Nostr relay adapter
 foundation: `validateRelayUrl` (ws/wss only, no credentials),
@@ -133,6 +133,30 @@ fetch/install/exec/apply/spawn callable on any output; apply-update confirmation
 helpers — surfaces NO fetch/install/update/apply/exec/spawn/download/navigate method; NOT an
 updater (performs no real update). Reachable read-only via
 `ToriiDebug.shells.updateFlowSmoke(opts?)` / `updateFlowSmokeReport(opts?)`.
+
+`hostRouteSmoke` (HOST / HOST-ROUTE-SMOKE, v0.2.197) is the pure READ-ONLY/NO-DEPLOY smoke
+harness that proves the torii.quest static-host route + asset readiness contracts hold WITHOUT
+a server, shell, or network. Constants: `HOST_ROUTE_SMOKE_VERSION` (1), `HOST_ROUTE_SMOKE_BADGE`
+(`HOST ROUTE SMOKE · READ-ONLY · NO DEPLOY`), `REQUIRED_ASSETS` (index.html / continuum.html /
+continuum-data.json / release-metadata.json); frozen LOCAL fixtures `SAMPLE_DIST_PATHS`
+(Vite-build-shape path list), `SAMPLE_FALLBACK_DOCS` (VPS_INSTALL.md/HANDOFF.md with try_files +
+/zone/ text), `SAMPLE_ZONE_SLUG` (`plebeian-market-bazaar`), `HOSTILE_ZONE_PATHS` (absolute scheme /
+protocol-relative / dot-dot / sub-path / uppercase+underscore / empty slug / percent-encoding /
+`javascript:`). `runHostRouteSmoke(opts?)` composes the shipped pure readiness helpers
+(`zoneFallbackReadiness`, `zoneRoute`, `releaseMeta`) through ten signals — root `index.html`
+present; `DIST_SPEC` expected artifacts present; the `/continuum.html` dashboard asset present;
+the `release-metadata.json` update asset present; the `REQUIRED_FILES` floor documented; the
+`/zone/*` SPA fallback documented; NO built file shadows the `/zone/<slug>` fallback; an unknown
+`/zone/<slug>` is served `index.html` while NOT a built file; the route parser keeps the slug SAFE
+(`parseZoneRoute`→`ZONE`) and rejects the whole `HOSTILE_ZONE_PATHS` fixture; no host-side action
+(every report pins `served/deployed/navigated/performed/external/network/wrote/fetched=false`, no
+serve/deploy/publish/upload/fetch/write/navigate/exec/spawn/run/ssh/connect callable) — folding into
+`{version,badge,ok,signals,summary,safety,reasons,rendered:false,actionable:false}` (a broken
+injected fixture degrades to `ok:false` with concrete `reasons`, never throws).
+`formatHostRouteSmoke` renders one stable text block. Composes ONLY the shipped pure readiness
+helpers — surfaces NO serve/deploy/publish/upload/fetch/write/navigate method; NOT a VPS deployment
+(touches no real server/DNS/SSH/remote command/network). Reachable read-only via
+`ToriiDebug.shells.hostRouteSmoke(opts?)` / `hostRouteSmokeReport(opts?)`.
 
 `consentGate` (CONSENT-1 / SEC-1 precursor, v0.2.162) is the pure, inert consent
 boundary every future write/sign/publish/update/travel action must pass before it may
@@ -547,6 +571,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.readHealth(o?)` | **v0.2.194** READ-ONLY Nostr READ-PATH HEALTH proof over a deterministic LOCAL sample — `{ok,badge,signals:[{key,label,status,detail}],summary:{total:6,ok,fail},readOnly:true,signed:false,published:false,errors}` (folds the six read-path signal checks: relay verbs CLOSE/REQ only, no EVENT/publish verb, profile+leaderboard read paths present, write paths consent-gated, SEC-1/2/3 future-gated; derives from the shipped pure read modules, no relay/socket/sign/publish/DOM I/O) |
 | `shells.travelSmoke(o?)` | **v0.2.195** READ-ONLY/DRY-RUN GATEWAY TRAVEL SMOKE harness — `{title:'GATEWAY TRAVEL SMOKE',badge,ok,summary,signals:[{key,label,status,detail}],safety,reasons,rendered:false,actionable:false}` (drives `createGatewayPortalBoundary({dryRun:true})` with no transport through ten travel-contract signals: trigger arms/proximity never navigates/explicit confirm/same-origin `/zone/<slug>`/scoped allowlist never `'/'`/`HOSTILE_ROUTES` all rejected/no external website/consent-gated/no auto travel; every report pins `navigated/performed/external/signed/published/network=false`; never navigates/signs/publishes) |
 | `shells.updateFlowSmoke(o?)` | **v0.2.196** READ-ONLY/NO-AUTO-UPDATE UPDATE FLOW SMOKE harness — `{title:'UPDATE FLOW SMOKE',badge,ok,summary,signals:[{key,label,status,detail}],safety,reasons,rendered:false,actionable:false}` (folds ten update-flow contract signals over frozen LOCAL fixtures: current-version read, release-metadata shape, update-available + up-to-date classification, malformed→unknown degrades safely, manual-only/no-auto-update, metadata safety floor rejects tampered autoUpdate/actionable, no fetch/install/exec surface, confirmation-gated `update:apply` consent, no auto-action; every report pins `performed/actionable/autoUpdate/installed/executed/fetched/network/signed/published/navigated=false`; NOT an updater — never fetches/installs/executes/updates) |
+| `shells.hostRouteSmoke(o?)` | **v0.2.197** READ-ONLY/NO-DEPLOY HOST ROUTE + ASSET SMOKE harness — `{title:'HOST ROUTE SMOKE',badge,ok,summary,signals:[{key,label,status,detail}],safety,reasons,rendered:false,actionable:false}` (folds ten static-host readiness signals: root index present, DIST_SPEC artifacts, dashboard + release-metadata assets, /zone/* SPA fallback documented, no built file shadows the fallback, unknown /zone/<slug> → index.html, safe slug parsing; every report pins served/deployed/navigated/performed/external/network/wrote/fetched=false; NOT a VPS deployment — touches no server/DNS/SSH/network) |
 | `shells.consentGate(o?)` | **v0.2.162** READ-ONLY CONSENT-GATE foundation map — `{title,badge,count,writeActions,allowedByDefault,actions:[{action,kind,write,signed,requiresConsent,danger,allowed,blocked,reason,performed:false,summary}],readOnly:true,performed:false}` (reads allowed, writes blocked until an explicit grant; pass `{grants}` to preview; never signs/publishes/acts) |
 | `shells.leaderboardSubmit(i?,g?)` | **v0.2.163** READ-ONLY leaderboard SUBMIT INTENT/PREVIEW over a deterministic sample — `{title,badge,action,ok,allowed,blocked,reason,kind,identity,tags,summary,signed:false,published:false,performed:false,readOnly:true,errors}` (inert UNSIGNED kind-30000 draft routed through the consent gate; BLOCKED with no grant, pass a grant to preview allow; never signs/publishes/sends/connects) |
 | `shells.gatewayRead(e?)` | **v0.2.164** READ-ONLY gateway DESTINATION-RECORD read proof over a deterministic LOCAL sample — `{title,badge,ok,count,duplicates,filter,gateways,skipped,navigated:false,signed:false,published:false,performed:false,readOnly:true,errors}` (kind-30078 `#t:torii-gateway` filter; extract→sanitise→newest-per-zone; https-only inert URLs + ws/wss relays, no navigation/DOM/relay I/O) |

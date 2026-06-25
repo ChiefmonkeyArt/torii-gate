@@ -454,3 +454,43 @@ Every report pins `performed/actionable/autoUpdate/installed/executed/fetched/ne
 published/navigated = false`. This is **NOT an updater** and performs no real update — it only makes
 the manual-deploy contracts in this document checkable in CI. Deploying a new release stays the
 manual maintainer step in §7; rollback stays §8.
+
+---
+
+## 15. Host route + asset smoke contracts (v0.2.197)
+
+The serve blocks (§6a/§6b), the SPA `/zone/*` fallback (§11), and the release metadata (§12) all
+describe what a *correctly configured static host* must do with the published `dist/`. v0.2.197
+pins those host-route + asset expectations as an executable smoke harness so the static-host
+readiness for torii.quest can be regression-checked locally — **with NO server, SSH, DNS, remote
+command, or network**.
+
+`src/engine/host/hostRouteSmoke.js` (read-only at `ToriiDebug.shells.hostRouteSmoke()`, SDK
+`hostRouteSmoke`, covered by `tests/host-route-smoke.test.js`) composes the already-shipped pure
+readiness helpers (`zoneFallbackReadiness`, the v0.2.182 `/zone/<slug>` route parser, and the
+v0.2.192 release-metadata guards) into ONE fail-fast report over frozen LOCAL fixtures. It
+serves/deploys/touches nothing; it only asserts the contracts an operator relies on before
+publishing a `dist/`:
+
+- **Root index present:** the build emits a root `index.html` (the document the host serves for
+  `/` and as the SPA fallback).
+- **Expected artifacts present:** the `DIST_SPEC` artifacts (`index.html` + the hashed `assets`
+  bundle) are in the published path set.
+- **Dashboard + update assets present:** `/continuum.html` (the oversight dashboard) and
+  `release-metadata.json` (the manual update-check asset) are published.
+- **Required files documented** and the **`/zone/*` SPA fallback documented** in `VPS_INSTALL.md`
+  / `HANDOFF.md` (the same `try_files … /index.html` contract as §11).
+- **No fallback shadow:** no built file is published under `dist/zone/*` that would shadow the
+  unmatched-path → `index.html` fallback.
+- **Unknown `/zone/<slug>` is served `index.html` by host config** (it is NOT a built file), while
+  the **app route parser keeps the slug safe** — a valid slug parses to a `ZONE` route and the
+  whole hostile-path fixture (absolute scheme / protocol-relative / dot-dot / sub-path /
+  uppercase+underscore / empty slug / percent-encoding / `javascript:`) is rejected as INVALID.
+
+The contract here is the division of labour: **the host config serves `index.html` for unknown
+`/zone/<slug>` paths; the app's route parser is what keeps each slug safe once the page loads.**
+The host never needs to know the slug allowlist, and the app never needs a server runtime. Every
+report pins `served/deployed/navigated/performed/external/network/wrote/fetched = false` and the
+harness exposes no `serve`/`deploy`/`publish`/`upload`/`fetch`/`write`/`navigate`/`ssh`/`connect`
+method. This is **NOT a VPS deployment** — configuring the real host stays the manual maintainer
+steps in §6/§11; this only makes the route + asset readiness checkable in CI.

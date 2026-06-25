@@ -34,6 +34,7 @@ import { buildPortalMeshPlan, describePortalMeshPlan, PORTAL_MESH_BADGE, DEMO_PO
 import { portalPromptLabel, enteredZoneLabel, ZONE_LABEL_BADGE, DEMO_ZONE_LABEL_OPTS } from '../gateway/zoneLabel.js';
 import { runGatewayTravelSmoke } from '../gateway/travelSmoke.js';
 import { runUpdateFlowSmoke } from '../update/updateFlowSmoke.js';
+import { runHostRouteSmoke } from '../host/hostRouteSmoke.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -893,6 +894,30 @@ export function updateFlowSmokeReport(opts = {}) {
   };
 }
 
+// hostRouteSmokeReport(opts) → the PURE host route + asset SMOKE report (VPS /
+// static-host readiness for torii.quest, v0.2.197). Folds the shipped static-host
+// contracts (root index present, DIST_SPEC artifacts, dashboard + release-metadata
+// assets, /zone/* SPA fallback documented, no built file shadows the fallback,
+// unknown /zone/<slug> → index.html, the route parser keeps a good slug ZONE and
+// hostile paths INVALID) into ONE fail-fast read-only smoke verdict. Inspects
+// DETERMINISTIC LOCAL fixtures only — it touches NO server/DNS/SSH/network and
+// every safety flag stays false. A test can inject fixtures via opts to drive a
+// deliberately-broken layout and prove the harness catches it.
+export function hostRouteSmokeReport(opts = {}) {
+  const r = runHostRouteSmoke(opts);
+  return {
+    title: 'HOST ROUTE SMOKE',
+    badge: r.badge,
+    ok: r.ok,
+    summary: r.summary,
+    signals: r.signals,
+    safety: r.safety,
+    reasons: r.reasons,
+    rendered: r.rendered,
+    actionable: r.actionable,
+  };
+}
+
 // updatePreviewReport(release, opts) → the visible-but-inert torii.quest
 // update-check PREVIEW block (LEAN-5) a title/HUD card would draw. Read-only;
 // pins actionable:false so the no-fetch/no-auto-update guarantee is explicit.
@@ -1015,6 +1040,7 @@ export function buildShellReport(inputs = {}) {
     updatePreview: updatePreviewReport(release),
     updateStatus: updateStatusReport(updateFeed),
     updateFlowSmoke: updateFlowSmokeReport(),
+    hostRouteSmoke: hostRouteSmokeReport(),
     mvpLoop: mvpLoopReport(),
   };
 }

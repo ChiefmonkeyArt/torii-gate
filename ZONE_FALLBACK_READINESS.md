@@ -103,3 +103,30 @@ The same checks run inside `npm run check` (regression-check **[15]**), so the r
   `['/zone/']`. This document changes nothing the app does at runtime.
 - **No client-side workaround for the cold deep-link.** Hard-refresh resolution is a hosting
   concern by definition; the app cannot serve its own entry document on a 404.
+
+---
+
+## 6. The end-to-end smoke harness (v0.2.197)
+
+The `npm run zones:check` guard (§4) enforces the fallback contract at build time. v0.2.197 adds a
+pure, node-safe **host route + asset smoke harness** that pins the SAME contracts — plus the root
+index, the `DIST_SPEC` artifacts, the `/continuum.html` dashboard asset, and the
+`release-metadata.json` update asset — end-to-end in ONE fail-fast report, so the static-host route
+path for torii.quest can be regression-checked alongside the rest of the test suite.
+
+`src/engine/host/hostRouteSmoke.js` (read-only at `ToriiDebug.shells.hostRouteSmoke()`, SDK
+`hostRouteSmoke`, covered by `tests/host-route-smoke.test.js`) composes the already-shipped pure
+readiness helpers used by this checklist — `checkFallbackDocs` / `checkDistRoutes` /
+`zonePathsInDist` from `tools/zoneFallbackReadiness.mjs`, the v0.2.182 `/zone/<slug>` route parser,
+and the v0.2.192 release-metadata guards — over frozen LOCAL fixtures. It re-asserts the central
+division of labour this document describes: **the host serves `index.html` for an unknown
+`/zone/<slug>` (it is NOT a built file), and the app's route parser is what keeps each slug safe
+once the page loads** — a valid slug parses to a `ZONE` route while the whole hostile-path fixture
+(absolute scheme / protocol-relative / dot-dot / sub-path / uppercase+underscore / empty slug /
+percent-encoding / `javascript:`) is rejected as INVALID, and no built file is allowed to shadow
+the fallback.
+
+Same non-goals as §5: it touches no server/DNS/SSH/remote command/network, serves/deploys nothing,
+changes nothing at runtime — every report pins
+`served/deployed/navigated/performed/external/network/wrote/fetched = false`. The full host-side
+contract narrative lives in `VPS_INSTALL.md` §15.
