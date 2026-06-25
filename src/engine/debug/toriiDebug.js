@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, handoffExecuteReport, hostTransportReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, handoffExecuteReport, hostTransportReport, gatewayActivationReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 import { resolveAllAnchors } from '../world/anchorTransforms.js';
@@ -233,6 +233,16 @@ export function installToriiDebug(refs) {
       // signed:false/published:false/network:false — never signs, publishes, reloads
       // the world, writes the network, or navigates externally.
       hostTransport(input, grant, opts) { return hostTransportReport(input, grant, opts); },
+      // v0.2.178 — the LIVE-WIRE seam for a CONFIRMED same-origin gateway hop
+      // (GATEWAY / NAP-zone handoff, LEAN-2): activateGatewayHandoff joins the
+      // consent-gated plan to a host transport, but REFUSES to act unless
+      // opts.confirmed === true. The debug shell drives an IN-MEMORY recording host,
+      // so a confirmed hop is captured in memory (pushStateCalls) with NO live
+      // browser navigation; pass opts.confirmed:false to see the unconfirmed no-op.
+      // confirmed/live/transportKind reported; external:false/worldReloaded:false/
+      // signed:false/published:false/network:false — never signs, publishes, reloads
+      // the world, writes the network, or navigates externally.
+      gatewayActivation(input, grant, opts) { return gatewayActivationReport(input, grant, opts); },
       // v0.2.142 — the visible-but-inert torii.quest update-check PREVIEW block
       // (LEAN-5) the title/HUD card draws. Read-only; actionable:false — no network
       // fetch, no auto-update, no install, no navigation (deterministic local sample).

@@ -55,6 +55,7 @@ export * as travelConfirm from '../engine/gateway/travelConfirm.js';
 export * as handoffPlan from '../engine/gateway/handoffPlan.js';
 export * as handoffExecute from '../engine/gateway/handoffExecute.js';
 export * as hostTransport from '../engine/gateway/hostTransport.js';
+export * as gatewayActivation from '../engine/gateway/gatewayActivation.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
@@ -179,6 +180,14 @@ export const SDK_SURFACE = Object.freeze({
   // recording host performs no real navigation; createBrowserHostTransport(win) is the
   // History-pushState runtime seam (no reload/external nav). NO network/sign/publish/relay.
   hostTransport:   { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/hostTransport.js' },
+  // LIVE-WIRE seam for a CONFIRMED same-origin gateway hop (GATEWAY / NAP-zone handoff,
+  // v0.2.178, LEAN-2) — the missing link that joins planHandoff/executeHandoff to
+  // createBrowserHostTransport(window). activateGatewayHandoff REFUSES to resolve a
+  // transport or navigate unless opts.confirmed === true (literal), preserves the consent
+  // gate, enforces safeRoutePath + an OPTIONAL same-origin routeAllowlist, and drives the
+  // v0.2.168 executor. Same-origin history.pushState ONLY — NO external nav/world-reload/
+  // network/sign/publish/relay; default no-op without a window/transport.
+  gatewayActivation: { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/gatewayActivation.js' },
   // torii.quest GitHub release/update-check helpers (LEAN-5, v0.2.138) — pure
   // compare + inert view-model; NO network fetch, NO auto-update.
   updateCheck:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateCheck.js' },

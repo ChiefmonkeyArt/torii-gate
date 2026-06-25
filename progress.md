@@ -1,7 +1,7 @@
 # Torii Quest — Progress Dashboard
 
 > Visual execution dashboard. `strategy.md` = vision/decision rules · `todo.md` = active task queue.
-> Current version: **v0.2.177-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
+> Current version: **v0.2.178-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
 > **ACTIVE FOCUS — 15-hour proof-of-concept route.** Shooter is maintenance-only unless demo-breaking; the active MVP is the freedom-tech loop (gateway/NAP-to-NAP preview → Plebeian/Nostr product panel → leaderboard preview → torii.quest update-check). Polish comes after PoC validation.
 
 ---
@@ -10,12 +10,12 @@
 
 | Metric | Value |
 |---|---|
-| Source version | **v0.2.177-alpha** (build truth; live trails — manual maintainer deploy) |
-| Tests | **821 passing / 60 files** (profiles: `test:fast` ~5 files, `test:foundation` ~17 files) |
+| Source version | **v0.2.178-alpha** (build truth; live trails — manual maintainer deploy) |
+| Tests | **861 passing / 61 files** (profiles: `test:fast` ~5 files, `test:foundation` ~18 files) |
 | Regression check | **14 / 14 GREEN** |
 | Bundle (advisory) | 2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected) |
 | Gates | SEC-1 / SEC-2 / SEC-3 intact · godMode `false` · continuum CSP enforced |
-| Active slice | v0.2.177 dashboard layout/readability pass (Continuum hierarchy + lead captions + responsive columns; build-time, static, read-only) |
+| Active slice | v0.2.178 LEAN-2 gateway handoff activation — confirmed same-origin host-transport live-wire (`gatewayActivation.js`; double-gated, build-time/pure, no live navigation) |
 
 Legend: `█` done · `░` remaining · ✅ landed · 🔄 in progress · ⏳ pending · 🚫 blocked · 🟢 no-blocker
 
@@ -46,7 +46,7 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 | # | Slice | Status |
 |---|-------|--------|
 | LEAN-1 | Torii.quest live (publish green source) | ⏳ pending (manual smoke first) |
-| LEAN-2 | Gateway / NAP-to-NAP travel | 🔄 chain proven: protocol+intent (134) → handoff/portal shells (135/136) → visible preview (139) → read (164) → confirm (165) → consent (162/166) → plan (167) → executor (168) → **host transport adapter (170)**. Needs `createBrowserHostTransport(window)` wired into `world/handoff.js` + portal mesh to ACT. |
+| LEAN-2 | Gateway / NAP-to-NAP travel | 🔄 chain proven: protocol+intent (134) → handoff/portal shells (135/136) → visible preview (139) → read (164) → confirm (165) → consent (162/166) → plan (167) → executor (168) → host transport adapter (170) → **confirmed activation live-wire (178)**. A `confirmed:true` hop over an injected window/host now NAVIGATES via `gatewayActivation`; needs a real host router injected at the boundary + portal mesh to ACT in 3D. |
 | LEAN-3 | Plebeian/Nostr product panel | 🔄 `productDisplay`/`productPanel`/`productPanelShell` + visible preview (140). Needs in-world mesh + real listing. |
 | LEAN-4 | Leaderboard (Nostr signed events) | 🔄 unsigned helpers + publisher adapter + view + visible preview (141) + relay-read proof (160). Needs real signer (SEC-1) + relay read. |
 | LEAN-5 | torii.quest GitHub update-check | 🔄 helper + view-model + docs + visible preview (142) + release source/status (157/158). Needs read-only releases fetch + prompt mesh. |
@@ -55,6 +55,7 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 ## Active now
 
+- 🔄 **v0.2.178 — LEAN-2 gateway handoff activation** (`engine/gateway/gatewayActivation.js`): the confirmed same-origin host transport is now **live-wired** into the v0.2.168 executor. `resolveHostTransport(source)` turns an injected transport / a window (`history.pushState`) / a recording host into a usable transport **without navigating**, and `activateGatewayHandoff(input,grant,opts)` only resolves + drives it after three ordered gates — a literal `confirmed:true`, the consent-gated dry-run plan being `ok`, and an optional same-origin route allowlist — so any preview/render/unconfirmed path can never navigate. A failed navigate rolls back to the rollback route (back-home); `external`/`worldReloaded`/`signed`/`published`/`network` stay `false`. Reachable read-only via `ToriiDebug.shells.gatewayActivation()` over an in-memory recording host. +25 tests.
 - 🔄 **v0.2.177 — dashboard layout/readability pass** (DASHBOARD-LAYOUT-1; `renderContinuumPage` in `continuumData.js`): a visual-hierarchy + scannability pass on `/continuum.html` — the ACTIVE-milestone headline is **promoted above At-a-glance**; every section gains a one-line **lead caption** + a `_h2(title,count)` heading row with an item-count chip; the Now/Archive/Done columns reflow on a **responsive auto-fit grid** (no hard 3→1 jump) and show live counts; spacing/typography tightened (wider main, more section separation, subtle card hover). DERIVED/GENERATED/LAST-KNOWN/SEED chips stay visible. No new `<script>`/asset; CSP/refresh-script hash unchanged. A larger visual redesign remains a future follow-up.
 - 🔄 **v0.2.176 — milestone + layout pass** (`buildMilestoneModel` + `SEED_MILESTONES` in `continuumData.js`): a build-time, static, read-only **Milestones** section on `/continuum.html` surfaces the 15-hour MVP route as the one true **ACTIVE** milestone — the leanRoute slices ARE its tasks, folded into DERIVED counts (5 total / 0 done / 4 active / 1 pending) + a directional **46% complete** progress bar — alongside clearly-labelled **SEED** future milestones (honest total: 1 active + 3 seed, never pretending the seeds carry real task counts). Grouped card values (health, docs-derived) now render as bullet lists via `_cardValueHtml`, not dense `·`-separated prose. No new `<script>`; CSP/refresh-script hash unchanged. Follow-up: **DASHBOARD-LAYOUT-1** (design dashboard layout/formatting better).
 - 🔄 **v0.2.175 — engineering health metrics** (`buildHealthModel` in `continuumData.js` + `tools/build-continuum.mjs`): a build-time, static, read-only **Engineering health** section on `/continuum.html` surfaces the efficiency loop (**measure · profile · standardise · automate · modularise · document**) — profile/test-file counts, parser-gap count, version + doc-sync GENERATED at build; total tests, profile timings, bundle baseline, last-green gate LABELLED last-known. CSP/refresh-script hash unchanged; page stays fully static/read-only.
@@ -66,8 +67,8 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 ## Next 12 tasks
 
-1. Wire `createBrowserHostTransport(window)` (v0.2.170) into `world/handoff.js` (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.
-2. Gateway portal mesh — actually move the player in-world on a confirmed hop.
+1. Drive `gatewayActivation` (v0.2.178) from a real host router — inject the app/browser window or host transport at the gateway boundary + a same-origin route allowlist wired to CSP, so a confirmed in-world hop performs the live same-origin navigation.
+2. Gateway portal mesh — actually move the player in-world on a confirmed hop (the front-end trigger for the live-wired activation seam).
 3. **SEC-2** handoff verification gate — cryptographic checks before acting on live relay travel intents.
 4. Real leaderboard signer/publisher + relay read (**SEC-1** explicit NIP-07 consent first).
 5. In-world product panel mesh over `productPanelShell` + a real Plebeian.Market listing.
@@ -92,7 +93,7 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 | Travel-time lead on fast targets | ⚠ open edge | Hitscan-aimed but projectile-flown; long shots on strafing bots can trail. |
 | ESBUILD-1 dev-server advisory | ⏳ deferred | `npm audit fix` pulls a risky rolldown/vite chain; tracked WARN. |
 
-**Security gates (carried):** SEC-1 explicit user consent before any live NIP-07 signing / relay publish · SEC-2 cryptographic verification in `world/handoff.js` before acting on live relay data · SEC-3 `URL`-object product-URL validation before any clickable/fetched listing. The v0.2.162 consent gate + v0.2.166 consent UX + v0.2.167 dry-run plan + v0.2.168 injected-transport executor keep all three intact.
+**Security gates (carried):** SEC-1 explicit user consent before any live NIP-07 signing / relay publish · SEC-2 cryptographic verification in `world/handoff.js` before acting on live relay data · SEC-3 `URL`-object product-URL validation before any clickable/fetched listing. The v0.2.162 consent gate + v0.2.166 consent UX + v0.2.167 dry-run plan + v0.2.168 injected-transport executor keep all three intact. The v0.2.178 activation seam only acts on a SAME-ORIGIN route after a literal `confirmed:true` clears the consent + route-allowlist gates — it never signs/publishes/writes network and never reaches `window` at module scope (still pre-SEC-2 for any LIVE relay-sourced destination).
 
 ---
 
@@ -100,6 +101,9 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 Struck-through items stay ~24h, then collapse into Archive. Newest first.
 
+- ~~**v0.2.178** — **LEAN-2 gateway handoff ACTIVATION** (`engine/gateway/gatewayActivation.js`): live-wired the confirmed same-origin host transport into the v0.2.168 executor. `resolveHostTransport()` picks an injected / browser-window (History pushState) / recording-host transport WITHOUT navigating; `activateGatewayHandoff()` double-gates on a literal `confirmed:true` AND the consent-gated dry-run plan AND an optional same-origin route allowlist before resolving any transport — so preview/render/unconfirmed paths can never navigate. Rollback/back-home reachable; `external`/`worldReloaded`/`signed`/`published`/`network` all stay false. SDK (experimental) + debug-shell (in-memory recording host) exposure. +25 tests.~~
+- ~~**v0.2.177** — **dashboard layout/readability pass** (DASHBOARD-LAYOUT-1): visual-hierarchy + scannability pass on `/continuum.html` — the ACTIVE-milestone headline promoted above At-a-glance, one-line lead captions + live item counts per section, the Now/Archive/Done columns reflow on a responsive auto-fit grid, spacing/typography tightened. DERIVED/GENERATED/LAST-KNOWN/SEED chips stay visible. No new `<script>`/asset; CSP/refresh-script hash unchanged. +tests.~~
+- ~~**v0.2.176** — **milestone + layout pass**: an explicit Milestones section surfaces the 15-hour MVP route as the one ACTIVE milestone (pure `buildMilestoneModel()` folds the leanRoute slices into DERIVED counts + a directional % bar) alongside clearly-labelled SEED future milestones; grouped card values render as bullet lists. CSP/refresh-script unchanged. +tests.~~
 - ~~**v0.2.175** — **engineering health metrics**: a new build-time, static, read-only **Engineering health** section on `/continuum.html` (provenance-chipped cards + SVG rings) surfaces the efficiency loop (measure · profile · standardise · automate · modularise · document). Pure `buildHealthModel()` + a `HEALTH_LASTKNOWN` baseline in `continuumData.js` run at module load (curated fallback) AND in `build-continuum.mjs` with freshly GENERATED inputs (profile/test-file counts, parser gaps, version, doc-sync); total tests / timings / bundle baseline / last-green gate are LABELLED last-known via a chip so a stale number is obvious. `continuumDataJSON` carries `health`. CSP/refresh-script hash unchanged; page stays fully static/read-only. +9 tests.~~
 - ~~**v0.2.174** — dashboard **data automation**: a pure `tools/continuumParse.mjs` parses `progress.md` + `todo.md` at build time so the continuum page DERIVES its next-12 / active-now / completed-24h / archive lists + a docs-derived task-count metric; `buildContinuumModel(overrides)` merges them over the curated fallback with parser-gap reporting; CSP unchanged, page stays fully static/read-only. +15 tests.~~
 - ~~**v0.2.173** — **test-profile system** for faster agent loops (`tools/testProfiles.mjs` PURE registry + `tools/test-profile.mjs` CLI): `npm run test:fast` (5 core files — state/events/classifier/aim/snapshot) + `test:foundation` (16 pure/guard files) for inner loops, `test:release` = FULL suite + check/build/bundle/handoff (release gate unchanged). Explicit curated lists (no git-diff heuristics) validated against disk (`fast ⊆ foundation`, no stale entries) + a timing footer so savings are visible. Agents iterate on fast/foundation; every deploy/publish/push still runs `test:release`. +11 tests.~~

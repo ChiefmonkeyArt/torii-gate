@@ -334,9 +334,25 @@ linked by signed spatial events, with **no central router**.
   NO reload/`location.href`/`window.open`) and is NOT wired into the live app yet. An unusable host
   → `null`, so the executor safely no-ops. NO network/fetch/relay/signing/publishing. Read-only at
   `ToriiDebug.shells.hostTransport()` (acts through the in-memory host). SDK `hostTransport` (experimental).
-- `src/world/handoff.js` — the (skeleton) host seam where a future build will act on a validated
-  intent: it will pass a `createBrowserHostTransport(window)` transport (above) to `handoffExecute`
-  so the v0.2.170 adapter performs the controlled same-origin hop. Live wiring remains deferred.
+- `src/engine/gateway/gatewayActivation.js` (v0.2.178) — the **LIVE-WIRE activation seam** that
+  finally lets the v0.2.168 executor ACT on a CONFIRMED same-origin hop. `resolveHostTransport(source)`
+  turns an injected transport / a window (`history.pushState`) / a recording host into a usable
+  v0.2.170 transport WITHOUT navigating; `activateGatewayHandoff(input, grant, opts)` ALWAYS builds the
+  dry-run `planHandoff` first, then resolves + drives a transport ONLY after THREE ordered gates —
+  (1) a LITERAL `confirmed:true` (any truthy-but-not-true value is rejected and the transport is NEVER
+  resolved), (2) the consent-gated plan being `ok`, and (3) the planned same-origin `targetRoute` passing
+  an optional `routeAllowlist` prefix check — so a read/preview/render or unconfirmed path can NEVER
+  navigate. A failed navigate rolls back to the rollback route (back-home); `external`/`worldReloaded`/
+  `signed`/`published`/`network` are pinned false; the browser window is INJECTED, never reached at module
+  scope. This realises the spec's "explicit, confirmed travel intent → controlled same-origin hop"
+  requirement for the local/same-site tier (the signed/relay-mediated tier still gates behind SEC-2).
+  Read-only at `ToriiDebug.shells.gatewayActivation()` (acts through an in-memory recording host, never
+  live-navigates). SDK `gatewayActivation` (experimental).
+- `src/world/handoff.js` — the (skeleton) host seam where a future build will inject the live app/browser
+  window into `gatewayActivation` (above): it will hand a `createBrowserHostTransport(window)` transport (or
+  the host router) + a same-origin route allowlist to `activateGatewayHandoff` so a confirmed in-world hop
+  performs the controlled same-origin navigation. The activation seam now exists and is wired in-memory; the
+  remaining deferred step is injecting the REAL host window + the in-world portal mesh trigger.
 
 Component is code. Protocol is agreement. This file is the agreement; the modules
 above are one implementation of it.

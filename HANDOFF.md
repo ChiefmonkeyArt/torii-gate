@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.177-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.178-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -90,6 +90,13 @@ Breaking one should fail CI/the check, not ship.
   v0.2.147 added `proofSurfaceSpecs` (pure in-world proof-mesh layout/spec data);
   v0.2.170 added `hostTransport` (the real same-site host transport adapter for
   gateway travel — injected History-pushState host, same-origin only);
+  v0.2.178 added `gatewayActivation` (the LIVE-WIRE seam that lets the v0.2.168
+  executor ACT on a confirmed same-origin hop — `resolveHostTransport` picks an
+  injected/browser-window/recording-host transport WITHOUT navigating, and
+  `activateGatewayHandoff` double-gates on a literal `confirmed:true` AND the
+  consent-gated dry-run plan AND an optional same-origin route allowlist before any
+  transport is resolved; rollback/back-home reachable; external/world/sign/publish/
+  network pinned false; window is injected, never reached at module scope);
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
@@ -283,7 +290,7 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
 - `.snapshot()` — one JSON-serialisable object: version, phase, run state, player
   pos, combat last shot/hit/miss, physics+crate summary, tuning. Safe anytime.
 - `.combat.report()` / `.physics.report()` — focused JSON sub-reports.
-- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,handoffPlan,handoffExecute,hostTransport,report,summary,diff,surfaceSpecs,surfaceSpecCheck,anchorTransforms,surfaceRender,surfaceBindings,surfaceGate}()` —
+- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,handoffPlan,handoffExecute,hostTransport,gatewayActivation,report,summary,diff,surfaceSpecs,surfaceSpecCheck,anchorTransforms,surfaceRender,surfaceBindings,surfaceGate}()` —
   read-only reports over the VIEW shells + visible preview blocks (demo fixtures by
   default; pass overrides). No signer, no relay/publish, no navigation, no checkout,
   no fetch/auto-update
@@ -384,8 +391,17 @@ only; no server is touched). It aligns with the update-check safety boundary in
   `{navigate,snapshot,rollback,log}` object the v0.2.168 executor consumes, browser
   primitives INJECTED via a host (History `pushState`); same-origin only, in-memory
   recording host by default, `createBrowserHostTransport(window)` runtime seam not yet
-  wired.** Next: wire that transport into `world/handoff.js` to act on a validated
-  travel intent + the
+  wired.** **v0.2.178 LIVE-WIRED that transport behind a confirmation gate
+  (`gatewayActivation.js`): `resolveHostTransport(source)` turns an injected
+  transport / a window (`history.pushState`) / a recording host into a usable
+  transport WITHOUT navigating, and `activateGatewayHandoff(input,grant,opts)` only
+  resolves + drives it after THREE ordered gates — literal `confirmed:true`, the
+  consent-gated dry-run plan `ok`, and an optional same-origin route allowlist — so a
+  preview/render/unconfirmed path can never navigate. Failed navigates roll back to
+  the rollback route (back-home); `external/worldReloaded/signed/published/network`
+  stay false; reachable read-only via `ToriiDebug.shells.gatewayActivation()` over an
+  in-memory recording host.** Next: drive `gatewayActivation` from a real injected
+  host router (app/browser window + CSP-scoped allowlist) + the
   gateway's portal mesh (actually move the player), the real leaderboard
   signer/publisher + relay read, the in-world product panel mesh, and the
   loader's remote/Nostr-event path with signature/hash/capability enforcement.

@@ -42,6 +42,7 @@ const FOUNDATION = [
   'registry.test.js',
   'component.test.js',
   'consent-gate.test.js',
+  'gateway-activation.test.js',
   'doc-consistency.test.js',
   'handoff-status.test.js',
   'bundle-sizes.test.js',

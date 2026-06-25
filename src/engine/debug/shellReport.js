@@ -25,6 +25,7 @@ import { prepareTravelIntent, DEMO_TRAVEL_INPUT } from '../gateway/travelConfirm
 import { planHandoff, DEMO_HANDOFF_INPUT } from '../gateway/handoffPlan.js';
 import { executeHandoff } from '../gateway/handoffExecute.js';
 import { createRecordingHost, createHostTransport, HOST_TRANSPORT_BADGE } from '../gateway/hostTransport.js';
+import { activateGatewayHandoff, DEMO_ACTIVATION_OPTS } from '../gateway/gatewayActivation.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -554,6 +555,60 @@ export function hostTransportReport(input = DEMO_HANDOFF_INPUT, grant = true, op
   };
 }
 
+// gatewayActivationReport(input, grant, opts) → the CONFIRMED same-origin gateway
+// hop activation report (GATEWAY / NAP-zone handoff, v0.2.178, LEAN-2). Runs the
+// live-wire seam through an IN-MEMORY recording host so the debug shell can prove a
+// CONFIRMED acting hop (and the no-confirm / blocked / unsafe no-ops) without any
+// real browser navigation. By default `confirmed:true` + a `/zone/` allowlist drive
+// a recording-host hop; pass `opts.confirmed:false` to see the unconfirmed no-op, or
+// omit the host to see the safe no-transport no-op. Every external/world/network/
+// sign/publish flag stays false.
+export function gatewayActivationReport(input = DEMO_HANDOFF_INPUT, grant = true, opts = {}) {
+  const o = (opts && typeof opts === 'object') ? opts : {};
+  const hostContext = o.hostContext || DEMO_ACTIVATION_OPTS.hostContext;
+  const confirmed = o.confirmed === undefined ? true : o.confirmed === true;
+  // Default-safe demo: a recording host (NOT a real window) so the shell never
+  // navigates the live app. Callers may inject their own transport/window/host.
+  const host = o.host !== undefined || o.window !== undefined || o.transport !== undefined
+    ? undefined
+    : createRecordingHost(hostContext.currentRoute || '/');
+  const r = activateGatewayHandoff(input, grant, {
+    confirmed,
+    host: host !== undefined ? host : o.host,
+    window: o.window,
+    transport: o.transport,
+    hostContext,
+    home: hostContext.rollbackRoute || '/',
+    routeAllowlist: o.routeAllowlist || DEMO_ACTIVATION_OPTS.routeAllowlist,
+    dryRun: o.dryRun === true,
+  });
+  return {
+    title: 'GATEWAY ACTIVATION',
+    badge: r.badge,
+    action: r.action,
+    status: r.status,
+    ok: r.ok,
+    confirmed: r.confirmed,
+    live: r.live,
+    reason: r.reason,
+    transportKind: r.transportKind,
+    targetRoute: r.targetRoute,
+    fromRoute: r.fromRoute,
+    rollbackRoute: r.rollbackRoute,
+    hostRoute: host ? host.route : null,
+    pushStateCalls: host ? host.calls.pushState : [],
+    inMemory: host !== undefined,
+    navigated: r.navigated,
+    performed: r.performed,
+    external: r.external,
+    worldReloaded: r.worldReloaded,
+    signed: r.signed,
+    published: r.published,
+    network: r.network,
+    errors: r.errors,
+  };
+}
+
 // updatePreviewReport(release, opts) → the visible-but-inert torii.quest
 // update-check PREVIEW block (LEAN-5) a title/HUD card would draw. Read-only;
 // pins actionable:false so the no-fetch/no-auto-update guarantee is explicit.
@@ -647,6 +702,9 @@ export function buildShellReport(inputs = {}) {
     hostTransportInput = DEMO_HANDOFF_INPUT,
     hostTransportGrant = true,
     hostTransportOpts = {},
+    activationInput = DEMO_HANDOFF_INPUT,
+    activationGrant = true,
+    activationOpts = {},
     release = DEMO_RELEASE,
     updateFeed,
   } = inputs;
@@ -667,6 +725,7 @@ export function buildShellReport(inputs = {}) {
     handoffPlan: handoffPlanReport(handoffInput, handoffGrant, handoffContext),
     handoffExecute: handoffExecuteReport(executeInput, executeGrant, executeTransport, executeOpts),
     hostTransport: hostTransportReport(hostTransportInput, hostTransportGrant, hostTransportOpts),
+    gatewayActivation: gatewayActivationReport(activationInput, activationGrant, activationOpts),
     updatePreview: updatePreviewReport(release),
     updateStatus: updateStatusReport(updateFeed),
     mvpLoop: mvpLoopReport(),

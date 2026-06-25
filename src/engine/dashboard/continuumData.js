@@ -31,7 +31,7 @@
 //     passes them to buildContinuumModel(overrides). Anything that fails to parse falls
 //     back to the curated values below, so the page never shows an empty/garbled section.
 
-export const CONTINUUM_VERSION = 'v0.2.177-alpha';
+export const CONTINUUM_VERSION = 'v0.2.178-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // HEALTH_LASTKNOWN (v0.2.175) — the engineering-health values that are NOT cheaply
@@ -41,7 +41,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // number is obvious rather than silently wrong. The deterministic fields (profile file
 // counts, parser gaps, version, doc-sync) are GENERATED at build time and override these.
 export const HEALTH_LASTKNOWN = Object.freeze({
-  totalTests: '821 passing',
+  totalTests: '861 passing',
   timings: 'fast ~1s · foundation ~6s · full suite ~41s',
   bundle: '2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)',
   regression: '14 / 14',
@@ -233,12 +233,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.177-alpha (build truth; live trails — manual deploy)' },
-    { label: 'Tests', value: '821 passing / 60 files (profiles: test:fast ~5, test:foundation ~17)' },
+    { label: 'Source version', value: 'v0.2.178-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Tests', value: '861 passing / 61 files (profiles: test:fast ~5, test:foundation ~18)' },
     { label: 'Regression check', value: '14 / 14 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.177 dashboard layout/readability pass (build-time, static, read-only)' },
+    { label: 'Active slice', value: 'v0.2.178 LEAN-2 gateway handoff activation — confirmed same-origin host-transport live-wire (build-time, static, read-only)' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
@@ -264,7 +264,7 @@ export const CONTINUUM = Object.freeze({
   // `progress` is a directional estimate used only for the aggregate PoC ring.
   leanRoute: [
     { id: 'LEAN-1', state: 'pending', progress: 20, slice: 'Torii.quest live (publish green source)', status: 'pending (manual smoke first)' },
-    { id: 'LEAN-2', state: 'in-progress', progress: 70, slice: 'Gateway / NAP-to-NAP travel', status: 'chain proven through the host transport adapter (170); needs createBrowserHostTransport(window) wired into world/handoff.js + portal mesh to ACT' },
+    { id: 'LEAN-2', state: 'in-progress', progress: 70, slice: 'Gateway / NAP-to-NAP travel', status: 'confirmed same-origin host transport now LIVE-WIRED via gatewayActivation (178): a confirmed:true hop navigates over an injected window/host; needs in-world portal mesh to ACT in 3D' },
     { id: 'LEAN-3', state: 'in-progress', progress: 45, slice: 'Plebeian/Nostr product panel', status: 'shells + visible preview; needs in-world mesh + real listing' },
     { id: 'LEAN-4', state: 'in-progress', progress: 40, slice: 'Leaderboard (Nostr signed events)', status: 'unsigned helpers + publisher adapter + view + relay-read proof; needs real signer (SEC-1) + relay read' },
     { id: 'LEAN-5', state: 'in-progress', progress: 55, slice: 'torii.quest GitHub update-check', status: 'helper + view-model + release source/status; needs read-only releases fetch + prompt mesh' },
@@ -272,14 +272,14 @@ export const CONTINUUM = Object.freeze({
 
   // Now / Next / Later.
   activeNow: [
-    'v0.2.177 — dashboard layout/readability pass (DASHBOARD-LAYOUT-1): the Milestones headline is promoted above At-a-glance; sections gain one-line lead captions + item counts; the Now/Archive/Done columns reflow on a responsive auto-fit grid; spacing/typography tightened. Pure/static/read-only; no new script; CSP/refresh-script hash unchanged.',
+    'v0.2.178 — LEAN-2 gateway handoff ACTIVATION (gatewayActivation.js): the confirmed same-origin host transport is now live-wired into the v0.2.168 executor. A literal confirmed:true hop over an injected window (History pushState) or host transport actually navigates; preview/render/unconfirmed paths never resolve a transport, the consent gate is preserved, and routes are same-origin only with an optional prefix allowlist. external/world/sign/publish/network stay false; reachable + in-memory via the debug shell. +tests.',
     'ARS-4 — finish folding reload/pointer-lock into the guarded FSM.',
     'ARS-6 / PROGRESS-1 — ongoing CODE_INDEX + living-docs upkeep.',
   ],
 
   next12: [
-    'Wire createBrowserHostTransport(window) (v0.2.170) into world/handoff.js (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.',
-    'Gateway portal mesh — actually move the player in-world on a confirmed hop.',
+    'Drive gatewayActivation (v0.2.178) from a real host router: inject the app/browser window or host transport at the gateway boundary + a same-origin route allowlist wired to CSP, so a confirmed in-world hop performs the live same-origin navigation.',
+    'Gateway portal mesh — actually move the player in-world on a confirmed hop (front-end trigger for the live-wired activation seam).',
     'SEC-2 handoff verification gate — cryptographic checks before acting on live relay travel intents.',
     'Real leaderboard signer/publisher + relay read (SEC-1 explicit NIP-07 consent first).',
     'In-world product panel mesh over productPanelShell + a real Plebeian.Market listing.',
@@ -303,10 +303,10 @@ export const CONTINUUM = Object.freeze({
 
   // Completed last 24h — shown struck through, newest first.
   completed24h: [
+    'v0.2.178 — LEAN-2 gateway handoff ACTIVATION (gatewayActivation.js): live-wired the confirmed same-origin host transport into the v0.2.168 executor. resolveHostTransport() picks an injected transport / a browser History-pushState transport from a window / a recording host; activateGatewayHandoff() double-gates on a literal confirmed:true AND the consent-gated dry-run plan AND an optional same-origin route allowlist before resolving any transport — so preview/render/unconfirmed paths can never navigate. Rollback/back-home reachable; external/world/sign/publish/network all stay false. SDK (experimental tier) + debug-shell (in-memory recording host) exposure. +tests.',
     'v0.2.177 — DASHBOARD LAYOUT/READABILITY pass (DASHBOARD-LAYOUT-1): visual-hierarchy + scannability pass on /continuum.html — the ACTIVE-milestone headline is promoted above At-a-glance, sections gain one-line lead captions + live item counts, the Now/Archive/Done columns reflow on a responsive auto-fit grid, and spacing/typography are tightened. DERIVED/GENERATED/LAST-KNOWN/SEED chips stay visible. No new script/asset; CSP/refresh-script hash unchanged. +tests.',
     'v0.2.176 — MILESTONE + LAYOUT pass: an explicit Milestones section surfaces the 15-hour MVP route as the one ACTIVE milestone — pure buildMilestoneModel() folds the leanRoute slices into DERIVED task counts (total/done/active/pending) + a directional % progress bar — alongside clearly-labelled SEED future milestones (1 active + N seed). Grouped card values now render as bullet lists, not dense comma/dot-separated prose. CSP/refresh-script unchanged. +tests.',
     'v0.2.175 — ENGINEERING HEALTH metrics: a new build-time, static, read-only "Engineering health" section on /continuum.html (cards + rings) — profile/test-file counts, parser-gap count, doc-sync + version GENERATED at build; total tests, timings, bundle baseline, last-green gate LABELLED last-known. Pure buildHealthModel() runs at module load (curated fallback) AND in build-continuum (measured override). CSP/refresh-script unchanged. +tests.',
-    'v0.2.174 — dashboard DATA AUTOMATION: pure tools/continuumParse.mjs parses progress.md + todo.md at build time so the continuum page DERIVES its next-12 / active-now / completed-24h / archive lists + a docs-derived task-count metric; buildContinuumModel(overrides) merges them over the curated fallback (safe fallback + parser-gap reporting on any miss). CSP unchanged. +tests.',
   ],
 
   // Archive clusters, newest first.
