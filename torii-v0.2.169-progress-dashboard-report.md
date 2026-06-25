@@ -71,4 +71,4 @@ No new modules, no new tests (existing doc-consistency helper already covers the
 Branch `v0.2.169` off the v0.2.168 HEAD (`2e4661a`); committed locally only. NOT pushed /
 deployed / published — parent agent will verify / security-review / deploy / push / publish.
 
-Commit: `<FILL>` on branch `v0.2.169`.
+Commit: `d880f44` on branch `v0.2.169` (off `2e4661a`, the v0.2.168 HEAD).
