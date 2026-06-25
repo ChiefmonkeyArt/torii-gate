@@ -99,4 +99,7 @@ such comments added).
 ## Commit
 
 Committed locally only (not pushed/published) — the parent agent verifies, deploys,
-publishes, pushes, and uploads docs. Commit hash recorded below after commit.
+publishes, pushes, and uploads docs.
+
+- **Commit:** `415c017` — `v0.2.187-alpha: add release readiness summary tooling`
+- **Branch:** `v0.2.180` (local only; not pushed)
