@@ -2,7 +2,7 @@
 
 > **Slice type:** infrastructure / tooling / docs only. **No runtime, gameplay, portal,
 > physics, shooting, controls, live Nostr write, or update-execution change.** Local-only,
-> read-only, network-free. Commit: `__COMMIT__` (local only — not pushed/published).
+> read-only, network-free. Commit: `f159c66` (local only — not pushed/published).
 
 ---
 
