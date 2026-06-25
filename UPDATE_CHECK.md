@@ -151,3 +151,14 @@ fixed `false` and `validateReleaseMeta` enforces it, so the §4 safety boundary 
 instance can *describe* and *display* the latest known release, but deploying a new one stays
 the manual maintainer step in `VPS_INSTALL.md` §7 (and §12 for how the metadata fits the
 manual-update story).
+
+## 6. Pre-deploy install dry-run (v0.2.193)
+
+Before a maintainer walks the manual install/update story above, the **local install dry-run**
+(`npm run vps:dry-run`, `VPS_INSTALL.md` §13) confirms the metadata half is in order — with NO
+SSH, network, DNS, or server change. Among its 11 read-only checks it REUSES `validateReleaseMeta()`
+to assert `public/release-metadata.json` is present and **manual-only / non-actionable**, and it
+verifies that BOTH the metadata source AND this document reference the real repo
+`ChiefmonkeyArt/torii-gate` (not the legacy placeholder). It exits non-zero only on a blocking
+failure; it performs no deploy. The pure checklist logic lives in `tools/vpsDryRun.mjs`
+(unit-tested, `tests/vps-dry-run.test.js`).

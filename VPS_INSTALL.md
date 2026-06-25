@@ -283,6 +283,14 @@ Prune old releases manually once disk pressure warrants it — never the one
   tarballs (§8) and the web-server config (`/etc/caddy` or `/etc/nginx`) in a
   backup or config repo.
 - **HTTPS only** — both server options above redirect HTTP→HTTPS.
+- **No service worker (today).** The bundle ships **no service worker / PWA cache** —
+  there is no `sw.js`, no `navigator.serviceWorker.register`, and no Workbox. That is
+  *why* the atomic symlink-flip update model (§7/§8) is sufficient: a returning browser
+  re-fetches `index.html` (served `no-cache`) and the hashed Vite assets, so a flip takes
+  effect on the next load with **no client-side cache to bust**. If a service worker is ever
+  added, this assumption breaks — an SW could keep serving the old build after a flip — so
+  treat adding one as a deliberate, documented decision that must ship a cache-invalidation /
+  `skipWaiting` story alongside it. Until then, no SW is the safe default.
 
 ---
 
@@ -373,3 +381,30 @@ This is descriptive metadata only. `update.autoUpdate` and `update.actionable` a
 flipped — so the metadata can never become an update *trigger*. The guarded "update button"
 sketch in §10 still applies: any real update affordance is a separate, explicitly-authorised
 step. Until then, updates stay 100% manual and this file only *informs*.
+
+---
+
+## 13. Pre-deploy install dry-run (v0.2.193)
+
+Before an operator walks the manual install (§5) or update (§7), run the **local install
+dry-run** to confirm the repo/build/docs are in order — with **no SSH, no network, no DNS, and
+no server change**. It only READS local files and prints a clear pass/fail checklist:
+
+```bash
+npm run build        # so the dist/ row checks a real bundle (optional — skipped if absent)
+npm run vps:dry-run  # the read-only readiness checklist (add `-- --json` for machine output)
+```
+
+It checks: the required deploy docs are present; `dist/` (if built) carries `index.html` (and
+the copied `release-metadata.json`); `public/release-metadata.json` is present and **manual-only /
+non-actionable** (reusing `validateReleaseMeta()`); the metadata + `UPDATE_CHECK.md` point at the
+real repo `ChiefmonkeyArt/torii-gate`; the `/zone/*` SPA fallback is documented (§11); this file
+carries the build/manual-update/rollback/security sections; the `npm run build` / `npm run check`
+commands are documented; the rollback + manual/no-auto-update wording is present (§8/§9); the
+**service-worker stance** is documented (§9); and the live URL references are clear.
+
+It exits non-zero only on a **blocking failure** (a missing doc/section, missing/placeholder
+metadata, or a built bundle with no `index.html`); warnings and the skipped-`dist/` row never
+fail the run. It performs **no deploy** — configuring the real host stays the manual maintainer
+steps in §5–§8. The pure checklist logic lives in `tools/vpsDryRun.mjs`
+(unit-tested, `tests/vps-dry-run.test.js`); the CLI `tools/vps-dry-run.mjs` only reads + prints.

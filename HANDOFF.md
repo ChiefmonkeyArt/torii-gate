@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.192-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.193-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -260,7 +260,22 @@ Breaking one should fail CI/the check, not ship.
   time for a deploy step; it is read-only by default, writes ONLY the in-repo safe path under
   `--write`, and ALWAYS exits 0. The spec is mirrored into `UPDATE_CHECK.md` §5 and the manual-
   update story in `VPS_INSTALL.md` §12. `tests/release-meta.test.js` (+23).
-  Latest slice report: `torii-v0.2.192-github-release-metadata-report.md`.
+  **v0.2.193** added a VPS INSTALL DRY-RUN — a local, read-only readiness checklist an operator
+  runs BEFORE deploying torii.quest to a VPS/static host, with NO SSH, network, DNS, or server
+  change. A pure `runVpsDryRun({docs,dist,releaseMeta})` in `tools/vpsDryRun.mjs` REUSES the
+  shipped pure guards (`validateReleaseMeta()` for the manual-only/non-actionable floor and
+  `fallbackEvidence()` for the `/zone/*` SPA fallback) and folds 11 checklist rows: required deploy
+  docs present; `dist/` (if built) carries `index.html` (+ the copied `release-metadata.json`);
+  `public/release-metadata.json` present + manual-only; metadata + `UPDATE_CHECK.md` point at the
+  real repo `ChiefmonkeyArt/torii-gate`; the `/zone/*` SPA fallback documented; `VPS_INSTALL.md`
+  build/manual-update/rollback/security sections; the `npm run build`/`npm run check` commands
+  documented; rollback + manual/no-auto-update wording; the service-worker stance documented; and
+  live URL references clear. `ok` is true iff NO check FAILED (warn/skip never flip it); never
+  throws. The thin CLI `tools/vps-dry-run.mjs` (`npm run vps:dry-run`) reads local files only,
+  prints text by default with `--json`, and exits non-zero ONLY on a blocking FAIL — it is NOT
+  wired into `npm run check` (standalone operator tool). Documented in `VPS_INSTALL.md` §13 + the
+  §9 service-worker caveat. `tests/vps-dry-run.test.js` (+43).
+  Latest slice report: `torii-v0.2.193-vps-install-dry-run-report.md`.
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
@@ -421,6 +436,7 @@ npm run release:status:json # the SAME verdict as a machine-readable JSON envelo
 npm run handoff:summary # ONE concise AI-handoff brief for the next agent/model (v0.2.190): version, git commit, live URL, current gate verdict (folds gatherReleaseReadiness()), regression + test-profile counts, latest reports, next SAFE task, key constraints, exact release-verify commands. Text default; --json (schema torii.handoff-summary v1; scripted: npm run --silent handoff:summary -- --json); --markdown; opt-in --write[=path] is the ONLY writer — read-only/local/network-free otherwise; exits 0
 npm run docs:stale # ADVISORY stale-doc detector (v0.2.191): catches docs/status/version drift earlier/clearer than docConsistency — version-HEADER drift per continuity doc, a doc that never mentions the current version, a newest report nobody links, a newest report lagging the current version, disagreeing test counts across continuity docs. Low false positives (HEADER-only matching + quoted-span stripping). Text default; --json; read-only/local/network-free; ALWAYS exits 0 — NOT in `npm run check` (the hard gate stays docConsistency [14])
 npm run release:meta # GitHub release/update METADATA for the FUTURE torii.quest/VPS update-checker (v0.2.192): shapes {kind, schemaVersion, channel (from version tag), version, commit, doc-only GitHub source URLs, dist artifact expectations, requiredFiles/requiredChecks, manual/no-auto-update consent+notice}. validateReleaseMeta ERRORs if update.autoUpdate/actionable is not false (no-auto-update safety floor). Text default; --json; --write the DETERMINISTIC public/release-metadata.json (re-runs never churn); --stamp bakes live commit/time for a deploy step. Read-only by default, writes only the in-repo safe path under --write; ALWAYS exits 0. NO live update execution, NO runtime network
+npm run vps:dry-run # LOCAL VPS/static-host install DRY-RUN readiness checklist (v0.2.193): an operator runs it BEFORE deploying torii.quest — NO SSH/network/DNS/server change. Pure runVpsDryRun() reuses validateReleaseMeta() + fallbackEvidence() and folds 11 checks (required deploy docs; dist/ index.html + copied release-metadata.json; metadata present + manual-only; real repo ChiefmonkeyArt/torii-gate; /zone/* fallback; VPS_INSTALL.md sections; build/verify commands; rollback + manual wording; service-worker stance; live URLs). Text default; --json; read-only/local/network-free; exits non-zero ONLY on a blocking FAIL (warn/skip never fail). NOT in `npm run check` (standalone operator tool)
 ```
 
 **Test profiles (v0.2.173).** The `test:fast`/`test:foundation` profiles are explicit,
