@@ -146,5 +146,5 @@ or admin actions.
 Committed **locally only** on branch `v0.2.171` (no push/deploy/publish/upload).
 Parent agent verifies / security-reviews / ships.
 
-- feat commit: see git log on branch `v0.2.171`.
-- Commit hash: _(recorded in a follow-up `docs(v0.2.171)` commit to keep the tree clean)_.
+- feat commit: **`9076d13`** — `feat(v0.2.171): Torii Continuum project-oversight dashboard` (branch `v0.2.171`).
+- This report's own hash is recorded by a follow-up `docs(v0.2.171)` commit to keep the tree clean.
