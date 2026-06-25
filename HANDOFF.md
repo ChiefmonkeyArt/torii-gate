@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.191-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.192-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -243,7 +243,23 @@ Breaking one should fail CI/the check, not ship.
   read-only/local/network-free and ALWAYS exits 0 — it is **ADVISORY**, deliberately NOT wired into
   `npm run check` (the HARD gate stays docConsistency [14]; the finer/higher-recall signals are
   surfaced, not enforced, so they never block safe dev). `tests/stale-docs.test.js` (+25).
-  Latest slice report: `torii-v0.2.191-stale-doc-detector-report.md`.
+  **v0.2.192** prepared GITHUB RELEASE/UPDATE METADATA for the FUTURE torii.quest / VPS
+  update-checker — the static metadata an instance reads to surface an inert "update available"
+  notice, with NO live update and NO runtime network. A pure `buildReleaseMeta({version,commit,
+  owner,repo,generatedAt})` in `tools/releaseMeta.mjs` shapes `{kind, schemaVersion, channel
+  (derived from the version tag via `channelForVersion`), version, commit, documentation-only
+  GitHub source URLs (mirrors `RELEASE_SOURCE` in `src/engine/update/updateCheck.js`), dist
+  artifact expectations (`DIST_SPEC`), `requiredFiles`/`requiredChecks`, and manual/no-auto-update
+  consent + notice wording}`. `validateReleaseMeta(meta)` is the SAFETY FLOOR: it ERRORs (not
+  warns) if `update.autoUpdate` or `update.actionable` is anything but `false`, machine-enforcing
+  the no-auto-update contract; it never throws and is safe on degraded input. The thin CLI
+  `tools/release-meta.mjs` (`npm run release:meta`) prints text by default, with `--json`, a
+  `--write` that emits the DETERMINISTIC `public/release-metadata.json` (no commit/timestamp baked
+  in, so re-running never churns the tree), and a `--stamp` that bakes the live git commit + ISO
+  time for a deploy step; it is read-only by default, writes ONLY the in-repo safe path under
+  `--write`, and ALWAYS exits 0. The spec is mirrored into `UPDATE_CHECK.md` §5 and the manual-
+  update story in `VPS_INSTALL.md` §12. `tests/release-meta.test.js` (+23).
+  Latest slice report: `torii-v0.2.192-github-release-metadata-report.md`.
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
@@ -403,6 +419,7 @@ npm run release:status # one concise release-readiness verdict aggregating the l
 npm run release:status:json # the SAME verdict as a machine-readable JSON envelope on stdout (v0.2.189; or: node tools/release-readiness.mjs --json) for dashboard/handoff/updater/agent consumption — read-only, network-free, exits 0; `node tools/release-readiness.mjs --json` is pure JSON, plain `npm run` prepends a lifecycle banner to stdout so scripted consumers use `npm run --silent release:status:json`
 npm run handoff:summary # ONE concise AI-handoff brief for the next agent/model (v0.2.190): version, git commit, live URL, current gate verdict (folds gatherReleaseReadiness()), regression + test-profile counts, latest reports, next SAFE task, key constraints, exact release-verify commands. Text default; --json (schema torii.handoff-summary v1; scripted: npm run --silent handoff:summary -- --json); --markdown; opt-in --write[=path] is the ONLY writer — read-only/local/network-free otherwise; exits 0
 npm run docs:stale # ADVISORY stale-doc detector (v0.2.191): catches docs/status/version drift earlier/clearer than docConsistency — version-HEADER drift per continuity doc, a doc that never mentions the current version, a newest report nobody links, a newest report lagging the current version, disagreeing test counts across continuity docs. Low false positives (HEADER-only matching + quoted-span stripping). Text default; --json; read-only/local/network-free; ALWAYS exits 0 — NOT in `npm run check` (the hard gate stays docConsistency [14])
+npm run release:meta # GitHub release/update METADATA for the FUTURE torii.quest/VPS update-checker (v0.2.192): shapes {kind, schemaVersion, channel (from version tag), version, commit, doc-only GitHub source URLs, dist artifact expectations, requiredFiles/requiredChecks, manual/no-auto-update consent+notice}. validateReleaseMeta ERRORs if update.autoUpdate/actionable is not false (no-auto-update safety floor). Text default; --json; --write the DETERMINISTIC public/release-metadata.json (re-runs never churn); --stamp bakes live commit/time for a deploy step. Read-only by default, writes only the in-repo safe path under --write; ALWAYS exits 0. NO live update execution, NO runtime network
 ```
 
 **Test profiles (v0.2.173).** The `test:fast`/`test:foundation` profiles are explicit,

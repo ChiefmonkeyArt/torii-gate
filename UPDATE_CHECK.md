@@ -113,3 +113,41 @@ in-world prompt MESH/HUD remain deferred (below).
   that must serve `index.html` for `/zone/*`) is tracked separately in
   `ZONE_FALLBACK_READINESS.md` and locally checkable via `npm run zones:check` — a
   read-only, network-free guard, independent of this update-check flow.
+
+## 5. Static release metadata (v0.2.192)
+
+The pieces above shape the update-check *at runtime* from a release object a host hands
+in. v0.2.192 adds the complementary **build-time** half: a small, static **release-metadata
+template** that a self-hosted instance (or a VPS update-checker) can read to know what the
+release it is serving *claims* to be — version, channel, the documentation-only GitHub
+source endpoints, the expected `dist/` artifacts, the minimum files/checks a publishable
+release must carry, and the manual/no-auto-update consent wording — all WITHOUT any network
+fetch or live update.
+
+Pure helpers in `tools/releaseMeta.mjs` (node-tested, no fs/network/THREE/DOM):
+
+| Export | Shape | Notes |
+|---|---|---|
+| `RELEASE_META_BADGE` | `'RELEASE METADATA · LOCAL · READ-ONLY · NO AUTO-UPDATE'` | Makes the contract explicit on any surface that renders it. |
+| `METADATA_SCHEMA_VERSION` / `RELEASE_META_KIND` / `RELEASE_META_FILE` | `1` / `'torii-release-metadata'` / `'public/release-metadata.json'` | Schema/identity + the canonical in-repo output path. |
+| `UPDATE_CHANNELS` | `{ STABLE, ALPHA, BETA, RC, UNKNOWN }` | Frozen channel enum. |
+| `DEFAULT_SOURCE` / `DIST_SPEC` / `REQUIRED_FILES` / `REQUIRED_CHECKS` | frozen | Repo coordinates (mirror `RELEASE_SOURCE` in `updateCheck.js`), build/artifact expectations, the publish floor. |
+| `CONSENT_TEXT` / `UPDATE_NOTICE` | strings | Manual/no-auto-update wording carried IN the metadata. |
+| `channelForVersion(version)` | channel | Derives stable/alpha/beta/rc/unknown from the prerelease tag. |
+| `releaseUrlsFor(owner, repo)` | `{ latestReleaseUrl, releasesPageUrl }` | Documentation-only https GitHub endpoints. |
+| `buildReleaseMeta({version, commit, owner, repo, generatedAt})` | metadata object | The canonical record a checker reads. |
+| `validateReleaseMeta(meta)` | `{ ok, errors, warnings }` | **Safety floor:** ERRORs if `update.autoUpdate` or `update.actionable` is anything but `false`; plus shape/channel/url/required-array checks. Never throws. |
+| `formatReleaseMeta(meta)` | text block | Terminal summary; safe on null. |
+
+The thin CLI `tools/release-meta.mjs` (`npm run release:meta`) reads the local `VERSION` +
+best-effort git commit and prints the metadata (text default / `--json`). `--write` emits a
+**deterministic** `public/release-metadata.json` (no commit/timestamp baked in, so re-running
+never churns the working tree); a deploy step that wants provenance baked into the *deployed*
+copy runs `--write --stamp`. The CLI is READ-ONLY by default, writes ONLY the in-repo safe
+path under an explicit `--write`, performs NO network/install/update, and ALWAYS exits 0.
+
+This is metadata only — it authorises nothing. `update.autoUpdate`/`update.actionable` are
+fixed `false` and `validateReleaseMeta` enforces it, so the §4 safety boundary holds: an
+instance can *describe* and *display* the latest known release, but deploying a new one stays
+the manual maintainer step in `VPS_INSTALL.md` §7 (and §12 for how the metadata fits the
+manual-update story).

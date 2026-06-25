@@ -1,0 +1,39 @@
+{
+  "kind": "torii-release-metadata",
+  "schemaVersion": 1,
+  "generatedAt": null,
+  "channel": "alpha",
+  "version": "v0.2.192-alpha",
+  "commit": null,
+  "source": {
+    "owner": "torii-quest",
+    "repo": "torii-quest",
+    "latestReleaseUrl": "https://api.github.com/repos/torii-quest/torii-quest/releases/latest",
+    "releasesPageUrl": "https://github.com/torii-quest/torii-quest/releases"
+  },
+  "dist": {
+    "buildCommand": "npm run build",
+    "outputDir": "dist",
+    "entry": "index.html",
+    "expectedArtifacts": [
+      "index.html",
+      "assets"
+    ]
+  },
+  "requiredFiles": [
+    "index.html",
+    "package.json",
+    "src/config.js"
+  ],
+  "requiredChecks": [
+    "npm run check",
+    "npm test"
+  ],
+  "update": {
+    "manual": true,
+    "autoUpdate": false,
+    "actionable": false,
+    "consent": "Updates are MANUAL. A maintainer reviews and deploys each release by hand; torii.quest never downloads, installs, or runs new code on its own.",
+    "notice": "This metadata only DESCRIBES the latest known release so an instance can show an inert \"update available\" notice. It performs no fetch and authorises no action."
+  }
+}

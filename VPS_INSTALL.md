@@ -337,3 +337,39 @@ shadow the fallback. The same guard runs inside `npm run check` (regression-chec
 the release gate. The full pre-publish checklist + non-goals live in
 `ZONE_FALLBACK_READINESS.md`. Configuring the real host fallback remains a manual maintainer
 step — this repo touches no server.
+
+---
+
+## 12. Release metadata for the manual update story (v0.2.192)
+
+A self-hosted instance should be able to say *what release it is serving* and *whether a newer
+one exists* — without ever updating itself. v0.2.192 prepares the **static release-metadata**
+half of that, complementing the runtime update-check helpers in `UPDATE_CHECK.md`.
+
+Generate the in-repo template locally (no server, no network):
+
+```bash
+npm run release:meta            # print + validate the metadata (text; or --json)
+npm run release:meta -- --write # emit the DETERMINISTIC public/release-metadata.json
+```
+
+`--write` produces a reproducible `public/release-metadata.json` (no commit/timestamp baked
+in, so re-running never churns the tree). It carries: the version + channel, the
+documentation-only GitHub source endpoints, the expected `dist/` artifacts, the minimum
+files/checks a publishable release must satisfy, and the manual/no-auto-update consent
+wording. Because it lives under `public/`, the `npm run build` step copies it into `dist/`, so
+a deployed instance (and any future VPS update-checker) can read `/release-metadata.json`
+alongside the app.
+
+**How it fits the manual update (§7).** When a maintainer builds a release to publish, they
+can bake live provenance into the *deployed* copy with:
+
+```bash
+npm run release:meta -- --write --stamp   # adds the live git commit + ISO timestamp
+```
+
+This is descriptive metadata only. `update.autoUpdate` and `update.actionable` are fixed
+`false`, and `validateReleaseMeta()` raises an ERROR (not a warning) if either is ever
+flipped — so the metadata can never become an update *trigger*. The guarded "update button"
+sketch in §10 still applies: any real update affordance is a separate, explicitly-authorised
+step. Until then, updates stay 100% manual and this file only *informs*.
