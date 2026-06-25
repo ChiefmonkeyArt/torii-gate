@@ -75,3 +75,7 @@ dashboard regenerated for v0.2.173.
   bundle + handoff); profiles add convenience subsets, they do NOT replace or
   weaken release verification.
 - Committed LOCALLY ONLY. Not pushed/deployed/published — parent verifies and ships.
+
+## Commit
+
+`5a8e0e5` — `feat(v0.2.173): test profile system for faster AI/dev loops` (branch `v0.2.173`).
