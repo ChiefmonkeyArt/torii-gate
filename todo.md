@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.168-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.169-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -241,7 +241,7 @@ These tasks build the structural layer that makes the project legible to any age
 | ~~ARS-5~~ | SDK | ~~**SDK/API skeleton** — `src/sdk/index.js` public entrypoint: curated namespace re-exports of the node-safe engine leaf modules (combat aim/classifier/damage, physics interactions/raycastService, weapons muzzle/reloadPose, botAgent, debug snapshot, ui phaseScreens) + `SDK_VERSION`, a `STABILITY` tier enum, and a frozen `SDK_SURFACE` map tagging each surface `stable`/`experimental`/`internal` (internals forward-declared with `module:null`). No runtime wiring; no scene/WebGLRenderer pull. **DONE v0.2.131** (`tests/sdk.test.js`). Tiers documented in `CODE_INDEX.md`.~~ |
 | ARS-6 | INDEX | **CODE_INDEX.md upkeep** — after each ARS task, update `CODE_INDEX.md` to reflect the new module boundary, public API, debug hook, test file, and any known constraints or open edges. The index is the primary agent-handoff document; it must stay current or it becomes misleading. *(Kept open as a standing per-task chore.)* |
 | ~~ARS-7~~ | ARCH | ~~**Handoff template** — `HANDOFF.md` created: repo state, hard constraints, version markers, source-of-truth docs, build/test/check + deploy commands, debug surface, active issues, next-job format. **DONE v0.2.130**.~~ |
-| PROGRESS-1 | DOCS | **Formalise / maintain `progress.md`** — keep track bars, sprint table, and completed-last-24h current. After each sprint or significant landing, move crossed-out completed items from `todo.md` into the Archive in `progress.md` and update the relevant track bar. Aim for weekly upkeep at minimum. |
+| PROGRESS-1 | DOCS | **Formalise / maintain `progress.md`** — keep track bars, sprint table, and completed-last-24h current. After each sprint or significant landing, move crossed-out completed items from `todo.md` into the Archive in `progress.md` and update the relevant track bar. Aim for weekly upkeep at minimum. *v0.2.169:* reworked `progress.md` into a compact **graphical dashboard** — at-a-glance metrics table, per-track progress bars + percentages + status badges, MVP-loop table, active-now, next-12-tasks, risk/blocked/no-blocker table, struck-through last-24h one-liners, and concise per-cluster Archive (collapsed the verbose per-version paragraphs). Standing upkeep: keep bars/24h/archive current each landing. |
 
 ---
 
