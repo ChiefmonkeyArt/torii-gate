@@ -19,7 +19,7 @@ import { VERSION } from '../src/config.js';
 
 describe('module shape', () => {
   it('pins the version (tracks the build) and the read-only oversight badge', () => {
-    expect(CONTINUUM_VERSION).toBe('v0.2.176-alpha');
+    expect(CONTINUUM_VERSION).toBe('v0.2.177-alpha');
     expect(CONTINUUM_VERSION).toBe(VERSION);
     expect(CONTINUUM_BADGE).toBe('PROJECT OVERSIGHT · STATIC · READ-ONLY');
   });
@@ -124,7 +124,7 @@ describe('continuumDataJSON', () => {
   it('is JSON-serialisable and carries totals + the seed contributors', () => {
     const j = continuumDataJSON();
     const round = JSON.parse(JSON.stringify(j));
-    expect(round.version).toBe('v0.2.176-alpha');
+    expect(round.version).toBe('v0.2.177-alpha');
     expect(round.totals.pocProgressPct).toBe(46);
     expect(round.contributors.isSeed).toBe(true);
   });
@@ -136,7 +136,7 @@ describe('renderContinuumPage', () => {
   it('returns a self-contained HTML document with the version', () => {
     expect(typeof html).toBe('string');
     expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('v0.2.176-alpha');
+    expect(html).toContain('v0.2.177-alpha');
     expect(html).toContain('Torii Continuum');
   });
 
@@ -387,9 +387,58 @@ describe('milestones (v0.2.176)', () => {
   });
 });
 
+describe('layout / readability pass (v0.2.177)', () => {
+  const html = renderContinuumPage();
+
+  it('promotes the ACTIVE-milestone headline above At-a-glance', () => {
+    const ms = html.indexOf('>Milestones<');
+    const glance = html.indexOf('>At a glance<');
+    expect(ms).toBeGreaterThan(-1);
+    expect(glance).toBeGreaterThan(-1);
+    expect(ms).toBeLessThan(glance);
+  });
+
+  it('keeps the headline order: Active focus → Milestones → At a glance → Engineering health', () => {
+    const order = ['>Active focus<', '>Milestones<', '>At a glance<', '>Engineering health<']
+      .map((s) => html.indexOf(s));
+    expect(order.every((i) => i > -1)).toBe(true);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+  });
+
+  it('every section carries a one-line lead caption + a scannable heading row', () => {
+    expect((html.match(/class="lead"/g) || []).length).toBeGreaterThanOrEqual(8);
+    expect(html).toContain('class="h2row"');
+  });
+
+  it('the Now/Next/Later columns show live item counts and reflow on a responsive grid', () => {
+    expect(html).toContain('NOW · Active <span class="count">');
+    expect(html).toContain('LATER · Archive <span class="count">');
+    expect(html).toContain('DONE · Last 24h <span class="count">');
+    expect(html).toContain('class="cols"');
+    expect(html).toContain('grid-template-columns:repeat(auto-fit,minmax(260px,1fr))');
+  });
+
+  it('section count chips reflect the model list lengths', () => {
+    const m = buildContinuumModel();
+    expect(html).toContain(`>15-hour proof-of-concept route</h2> <span class="count">${m.leanRoute.length}</span>`);
+    expect(html).toContain(`>Next 12 tasks</h2> <span class="count">${m.next12.length}</span>`);
+  });
+
+  it('SAFETY: the layout pass adds no new script and preserves the CSP script hash', () => {
+    expect((html.match(/<script/g) || []).length).toBe(1);
+    const mm = html.match(/<script>([\s\S]*?)<\/script>/);
+    expect(mm[1]).toBe(CONTINUUM_REFRESH_SCRIPT);
+    const pageHash = 'sha256-' + createHash('sha256').update(mm[1], 'utf8').digest('base64');
+    expect(pageHash).toBe(CONTINUUM_SCRIPT_SHA256);
+    // No external assets/links introduced by the layout pass.
+    expect(html).not.toMatch(/<link\b/i);
+    expect(html).not.toMatch(/href\s*=\s*["']https?:/i);
+  });
+});
+
 describe('SDK exposure', () => {
   it('re-exports the continuum module at the experimental tier', () => {
-    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.176-alpha');
+    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.177-alpha');
     expect(typeof SDK.continuum.renderContinuumPage).toBe('function');
     expect(SDK.SDK_SURFACE.continuum.tier).toBe(SDK.STABILITY.EXPERIMENTAL);
   });

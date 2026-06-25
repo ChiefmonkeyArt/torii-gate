@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.176-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.177-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no signing/publishing, no auto-update, and no navigation —
@@ -262,6 +262,17 @@ with a % bar + bullet-list counts, alongside clearly-labelled `SEED_MILESTONES` 
 bullet lists via `_cardValueHtml` (` · `-joined → bullets; user preference over dense prose).
 Server-rendered escaped text, NO new `<script>` — CSP hash unchanged. Layout follow-up:
 **DASHBOARD-LAYOUT-1**.
+
+**Layout / readability pass (v0.2.177, DASHBOARD-LAYOUT-1 first pass):** the renderer's
+information hierarchy was tightened. The ACTIVE-milestone headline is PROMOTED above At-a-glance
+(order: Active focus → Milestones → At a glance → Engineering health → Tracks → 15-hour route →
+Now/Next/Later → Next 12 → Risk); a new `_h2(title,count)` helper emits a `.h2row` heading with an
+item-count `.count` chip and every section carries a one-line `<div class="lead">` caption; the
+Now/Archive/Done lists moved into ONE `<div class="cols">` reflowing on a responsive auto-fit grid
+(`minmax(260px,1fr)`, no hard 3→1 break) with live counts; spacing/typography tightened (wider
+1080px `main`, larger section margins, subtle card hover). All server-rendered escaped text, NO new
+`<script>`/asset — CSP hash unchanged; DERIVED/GENERATED/LAST-KNOWN/SEED chips stay visible. A
+larger visual redesign remains a documented future follow-up.
 
 `githubReleaseSource` (LEAN-5, v0.2.157) is the pure GitHub Releases source adapter:
 `normalizeRelease`/`selectLatestRelease`/`evaluateFromSource` turn a `releases/latest`

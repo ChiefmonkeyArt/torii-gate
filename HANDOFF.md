@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.176-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.177-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -105,7 +105,12 @@ Breaking one should fail CI/the check, not ship.
   its tasks, folded into DERIVED total/done/active/pending + a directional % bar)
   plus clearly-labelled SEED future milestones, and grouped card values now render
   as bullet lists via `_cardValueHtml`. No new `<script>`; CSP hash unchanged.
-  Layout follow-up tracked as **DASHBOARD-LAYOUT-1**)
+  v0.2.177 ran the first **DASHBOARD-LAYOUT-1** pass — promoted the ACTIVE-milestone
+  headline above At-a-glance, gave every section a one-line lead caption + an
+  `_h2(title,count)` heading row with an item-count chip, reflowed the Now/Archive/Done
+  columns onto a responsive auto-fit grid (`minmax(260px,1fr)`), and tightened spacing/
+  typography. DERIVED/GENERATED/LAST-KNOWN/SEED chips stay visible; no new `<script>`/asset;
+  CSP hash unchanged. A larger visual redesign remains a documented future follow-up)
   (all experimental). **`SDK_DEBUG_INDEX.md`** (v0.2.145) is the compact
   discoverability map over this surface + the `ToriiDebug.shells` reports for AI
   handoffs / FOSS devs.

@@ -1,10 +1,10 @@
 {
-  "version": "v0.2.176-alpha",
-  "generatedAt": "2026-06-25T07:58:55.445Z",
+  "version": "v0.2.177-alpha",
+  "generatedAt": "2026-06-25T08:24:06.836Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
-    "activeTasks": 5,
+    "activeTasks": 6,
     "completedLast24h": 6,
     "archivedClusters": 11,
     "trackCount": 6,
@@ -25,14 +25,14 @@
     "isDerived": true,
     "todoCompletedMarkers": 12,
     "next12": 12,
-    "activeNow": 5,
+    "activeNow": 6,
     "completed24h": 6,
     "archiveClusters": 11
   },
   "derived": {
     "parsed": [
       "next12 (12)",
-      "activeNow (5)",
+      "activeNow (6)",
       "completed24h (6)",
       "archive (11)"
     ],
@@ -48,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.176-alpha"
+        "value": "v0.2.177-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -78,7 +78,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "14 / 14 regression checks GREEN · last green v0.2.176-alpha"
+        "value": "14 / 14 regression checks GREEN · last green v0.2.177-alpha"
       },
       {
         "label": "Source-of-truth docs",

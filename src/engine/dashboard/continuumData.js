@@ -31,7 +31,7 @@
 //     passes them to buildContinuumModel(overrides). Anything that fails to parse falls
 //     back to the curated values below, so the page never shows an empty/garbled section.
 
-export const CONTINUUM_VERSION = 'v0.2.176-alpha';
+export const CONTINUUM_VERSION = 'v0.2.177-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // HEALTH_LASTKNOWN (v0.2.175) — the engineering-health values that are NOT cheaply
@@ -233,12 +233,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.176-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.177-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: '821 passing / 60 files (profiles: test:fast ~5, test:foundation ~17)' },
     { label: 'Regression check', value: '14 / 14 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.176 milestone + layout pass (build-time, static, read-only)' },
+    { label: 'Active slice', value: 'v0.2.177 dashboard layout/readability pass (build-time, static, read-only)' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
@@ -272,7 +272,7 @@ export const CONTINUUM = Object.freeze({
 
   // Now / Next / Later.
   activeNow: [
-    'v0.2.176 — milestone + layout pass: an explicit Milestones section on /continuum.html shows the 15-hour MVP route as the one ACTIVE milestone (DERIVED task counts total/done/active/pending + a directional % complete progress bar) plus clearly-labelled SEED future milestones; grouped card values now render as bullet lists, not dense comma-separated prose.',
+    'v0.2.177 — dashboard layout/readability pass (DASHBOARD-LAYOUT-1): the Milestones headline is promoted above At-a-glance; sections gain one-line lead captions + item counts; the Now/Archive/Done columns reflow on a responsive auto-fit grid; spacing/typography tightened. Pure/static/read-only; no new script; CSP/refresh-script hash unchanged.',
     'ARS-4 — finish folding reload/pointer-lock into the guarded FSM.',
     'ARS-6 / PROGRESS-1 — ongoing CODE_INDEX + living-docs upkeep.',
   ],
@@ -303,10 +303,10 @@ export const CONTINUUM = Object.freeze({
 
   // Completed last 24h — shown struck through, newest first.
   completed24h: [
+    'v0.2.177 — DASHBOARD LAYOUT/READABILITY pass (DASHBOARD-LAYOUT-1): visual-hierarchy + scannability pass on /continuum.html — the ACTIVE-milestone headline is promoted above At-a-glance, sections gain one-line lead captions + live item counts, the Now/Archive/Done columns reflow on a responsive auto-fit grid, and spacing/typography are tightened. DERIVED/GENERATED/LAST-KNOWN/SEED chips stay visible. No new script/asset; CSP/refresh-script hash unchanged. +tests.',
     'v0.2.176 — MILESTONE + LAYOUT pass: an explicit Milestones section surfaces the 15-hour MVP route as the one ACTIVE milestone — pure buildMilestoneModel() folds the leanRoute slices into DERIVED task counts (total/done/active/pending) + a directional % progress bar — alongside clearly-labelled SEED future milestones (1 active + N seed). Grouped card values now render as bullet lists, not dense comma/dot-separated prose. CSP/refresh-script unchanged. +tests.',
     'v0.2.175 — ENGINEERING HEALTH metrics: a new build-time, static, read-only "Engineering health" section on /continuum.html (cards + rings) — profile/test-file counts, parser-gap count, doc-sync + version GENERATED at build; total tests, timings, bundle baseline, last-green gate LABELLED last-known. Pure buildHealthModel() runs at module load (curated fallback) AND in build-continuum (measured override). CSP/refresh-script unchanged. +tests.',
     'v0.2.174 — dashboard DATA AUTOMATION: pure tools/continuumParse.mjs parses progress.md + todo.md at build time so the continuum page DERIVES its next-12 / active-now / completed-24h / archive lists + a docs-derived task-count metric; buildContinuumModel(overrides) merges them over the curated fallback (safe fallback + parser-gap reporting on any miss). CSP unchanged. +tests.',
-    'v0.2.173 — TEST-PROFILE system for faster agent loops: npm run test:fast (~5 core files) + test:foundation (~16 pure/guard files) for inner loops, test:release = FULL suite + check/build/bundle/handoff (release gate unchanged). Explicit curated lists (tools/testProfiles.mjs, no git-diff heuristics) validated against disk + a timing footer. +11 tests.',
   ],
 
   // Archive clusters, newest first.
@@ -443,6 +443,13 @@ const _li = (items) => items.map((x) => `        <li>${escapeHtml(x)}</li>`).joi
 // joined with ' · ' of 2+ parts becomes a compact <ul class="mini"> bullet list; a single
 // part stays a plain value span. Each part is HTML-escaped; the <ul>/<li>/<span> markup is
 // our own static markup. No new script; the CSP/refresh-script hash is untouched. Pure.
+// _h2(title, count) — a section heading row (v0.2.177): the heading plus an optional
+// item-count chip so each section is scannable at a glance. Server-rendered + escaped.
+function _h2(title, count) {
+  const chip = count != null ? ` <span class="count">${escapeHtml(count)}</span>` : '';
+  return `<div class="h2row"><h2>${escapeHtml(title)}</h2>${chip}</div>`;
+}
+
 function _cardValueHtml(value) {
   const raw = String(value == null ? '' : value);
   const parts = raw.split(' · ').map((s) => s.trim()).filter(Boolean);
@@ -570,7 +577,8 @@ function _milestonesSection(ms) {
   const note = ms.note ? `      <div class="focus">${escapeHtml(ms.note)}</div>` : '';
   return `
     <section>
-      <h2>Milestones</h2>
+      ${_h2('Milestones', c.total)}
+      <div class="lead">The one true ACTIVE milestone vs. clearly-labelled SEED/future roadmap.</div>
       <div class="ms-totals">Total milestones: <b>${escapeHtml(c.total)}</b> — <b>${escapeHtml(c.active)}</b> active, <b>${escapeHtml(c.seed)}</b> seed/future <span class="seed">SEED · not yet tracked</span></div>
 ${_milestoneCard(ms.active)}
       <div class="ms-grid">
@@ -592,7 +600,8 @@ function _healthSection(health) {
   const note = health.note ? `      <div class="focus">${escapeHtml(health.note)}</div>` : '';
   return `
     <section>
-      <h2>Engineering health</h2>
+      ${_h2('Engineering health', health.metrics.length)}
+      <div class="lead">The efficiency loop in numbers — each card chipped GENERATED or LAST-KNOWN.</div>
       <div class="grid">
 ${_healthCards(health.metrics)}
       </div>
@@ -655,15 +664,20 @@ export function renderContinuumPage(model = buildContinuumModel()) {
   .badge{display:inline-block;margin-top:10px;padding:3px 10px;border:1px solid var(--edge);
     border-radius:3px;color:var(--accent);font-size:11px;letter-spacing:2px;}
   .live{color:var(--muted);font-size:12px;margin-top:6px;}
-  main{max-width:1040px;margin:0 auto;padding:0 16px;}
-  section{margin-top:26px;}
+  main{max-width:1080px;margin:0 auto;padding:0 16px;}
+  section{margin-top:34px;}
+  .h2row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 4px;}
   h2{font-size:13px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;
-    border-left:3px solid var(--hot);padding-left:10px;margin:0 0 12px;}
+    border-left:3px solid var(--hot);padding-left:10px;margin:0;}
+  .count{color:var(--accent);font-size:11px;letter-spacing:1px;
+    border:1px solid var(--edge);border-radius:10px;padding:0 8px;}
+  .lead{color:var(--muted);font-size:12px;letter-spacing:.4px;margin:0 0 12px;padding-left:13px;}
   .focus{background:var(--panel);border:1px solid var(--edge);border-radius:6px;
     padding:12px 14px;color:var(--muted);margin-top:14px;}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;}
   .metric{background:var(--panel);border:1px solid var(--edge);border-radius:6px;
-    padding:10px 12px;display:flex;flex-direction:column;gap:3px;}
+    padding:10px 12px;display:flex;flex-direction:column;gap:3px;transition:border-color .15s;}
+  .metric:hover,.ms:hover,.track:hover,.tot:hover{border-color:var(--accent);}
   .metric-label{color:var(--muted);font-size:11px;letter-spacing:1px;text-transform:uppercase;}
   .metric-value{color:var(--ink);}
   .seed{color:var(--gold);font-size:9px;border:1px solid var(--gold);border-radius:4px;padding:0 4px;letter-spacing:1px;}
@@ -725,12 +739,14 @@ export function renderContinuumPage(model = buildContinuumModel()) {
   .num{position:absolute;left:10px;top:8px;color:var(--accent);font-size:12px;}
   li.done{background:var(--panel);border:1px dashed var(--edge);border-radius:6px;
     padding:8px 11px;margin-bottom:6px;color:var(--muted);text-decoration:line-through;}
-  .cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
-  .cols h3{font-size:12px;letter-spacing:2px;color:var(--accent);margin:0 0 8px;}
-  footer{max-width:1040px;margin:30px auto 0;padding:14px 16px;color:var(--muted);
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start;}
+  .cols h3{font-size:12px;letter-spacing:2px;color:var(--accent);margin:0 0 8px;
+    display:flex;align-items:baseline;gap:8px;}
+  .cols h3 .count{color:var(--muted);}
+  footer{max-width:1080px;margin:38px auto 0;padding:14px 16px;color:var(--muted);
     border-top:1px solid var(--edge);font-size:12px;}
   footer b{color:var(--ink);}
-  @media(max-width:760px){.cols{grid-template-columns:1fr;}h1{font-size:21px;}}
+  @media(max-width:760px){h1{font-size:21px;}}
 </style>
 </head>
 <body>
@@ -743,12 +759,15 @@ export function renderContinuumPage(model = buildContinuumModel()) {
   </header>
   <main>
     <section>
-      <h2>Active focus</h2>
+      ${_h2('Active focus')}
+      <div class="lead">What the project is pointed at right now — read this first.</div>
       <div class="focus">${escapeHtml(m.focus)}</div>
     </section>
+${_milestonesSection(m.milestones)}
 
     <section>
-      <h2>At a glance</h2>
+      ${_h2('At a glance', m.metrics.length)}
+      <div class="lead">Build truth: source version, test/gate status, and the headline progress rings.</div>
       <div class="grid">
 ${_metricRows(m.metrics)}
 ${contrib}
@@ -761,16 +780,17 @@ ${_totalsStrip(t)}
 ${_rings(t)}
       </div>
     </section>
-${_milestonesSection(m.milestones)}
 ${_healthSection(m.health)}
 
     <section>
-      <h2>Track overview</h2>
+      ${_h2('Track overview', m.tracks.length)}
+      <div class="lead">Directional per-track completion — momentum, not archaeology.</div>
 ${_trackRows(m.tracks)}
     </section>
 
     <section>
-      <h2>15-hour proof-of-concept route</h2>
+      ${_h2('15-hour proof-of-concept route', m.leanRoute.length)}
+      <div class="lead">The active milestone's slices (LEAN-1..5) and what each still needs to ACT.</div>
       <table>
         <thead><tr><th>#</th><th>Slice</th><th>Status</th></tr></thead>
         <tbody>
@@ -779,36 +799,42 @@ ${_leanRows(m.leanRoute)}
       </table>
     </section>
 
-    <section class="cols">
-      <div>
-        <h3>NOW · Active</h3>
-        <ul class="bullets">
+    <section>
+      ${_h2('Now · Next · Later')}
+      <div class="lead">Active work, the archive of landed clusters, and what shipped in the last day.</div>
+      <div class="cols">
+        <div>
+          <h3>NOW · Active <span class="count">${m.activeNow.length}</span></h3>
+          <ul class="bullets">
 ${_li(m.activeNow)}
-        </ul>
-      </div>
-      <div>
-        <h3>LATER · Archive</h3>
-        <ul class="bullets">
+          </ul>
+        </div>
+        <div>
+          <h3>LATER · Archive <span class="count">${m.archive.length}</span></h3>
+          <ul class="bullets">
 ${_li(m.archive)}
-        </ul>
-      </div>
-      <div>
-        <h3>DONE · Last 24h</h3>
-        <ul>
+          </ul>
+        </div>
+        <div>
+          <h3>DONE · Last 24h <span class="count">${m.completed24h.length}</span></h3>
+          <ul>
 ${done24}
-        </ul>
+          </ul>
+        </div>
       </div>
     </section>
 
     <section>
-      <h2>Next 12 tasks</h2>
+      ${_h2('Next 12 tasks', m.next12.length)}
+      <div class="lead">The ordered queue — top of the list is the next thing to pick up.</div>
       <ol class="next">
 ${next12}
       </ol>
     </section>
 
     <section>
-      <h2>Risk / blocked / no-blocker</h2>
+      ${_h2('Risk / blocked / no-blocker', m.risks.length)}
+      <div class="lead">What can move freely vs. what is gated, manual, or a tracked open edge.</div>
       <table>
         <thead><tr><th>Item</th><th>State</th><th>Note</th></tr></thead>
         <tbody>

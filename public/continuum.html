@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'sha256-otKqhP2RYAA6ZkrRVcAQSBm7B1ssPR70QQR5dXePHmw='" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
-<title>Torii Continuum · v0.2.176-alpha</title>
+<title>Torii Continuum · v0.2.177-alpha</title>
 <style>
   :root{
     --bg:#070a12; --panel:#0d1320; --panel2:#111a2b; --edge:#1d2a44;
@@ -24,15 +24,20 @@
   .badge{display:inline-block;margin-top:10px;padding:3px 10px;border:1px solid var(--edge);
     border-radius:3px;color:var(--accent);font-size:11px;letter-spacing:2px;}
   .live{color:var(--muted);font-size:12px;margin-top:6px;}
-  main{max-width:1040px;margin:0 auto;padding:0 16px;}
-  section{margin-top:26px;}
+  main{max-width:1080px;margin:0 auto;padding:0 16px;}
+  section{margin-top:34px;}
+  .h2row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 4px;}
   h2{font-size:13px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;
-    border-left:3px solid var(--hot);padding-left:10px;margin:0 0 12px;}
+    border-left:3px solid var(--hot);padding-left:10px;margin:0;}
+  .count{color:var(--accent);font-size:11px;letter-spacing:1px;
+    border:1px solid var(--edge);border-radius:10px;padding:0 8px;}
+  .lead{color:var(--muted);font-size:12px;letter-spacing:.4px;margin:0 0 12px;padding-left:13px;}
   .focus{background:var(--panel);border:1px solid var(--edge);border-radius:6px;
     padding:12px 14px;color:var(--muted);margin-top:14px;}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;}
   .metric{background:var(--panel);border:1px solid var(--edge);border-radius:6px;
-    padding:10px 12px;display:flex;flex-direction:column;gap:3px;}
+    padding:10px 12px;display:flex;flex-direction:column;gap:3px;transition:border-color .15s;}
+  .metric:hover,.ms:hover,.track:hover,.tot:hover{border-color:var(--accent);}
   .metric-label{color:var(--muted);font-size:11px;letter-spacing:1px;text-transform:uppercase;}
   .metric-value{color:var(--ink);}
   .seed{color:var(--gold);font-size:9px;border:1px solid var(--gold);border-radius:4px;padding:0 4px;letter-spacing:1px;}
@@ -94,43 +99,80 @@
   .num{position:absolute;left:10px;top:8px;color:var(--accent);font-size:12px;}
   li.done{background:var(--panel);border:1px dashed var(--edge);border-radius:6px;
     padding:8px 11px;margin-bottom:6px;color:var(--muted);text-decoration:line-through;}
-  .cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
-  .cols h3{font-size:12px;letter-spacing:2px;color:var(--accent);margin:0 0 8px;}
-  footer{max-width:1040px;margin:30px auto 0;padding:14px 16px;color:var(--muted);
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start;}
+  .cols h3{font-size:12px;letter-spacing:2px;color:var(--accent);margin:0 0 8px;
+    display:flex;align-items:baseline;gap:8px;}
+  .cols h3 .count{color:var(--muted);}
+  footer{max-width:1080px;margin:38px auto 0;padding:14px 16px;color:var(--muted);
     border-top:1px solid var(--edge);font-size:12px;}
   footer b{color:var(--ink);}
-  @media(max-width:760px){.cols{grid-template-columns:1fr;}h1{font-size:21px;}}
+  @media(max-width:760px){h1{font-size:21px;}}
 </style>
 </head>
 <body>
   <header>
     <div class="gate">⛩ TORII CONTINUUM</div>
-    <h1>Torii Continuum <span class="v">v0.2.176-alpha</span></h1>
+    <h1>Torii Continuum <span class="v">v0.2.177-alpha</span></h1>
     <div class="sub">Project oversight dashboard</div>
     <div class="badge">PROJECT OVERSIGHT · STATIC · READ-ONLY</div>
-    <div class="live">Live: torii-quest.pplx.app · godMode false · build truth (live trails — manual deploy) · packaged: <span id="generated-at">2026-06-25T07:58:55.445Z</span></div>
+    <div class="live">Live: torii-quest.pplx.app · godMode false · build truth (live trails — manual deploy) · packaged: <span id="generated-at">2026-06-25T08:24:06.836Z</span></div>
   </header>
   <main>
     <section>
-      <h2>Active focus</h2>
+      <div class="h2row"><h2>Active focus</h2></div>
+      <div class="lead">What the project is pointed at right now — read this first.</div>
       <div class="focus">15-hour proof-of-concept route — shooter is maintenance-only unless demo-breaking; the active MVP is the freedom-tech loop (gateway/NAP-to-NAP preview → Plebeian/Nostr product panel → leaderboard preview → torii.quest update-check). Polish comes after PoC validation.</div>
     </section>
 
     <section>
-      <h2>At a glance</h2>
+      <div class="h2row"><h2>Milestones</h2> <span class="count">4</span></div>
+      <div class="lead">The one true ACTIVE milestone vs. clearly-labelled SEED/future roadmap.</div>
+      <div class="ms-totals">Total milestones: <b>4</b> — <b>1</b> active, <b>3</b> seed/future <span class="seed">SEED · not yet tracked</span></div>
+      <div class="ms ms-active">
+        <div class="ms-head"><span class="ms-name">15-hour proof-of-concept route</span><span class="pill ms-pill-active">ACTIVE</span></div>
+        <div class="ms-blurb">The one true ACTIVE milestone — the freedom-tech loop: gateway/NAP-to-NAP travel → Plebeian/Nostr product panel → leaderboard → torii.quest update-check.</div>
+        <div class="ms-meta"><span class="ms-pct">46% complete <span class="ms-sub">(directional estimate)</span></span><span class="ms-sub">0 / 5 tasks done</span></div>
+        <div class="bar"><div class="bar-fill" style="width:46%"></div></div>
+        <ul class="mini ms-counts">
+          <li>5 tasks total</li>
+          <li>0 done</li>
+          <li>4 active</li>
+          <li>1 pending</li>
+        </ul>
+      </div>
+      <div class="ms-grid">
+      <div class="ms ms-seed">
+        <div class="ms-head"><span class="ms-name">Live relay I/O + event signing</span><span class="seed">SEED · future</span></div>
+        <div class="ms-blurb">Gated by SEC-1/2/3 — explicit consent, handoff verification, and URL validation must clear before any wire write or live navigation.</div>
+      </div>
+      <div class="ms ms-seed">
+        <div class="ms-head"><span class="ms-name">Open-world NAP-to-NAP federation</span><span class="seed">SEED · future</span></div>
+        <div class="ms-blurb">Real in-world portals plus a formalised NAP zone registry, beyond the inert travel preview.</div>
+      </div>
+      <div class="ms ms-seed">
+        <div class="ms-head"><span class="ms-name">Component / Plebeian market economy</span><span class="seed">SEED · future</span></div>
+        <div class="ms-blurb">A CMP component marketplace and real Plebeian.Market listings over the read-only product-panel shells.</div>
+      </div>
+      </div>
+      <div class="focus">One real ACTIVE milestone (its tasks are the 15-hour MVP slices, DERIVED from the route states); the rest are SEED/future milestones — labelled as such, not pretending to carry real task counts yet. Future hook: derive seed milestones from strategy.md.</div>
+    </section>
+
+    <section>
+      <div class="h2row"><h2>At a glance</h2> <span class="count">6</span></div>
+      <div class="lead">Build truth: source version, test/gate status, and the headline progress rings.</div>
       <div class="grid">
-        <div class="metric"><span class="metric-label">Source version</span><span class="metric-value">v0.2.176-alpha (build truth; live trails — manual deploy)</span></div>
+        <div class="metric"><span class="metric-label">Source version</span><span class="metric-value">v0.2.177-alpha (build truth; live trails — manual deploy)</span></div>
         <div class="metric"><span class="metric-label">Tests</span><span class="metric-value">821 passing / 60 files (profiles: test:fast ~5, test:foundation ~17)</span></div>
         <div class="metric"><span class="metric-label">Regression check</span><span class="metric-value">14 / 14 GREEN</span></div>
         <div class="metric"><span class="metric-label">Bundle (advisory)</span><span class="metric-value">~2.9 MB raw / ~1022 KB gzip (rapier chunk &gt;700 KB, expected)</span></div>
         <div class="metric"><span class="metric-label">Gates</span><ul class="mini"><li>SEC-1 / SEC-2 / SEC-3 intact</li><li>godMode false</li><li>continuum CSP enforced</li></ul></div>
-        <div class="metric"><span class="metric-label">Active slice</span><span class="metric-value">v0.2.176 milestone + layout pass (build-time, static, read-only)</span></div>
+        <div class="metric"><span class="metric-label">Active slice</span><span class="metric-value">v0.2.177 dashboard layout/readability pass (build-time, static, read-only)</span></div>
         <div class="metric"><span class="metric-label">Contributors <span class="seed">SEED · not live</span></span><span class="metric-value">1 human · 3 clankers</span></div>
         <div class="metric"><span class="metric-label">Docs-derived <span class="seed">DERIVED · build-time</span></span><ul class="mini"><li>12 completed task markers (todo.md)</li><li>12 next-12</li><li>11 archive clusters</li></ul></div>
       </div>
       <div class="totals">
         <div class="tot"><span class="tot-v" data-k="tasksAhead">12</span><span class="tot-l">tasks ahead</span></div>
-        <div class="tot"><span class="tot-v" data-k="activeTasks">5</span><span class="tot-l">active</span></div>
+        <div class="tot"><span class="tot-v" data-k="activeTasks">6</span><span class="tot-l">active</span></div>
         <div class="tot"><span class="tot-v" data-k="completedLast24h">6</span><span class="tot-l">done (24h)</span></div>
         <div class="tot"><span class="tot-v" data-k="archivedClusters">11</span><span class="tot-l">archive clusters</span></div>
         <div class="tot"><span class="tot-v" data-k="trackCount">6</span><span class="tot-l">tracks</span></div>
@@ -168,47 +210,16 @@
     </section>
 
     <section>
-      <h2>Milestones</h2>
-      <div class="ms-totals">Total milestones: <b>4</b> — <b>1</b> active, <b>3</b> seed/future <span class="seed">SEED · not yet tracked</span></div>
-      <div class="ms ms-active">
-        <div class="ms-head"><span class="ms-name">15-hour proof-of-concept route</span><span class="pill ms-pill-active">ACTIVE</span></div>
-        <div class="ms-blurb">The one true ACTIVE milestone — the freedom-tech loop: gateway/NAP-to-NAP travel → Plebeian/Nostr product panel → leaderboard → torii.quest update-check.</div>
-        <div class="ms-meta"><span class="ms-pct">46% complete <span class="ms-sub">(directional estimate)</span></span><span class="ms-sub">0 / 5 tasks done</span></div>
-        <div class="bar"><div class="bar-fill" style="width:46%"></div></div>
-        <ul class="mini ms-counts">
-          <li>5 tasks total</li>
-          <li>0 done</li>
-          <li>4 active</li>
-          <li>1 pending</li>
-        </ul>
-      </div>
-      <div class="ms-grid">
-      <div class="ms ms-seed">
-        <div class="ms-head"><span class="ms-name">Live relay I/O + event signing</span><span class="seed">SEED · future</span></div>
-        <div class="ms-blurb">Gated by SEC-1/2/3 — explicit consent, handoff verification, and URL validation must clear before any wire write or live navigation.</div>
-      </div>
-      <div class="ms ms-seed">
-        <div class="ms-head"><span class="ms-name">Open-world NAP-to-NAP federation</span><span class="seed">SEED · future</span></div>
-        <div class="ms-blurb">Real in-world portals plus a formalised NAP zone registry, beyond the inert travel preview.</div>
-      </div>
-      <div class="ms ms-seed">
-        <div class="ms-head"><span class="ms-name">Component / Plebeian market economy</span><span class="seed">SEED · future</span></div>
-        <div class="ms-blurb">A CMP component marketplace and real Plebeian.Market listings over the read-only product-panel shells.</div>
-      </div>
-      </div>
-      <div class="focus">One real ACTIVE milestone (its tasks are the 15-hour MVP slices, DERIVED from the route states); the rest are SEED/future milestones — labelled as such, not pretending to carry real task counts yet. Future hook: derive seed milestones from strategy.md.</div>
-    </section>
-
-    <section>
-      <h2>Engineering health</h2>
+      <div class="h2row"><h2>Engineering health</h2> <span class="count">8</span></div>
+      <div class="lead">The efficiency loop in numbers — each card chipped GENERATED or LAST-KNOWN.</div>
       <div class="grid">
-        <div class="metric"><span class="metric-label">Build version <span class="hk hk-gen">GENERATED</span></span><span class="metric-value">v0.2.176-alpha</span></div>
+        <div class="metric"><span class="metric-label">Build version <span class="hk hk-gen">GENERATED</span></span><span class="metric-value">v0.2.177-alpha</span></div>
         <div class="metric"><span class="metric-label">Test files / profiles <span class="hk hk-gen">GENERATED</span></span><ul class="mini"><li>fast 5</li><li>foundation 17</li><li>full 60</li></ul></div>
         <div class="metric"><span class="metric-label">Total tests <span class="hk hk-lk">LAST-KNOWN</span></span><span class="metric-value">821 passing</span></div>
         <div class="metric"><span class="metric-label">Profile timings <span class="hk hk-lk">LAST-KNOWN</span></span><ul class="mini"><li>fast ~1s</li><li>foundation ~6s</li><li>full suite ~41s</li></ul></div>
         <div class="metric"><span class="metric-label">Bundle baseline <span class="hk hk-lk">LAST-KNOWN</span></span><span class="metric-value">2.9 MB raw / ~1022 KB gzip (rapier chunk &gt;700 KB, expected)</span></div>
         <div class="metric"><span class="metric-label">Parser gaps <span class="hk hk-gen">GENERATED</span></span><ul class="mini"><li>0</li><li>dashboard lists fully derived</li></ul></div>
-        <div class="metric"><span class="metric-label">Release gate <span class="hk hk-lk">LAST-KNOWN</span></span><ul class="mini"><li>14 / 14 regression checks GREEN</li><li>last green v0.2.176-alpha</li></ul></div>
+        <div class="metric"><span class="metric-label">Release gate <span class="hk hk-lk">LAST-KNOWN</span></span><ul class="mini"><li>14 / 14 regression checks GREEN</li><li>last green v0.2.177-alpha</li></ul></div>
         <div class="metric"><span class="metric-label">Source-of-truth docs <span class="hk hk-gen">GENERATED</span></span><ul class="mini"><li>progress.md</li><li>todo.md</li><li>strategy.md carry this version</li></ul></div>
       </div>
       <div class="rings">
@@ -244,7 +255,8 @@
     </section>
 
     <section>
-      <h2>Track overview</h2>
+      <div class="h2row"><h2>Track overview</h2> <span class="count">6</span></div>
+      <div class="lead">Directional per-track completion — momentum, not archaeology.</div>
         <div class="track">
           <div class="track-head"><span class="track-name">Foundation / ARS</span><span class="track-pct">71% · 5 / 7</span></div>
           <div class="bar"><div class="bar-fill" style="width:71%"></div></div>
@@ -278,7 +290,8 @@
     </section>
 
     <section>
-      <h2>15-hour proof-of-concept route</h2>
+      <div class="h2row"><h2>15-hour proof-of-concept route</h2> <span class="count">5</span></div>
+      <div class="lead">The active milestone's slices (LEAN-1..5) and what each still needs to ACT.</div>
       <table>
         <thead><tr><th>#</th><th>Slice</th><th>Status</th></tr></thead>
         <tbody>
@@ -291,20 +304,24 @@
       </table>
     </section>
 
-    <section class="cols">
-      <div>
-        <h3>NOW · Active</h3>
-        <ul class="bullets">
+    <section>
+      <div class="h2row"><h2>Now · Next · Later</h2></div>
+      <div class="lead">Active work, the archive of landed clusters, and what shipped in the last day.</div>
+      <div class="cols">
+        <div>
+          <h3>NOW · Active <span class="count">6</span></h3>
+          <ul class="bullets">
+        <li>v0.2.177 — dashboard layout/readability pass (DASHBOARD-LAYOUT-1; renderContinuumPage in continuumData.js): a visual-hierarchy + scannability pass on /continuum.html — the ACTIVE-milestone headline is promoted above At-a-glance; every section gains a one-line lead caption + a _h2(title,count) heading row with an item-count chip; the Now/Archive/Done columns reflow on a responsive auto-fit grid (no hard 3→1 jump) and show live counts; spacing/typography tightened (wider main, more section separation, subtle card hover). DERIVED/GENERATED/LAST-KNOWN/SEED chips stay visible. No new &lt;script&gt;/asset; CSP/refresh-script hash unchanged. A larger visual redesign remains a future follow-up.</li>
         <li>v0.2.176 — milestone + layout pass (buildMilestoneModel + SEED_MILESTONES in continuumData.js): a build-time, static, read-only Milestones section on /continuum.html surfaces the 15-hour MVP route as the one true ACTIVE milestone — the leanRoute slices ARE its tasks, folded into DERIVED counts (5 total / 0 done / 4 active / 1 pending) + a directional 46% complete progress bar — alongside clearly-labelled SEED future milestones (honest total: 1 active + 3 seed, never pretending the seeds carry real task counts). Grouped card values (health, docs-derived) now render as bullet lists via _cardValueHtml, not dense ·-separated prose. No new &lt;script&gt;; CSP/refresh-script hash unchanged. Follow-up: DASHBOARD-LAYOUT-1 (design dashboard layout/formatting better).</li>
         <li>v0.2.175 — engineering health metrics (buildHealthModel in continuumData.js + tools/build-continuum.mjs): a build-time, static, read-only Engineering health section on /continuum.html surfaces the efficiency loop (measure · profile · standardise · automate · modularise · document) — profile/test-file counts, parser-gap count, version + doc-sync GENERATED at build; total tests, profile timings, bundle baseline, last-green gate LABELLED last-known. CSP/refresh-script hash unchanged; page stays fully static/read-only.</li>
         <li>v0.2.174 — dashboard data automation (tools/continuumParse.mjs + tools/build-continuum.mjs): the continuum page now DERIVES its next-12 / active-now / completed-24h / archive lists + a docs-derived task-count metric from progress.md + todo.md at build time, falling back to the curated continuumData.js defaults (with parser-gap reporting) on any miss. CSP unchanged; page stays fully static/read-only.</li>
         <li>ARS-4 — finish folding reload/pointer-lock into the guarded FSM.</li>
         <li>ARS-6 / PROGRESS-1 — ongoing CODE_INDEX + living-docs upkeep.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>LATER · Archive</h3>
-        <ul class="bullets">
+          </ul>
+        </div>
+        <div>
+          <h3>LATER · Archive <span class="count">11</span></h3>
+          <ul class="bullets">
         <li>v0.2.169 — progress-dashboard rewrite (this file). Compact bars/percentages/badges/totals, 24h struck-through completions, concise archive. Docs/tooling only.</li>
         <li>v0.2.159–168 — gateway-travel chain + Nostr read foundation. Read-only NIP-01 relay-read foundation → leaderboard/profile/gateway-destination read proofs → consent-gate foundation → leaderboard submit + gateway travel-confirm intents → consent UX view-model → dry-run handoff plan → first same-origin travel executor (injected transport). All PURE &amp; INERT; never navigates/signs/publishes/writes network.</li>
         <li>v0.2.153–158 — infra/handoff tooling + update-check source. Bundle-size baseline [13], doc-consistency guard [14], AI-handoff status snapshot (npm run handoff:status); GitHub release-check source + in-game update-status panel (host-only injected fetcher, no auto-update).</li>
@@ -316,23 +333,25 @@
         <li>v0.2.120–130 — foundation &amp; test harness. Vitest added; event bus + FSM slices; ToriiDebug snapshot/report; pure physics/raycast/combat seams; HANDOFF.md.</li>
         <li>v0.2.114–119 — decoupling. Player/combat math extracted; foliage/mirror/bot-hit globals moved onto the event bus / module registries.</li>
         <li>v0.2.100–113 — reconciliation &amp; game-feel (2026-06-23). Source reconciled by concern; physics SDK seams; regression batch (hit-reg, head-zone, reload, barrel→crosshair aim); CSP + avatar-URL hardening.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>DONE · Last 24h</h3>
-        <ul>
+          </ul>
+        </div>
+        <div>
+          <h3>DONE · Last 24h <span class="count">6</span></h3>
+          <ul>
         <li class="done">v0.2.175 — engineering health metrics: a new build-time, static, read-only Engineering health section on /continuum.html (provenance-chipped cards + SVG rings) surfaces the efficiency loop (measure · profile · standardise · automate · modularise · document). Pure buildHealthModel() + a HEALTH_LASTKNOWN baseline in continuumData.js run at module load (curated fallback) AND in build-continuum.mjs with freshly GENERATED inputs (profile/test-file counts, parser gaps, version, doc-sync); total tests / timings / bundle baseline / last-green gate are LABELLED last-known via a chip so a stale number is obvious. continuumDataJSON carries health. CSP/refresh-script hash unchanged; page stays fully static/read-only. +9 tests.</li>
         <li class="done">v0.2.174 — dashboard data automation: a pure tools/continuumParse.mjs parses progress.md + todo.md at build time so the continuum page DERIVES its next-12 / active-now / completed-24h / archive lists + a docs-derived task-count metric; buildContinuumModel(overrides) merges them over the curated fallback with parser-gap reporting; CSP unchanged, page stays fully static/read-only. +15 tests.</li>
         <li class="done">v0.2.173 — test-profile system for faster agent loops (tools/testProfiles.mjs PURE registry + tools/test-profile.mjs CLI): npm run test:fast (5 core files — state/events/classifier/aim/snapshot) + test:foundation (16 pure/guard files) for inner loops, test:release = FULL suite + check/build/bundle/handoff (release gate unchanged). Explicit curated lists (no git-diff heuristics) validated against disk (fast ⊆ foundation, no stale entries) + a timing footer so savings are visible. Agents iterate on fast/foundation; every deploy/publish/push still runs test:release. +11 tests.</li>
         <li class="done">v0.2.172 — Continuum dashboard CSP hardening: strict Content-Security-Policy &lt;meta&gt; on the generated public/continuum.html — script-src &#39;self&#39; + the sha256 of the one packaged refresh script (NO &#39;unsafe-inline&#39; script), style-src &#39;self&#39; &#39;unsafe-inline&#39; (data-driven track bars), connect-src &#39;self&#39; (same-origin JSON refresh), default-src &#39;self&#39; with object-src/base-uri/form-action/frame-ancestors locked to &#39;none&#39;. Script body + hash kept in sync by a node:crypto test (cannot drift). Resolves the prior inline-script WARN; page stays fully static/read-only. +7 tests.</li>
         <li class="done">v0.2.171 — Torii Continuum project-oversight dashboard: a thin static page (public/continuum.html) generated from a curated, node-safe progress.md data model (engine/dashboard/continuumData.js) — CSS bars + SVG donut rings + totals strip, Now/Next/Later, next-12, struck completed-24h, archive, seed contributors/clankers metric, source-of-truth footer. Regenerated from packaged data each build (build:continuum); a same-origin-only refresh script re-reads continuum-data.json (no external URL/eval/timers). Safe relative link added to the title screen. Docs/tooling only, no gameplay change. +22 tests.</li>
         <li class="done">v0.2.170 — same-origin host transport adapter (engine/gateway/hostTransport.js): the injectable seam the v0.2.168 executor drives — createHostTransport/createRecordingHost (default-safe in-memory) + createBrowserHostTransport runtime seam (pushState/replaceState only, not yet wired); safeRoutePath re-validated, back-home rollback, browser APIs behind DI; null host → executor no-op. +21 tests.</li>
-        </ul>
+          </ul>
+        </div>
       </div>
     </section>
 
     <section>
-      <h2>Next 12 tasks</h2>
+      <div class="h2row"><h2>Next 12 tasks</h2> <span class="count">12</span></div>
+      <div class="lead">The ordered queue — top of the list is the next thing to pick up.</div>
       <ol class="next">
         <li><span class="num">1</span>Wire createBrowserHostTransport(window) (v0.2.170) into world/handoff.js (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.</li>
         <li><span class="num">2</span>Gateway portal mesh — actually move the player in-world on a confirmed hop.</li>
@@ -350,7 +369,8 @@
     </section>
 
     <section>
-      <h2>Risk / blocked / no-blocker</h2>
+      <div class="h2row"><h2>Risk / blocked / no-blocker</h2> <span class="count">6</span></div>
+      <div class="lead">What can move freely vs. what is gated, manual, or a tracked open edge.</div>
       <table>
         <thead><tr><th>Item</th><th>State</th><th>Note</th></tr></thead>
         <tbody>
@@ -372,7 +392,7 @@
         <li>progress.md remains the visual execution DASHBOARD source document — this page is curated from it.</li>
     </ul>
     Static, read-only oversight surface — generated from packaged project data each deploy; a page refresh shows the latest packaged state. No live writes, signing, relay publishing, or admin actions. Regenerate with <b>npm run build:continuum</b>.
-    Dashboard lists generated from <b>progress.md + todo.md</b> at build time — parsed: next12 (12), activeNow (5), completed24h (6), archive (11); no parser gaps.
+    Dashboard lists generated from <b>progress.md + todo.md</b> at build time — parsed: next12 (12), activeNow (6), completed24h (6), archive (11); no parser gaps.
   </footer>
   <script>
   // Best-effort refresh from the packaged SAME-ORIGIN data file. No external URL,
