@@ -18,8 +18,8 @@ the established **pure-helper + thin-CLI** pattern, and a deterministic static t
 - **`tools/releaseMeta.mjs`** (PURE — no fs/network/child_process/THREE/DOM):
   - Constants: `RELEASE_META_BADGE`, `METADATA_SCHEMA_VERSION` (1), `RELEASE_META_KIND`
     (`torii-release-metadata`), `RELEASE_META_FILE` (`public/release-metadata.json`),
-    `UPDATE_CHANNELS` (`stable/alpha/beta/rc/unknown`), `DEFAULT_SOURCE` (mirrors `RELEASE_SOURCE`
-    in `src/engine/update/updateCheck.js`), `DIST_SPEC`, `REQUIRED_FILES`, `REQUIRED_CHECKS`,
+    `UPDATE_CHANNELS` (`stable/alpha/beta/rc/unknown`), `DEFAULT_SOURCE` (the real GitHub repo
+    `ChiefmonkeyArt/torii-gate` — see follow-up fix below), `DIST_SPEC`, `REQUIRED_FILES`, `REQUIRED_CHECKS`,
     `CONSENT_TEXT`, `UPDATE_NOTICE`.
   - `channelForVersion(version)` → derives the channel from the prerelease tag (tagless →
     stable; unrecognised → unknown; bad input → unknown).
@@ -128,3 +128,39 @@ active + completed slices; oldest v0.2.188 rolled off completed-24h to keep the 
   `CODE_INDEX.md`, `SDK_DEBUG_INDEX.md`, `UPDATE_CHECK.md`, `VPS_INSTALL.md`.
 
 **Commit:** `628497f` — `v0.2.192-alpha: prepare GitHub release update metadata` (local-only; not pushed).
+
+---
+
+## Follow-up fix — correct the GitHub repo coordinates
+
+**Issue (informational):** the release metadata pointed at the placeholder repo
+`github.com/torii-quest/torii-quest`. The actual GitHub repo is
+`https://github.com/ChiefmonkeyArt/torii-gate` (git remote
+`https://git-agent-proxy.perplexity.ai/ChiefmonkeyArt/torii-gate.git`).
+
+**Fix (metadata/docs/tests only — no runtime/gameplay change):**
+
+- `tools/releaseMeta.mjs` — `DEFAULT_SOURCE` now `{ owner: 'ChiefmonkeyArt', repo: 'torii-gate' }`;
+  the source/release URLs derive from it, so `latestReleaseUrl` /`releasesPageUrl` now resolve to
+  `…/repos/ChiefmonkeyArt/torii-gate/releases/latest` and
+  `https://github.com/ChiefmonkeyArt/torii-gate/releases`.
+- `public/release-metadata.json` — regenerated (deterministic; carries the corrected URLs).
+- `tests/release-meta.test.js` — the explicit `releaseUrlsFor(...)` assertion now uses the real
+  `ChiefmonkeyArt/torii-gate`; the rest already derive from `DEFAULT_SOURCE`.
+- Docs — `UPDATE_CHECK.md` §5 table + `HANDOFF.md` v0.2.192 paragraph note the real repo and that
+  `RELEASE_SOURCE` in `src/engine/update/updateCheck.js` still carries the legacy placeholder,
+  deferred to a separate **runtime** slice (out of scope here).
+
+**Safety unchanged:** `update.manual` stays `true`, `update.autoUpdate` and `update.actionable`
+stay `false`, and `validateReleaseMeta()` still ERRORs if any of those are flipped — the metadata
+remains descriptive-only and authorises nothing.
+
+**Out of scope (deferred):** `RELEASE_SOURCE` in `src/engine/update/updateCheck.js` (and the
+runtime modules that re-export it) still use the placeholder; correcting those is a runtime change
+and was intentionally NOT made in this metadata/docs/tests slice.
+
+**Re-run:** `npm run release:meta` ✅ valid (URLs now `ChiefmonkeyArt/torii-gate`), `--write`
+idempotent ✅, `npm run docs:stale` ✅ no drift, `npm run test:release` ✅ ALL GREEN
+(Test Files 71, Tests 1100, regression-check ALL GREEN).
+
+**Follow-up commit:** `__FOLLOWUP_HASH__` — `v0.2.192-alpha: point release metadata at ChiefmonkeyArt/torii-gate` (local-only; not pushed).

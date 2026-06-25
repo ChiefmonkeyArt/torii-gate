@@ -33,9 +33,9 @@ describe('channelForVersion', () => {
 
 describe('releaseUrlsFor', () => {
   it('builds documentation-only https GitHub endpoints', () => {
-    const { latestReleaseUrl, releasesPageUrl } = releaseUrlsFor('torii-quest', 'torii-quest');
-    expect(latestReleaseUrl).toBe('https://api.github.com/repos/torii-quest/torii-quest/releases/latest');
-    expect(releasesPageUrl).toBe('https://github.com/torii-quest/torii-quest/releases');
+    const { latestReleaseUrl, releasesPageUrl } = releaseUrlsFor('ChiefmonkeyArt', 'torii-gate');
+    expect(latestReleaseUrl).toBe('https://api.github.com/repos/ChiefmonkeyArt/torii-gate/releases/latest');
+    expect(releasesPageUrl).toBe('https://github.com/ChiefmonkeyArt/torii-gate/releases');
   });
 
   it('url-encodes owner/repo', () => {

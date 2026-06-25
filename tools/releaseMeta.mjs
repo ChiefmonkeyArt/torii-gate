@@ -30,11 +30,13 @@ export const UPDATE_CHANNELS = Object.freeze({
   UNKNOWN: 'unknown',
 });
 
-// Where the latest-release data WOULD be fetched from. MUST mirror RELEASE_SOURCE in
-// src/engine/update/updateCheck.js — documentation only; nothing here fetches.
+// Where the latest-release data WOULD be fetched from — the real GitHub repo;
+// documentation only, nothing here fetches. (RELEASE_SOURCE in
+// src/engine/update/updateCheck.js still carries the legacy placeholder pending a
+// separate runtime slice.)
 export const DEFAULT_SOURCE = Object.freeze({
-  owner: 'torii-quest',
-  repo: 'torii-quest',
+  owner: 'ChiefmonkeyArt',
+  repo: 'torii-gate',
 });
 
 // What a published build is expected to contain. A VPS checker can assert these before flipping

@@ -6,10 +6,10 @@
   "version": "v0.2.192-alpha",
   "commit": null,
   "source": {
-    "owner": "torii-quest",
-    "repo": "torii-quest",
-    "latestReleaseUrl": "https://api.github.com/repos/torii-quest/torii-quest/releases/latest",
-    "releasesPageUrl": "https://github.com/torii-quest/torii-quest/releases"
+    "owner": "ChiefmonkeyArt",
+    "repo": "torii-gate",
+    "latestReleaseUrl": "https://api.github.com/repos/ChiefmonkeyArt/torii-gate/releases/latest",
+    "releasesPageUrl": "https://github.com/ChiefmonkeyArt/torii-gate/releases"
   },
   "dist": {
     "buildCommand": "npm run build",
