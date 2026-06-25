@@ -1,10 +1,11 @@
 {
   "name": "torii-quest",
-  "version": "0.2.170-alpha",
+  "version": "0.2.171-alpha",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:continuum": "node tools/build-continuum.mjs",
+    "build": "node tools/build-continuum.mjs && vite build",
     "preview": "vite preview",
     "check": "node tools/regression-check.mjs",
     "bundle:report": "node tools/bundle-report.mjs",

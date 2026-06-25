@@ -1,0 +1,24 @@
+{
+  "version": "v0.2.171-alpha",
+  "generatedAt": "2026-06-25T01:14:36.678Z",
+  "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
+  "totals": {
+    "tasksAhead": 12,
+    "activeTasks": 3,
+    "completedLast24h": 4,
+    "archivedClusters": 7,
+    "trackCount": 6,
+    "milestoneCount": 5,
+    "milestonesAchieved": 0,
+    "milestonesInProgress": 4,
+    "milestonesAchievedPct": 0,
+    "pocProgressPct": 46,
+    "buildProgressPct": 74
+  },
+  "contributors": {
+    "isSeed": true,
+    "humans": 1,
+    "clankers": 3,
+    "note": "Seed placeholder — not live Nostr/contributor data."
+  }
+}

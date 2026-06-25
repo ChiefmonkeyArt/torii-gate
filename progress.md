@@ -1,7 +1,7 @@
 # Torii Quest — Progress Dashboard
 
 > Visual execution dashboard. `strategy.md` = vision/decision rules · `todo.md` = active task queue.
-> Current version: **v0.2.170-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
+> Current version: **v0.2.171-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
 > **ACTIVE FOCUS — 15-hour proof-of-concept route.** Shooter is maintenance-only unless demo-breaking; the active MVP is the freedom-tech loop (gateway/NAP-to-NAP preview → Plebeian/Nostr product panel → leaderboard preview → torii.quest update-check). Polish comes after PoC validation.
 
 ---
@@ -10,12 +10,12 @@
 
 | Metric | Value |
 |---|---|
-| Source version | **v0.2.170-alpha** (build truth; live trails — manual maintainer deploy) |
-| Tests | **757 passing / 57 files** |
+| Source version | **v0.2.171-alpha** (build truth; live trails — manual maintainer deploy) |
+| Tests | **779 passing / 58 files** |
 | Regression check | **14 / 14 GREEN** |
 | Bundle (advisory) | 2.9 MB raw / ~1017 KB gzip (rapier chunk >700 KB, expected) |
 | Gates | SEC-1 / SEC-2 / SEC-3 intact · godMode `false` |
-| Active slice | v0.2.170 same-origin host transport adapter (gateway travel) |
+| Active slice | v0.2.171 Torii Continuum project-oversight dashboard |
 
 Legend: `█` done · `░` remaining · ✅ landed · 🔄 in progress · ⏳ pending · 🚫 blocked · 🟢 no-blocker
 
@@ -55,7 +55,7 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 ## Active now
 
-- 🔄 **v0.2.170 — same-origin host transport adapter** (`engine/gateway/hostTransport.js`): the injectable seam the v0.2.168 executor drives; recording host by default, `createBrowserHostTransport(window)` runtime seam not yet wired.
+- 🔄 **v0.2.171 — Torii Continuum oversight dashboard** (`engine/dashboard/continuumData.js` + `public/continuum.html`): curated `progress.md` model + self-contained static HTML render (bars/rings/totals); regenerated from packaged data each build.
 - 🔄 **ARS-4** — finish folding reload/pointer-lock into the guarded FSM.
 - 🔄 **ARS-6 / PROGRESS-1** — ongoing CODE_INDEX + living-docs upkeep.
 
@@ -97,6 +97,7 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 Struck-through items stay ~24h, then collapse into Archive. Newest first.
 
+- ~~**v0.2.171** — Torii Continuum project-oversight **dashboard**: a thin static page (`public/continuum.html`) generated from a curated, node-safe `progress.md` data model (`engine/dashboard/continuumData.js`) — CSS bars + SVG donut rings + totals strip, Now/Next/Later, next-12, struck completed-24h, archive, seed contributors/clankers metric, source-of-truth footer. Regenerated from packaged data each build (`build:continuum`); a same-origin-only refresh script re-reads `continuum-data.json` (no external URL/eval/timers). Safe relative link added to the title screen. Docs/tooling only, no gameplay change. +22 tests.~~
 - ~~**v0.2.170** — same-origin host **transport adapter** (`engine/gateway/hostTransport.js`): the injectable seam the v0.2.168 executor drives — `createHostTransport`/`createRecordingHost` (default-safe in-memory) + `createBrowserHostTransport` runtime seam (pushState/replaceState only, not yet wired); `safeRoutePath` re-validated, back-home rollback, browser APIs behind DI; null host → executor no-op. +21 tests.~~
 - ~~**v0.2.169** — graphical **progress dashboard** rewrite (this file): compact bars/percentages/badges/totals, 24h struck-through completions, concise archive. Docs/tooling only.~~
 - ~~**v0.2.168** — first SAME-ORIGIN travel **executor** (`engine/gateway/handoffExecute.js`): acts on a READY v0.2.167 plan ONLY via an injected `transport.navigate`, re-validates the route with `safeRoutePath`, single synchronous rollback, safety flags pinned; never touches `location`/`history`/`window.open`/network/sign/publish. +19 tests.~~

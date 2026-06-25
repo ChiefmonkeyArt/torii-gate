@@ -60,6 +60,7 @@ export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
 export * as updateStatus from '../engine/update/updateStatus.js';
 export * as mvpLoop from '../engine/mvpLoop.js';
+export * as continuum from '../engine/dashboard/continuumData.js';
 export * as proofSurfaceSpecs from '../engine/world/proofSurfaceSpecs.js';
 export * as anchorTransforms from '../engine/world/anchorTransforms.js';
 export { createRaycastService, raycastService } from '../engine/physics/raycastService.js';
@@ -193,6 +194,10 @@ export const SDK_SURFACE = Object.freeze({
   updateStatus:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateStatus.js' },
   // MVP loop header — frames the four PoC preview cards as one Travel→Market→Score→Update loop (v0.2.143).
   mvpLoop:         { tier: STABILITY.EXPERIMENTAL, module: '../engine/mvpLoop.js' },
+  // Torii Continuum project-oversight dashboard data + pure static-page renderer
+  // (v0.2.171) — curated progress.md model, computed totals/percentages, SVG-ring/
+  // bar HTML render. READ-ONLY: no live writes/signing/relay/navigation.
+  continuum:       { tier: STABILITY.EXPERIMENTAL, module: '../engine/dashboard/continuumData.js' },
   // In-world proof-mesh LAYOUT/SPEC contracts for the four MVP proof surfaces — pure
   // placement data for the future mesh pass; no Three/render (v0.2.147).
   proofSurfaceSpecs: { tier: STABILITY.EXPERIMENTAL, module: '../engine/world/proofSurfaceSpecs.js' },

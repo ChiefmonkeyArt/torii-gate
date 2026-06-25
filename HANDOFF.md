@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.170-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.171-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -89,7 +89,9 @@ Breaking one should fail CI/the check, not ship.
   `leaderboardPreview`; v0.2.142 added `updatePreview`; v0.2.143 added `mvpLoop`;
   v0.2.147 added `proofSurfaceSpecs` (pure in-world proof-mesh layout/spec data);
   v0.2.170 added `hostTransport` (the real same-site host transport adapter for
-  gateway travel — injected History-pushState host, same-origin only)
+  gateway travel — injected History-pushState host, same-origin only);
+  v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
+  data model + pure static-page renderer — read-only, no live writes)
   (all experimental). **`SDK_DEBUG_INDEX.md`** (v0.2.145) is the compact
   discoverability map over this surface + the `ToriiDebug.shells` reports for AI
   handoffs / FOSS devs.
@@ -215,7 +217,8 @@ Breaking one should fail CI/the check, not ship.
 ```bash
 npm install
 npm run dev      # local dev server (vite)
-npm run build    # production build → dist/
+npm run build    # production build → dist/ (runs build:continuum first → public/continuum.html + continuum-data.json)
+npm run build:continuum  # (re)generate the Torii Continuum dashboard page + packaged data from progress.md model
 npm run check    # static regression guardrails (tools/regression-check.mjs)
 npm test         # vitest run (unit tests, node env)
 npm run preview  # serve the built dist/ (used for headless smoke)

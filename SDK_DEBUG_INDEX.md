@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.170-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.171-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no signing/publishing, no auto-update, and no navigation —
@@ -218,6 +218,22 @@ is provided but NOT yet wired into the live app. Browser APIs are fully isolated
 host, so the module is pure/node-safe and never throws; it exposes NO bare browser-navigation method
 at module scope. Wiring `createBrowserHostTransport(window)` into `world/handoff.js` (real
 router/history adapter + same-origin allowlist + CSP) is the next deferred step.
+
+`continuum` (PROGRESS-1 / project oversight, v0.2.171) is the pure Torii Continuum
+project-oversight DASHBOARD data + renderer — the FIRST slice of a broader oversight surface.
+`CONTINUUM` holds the curated `progress.md` snapshot (metrics, a clearly-flagged SEED
+contributors/clankers metric, tracks, the 15-hour `leanRoute`, activeNow/next12/archive/
+completed24h, risks, sourceOfTruth) + `CONTINUUM_VERSION`/`CONTINUUM_BADGE`. Pure helpers:
+`escapeHtml`, `clampPct` (0..100|null), `barCells`, `ringDash`, `computeTotals(data)` (headline
+counts + pocProgressPct/buildProgressPct/milestonesAchievedPct), `buildContinuumModel()`,
+`continuumDataJSON(model)` (the packaged JSON snapshot), and `renderContinuumPage(model)` → a
+self-contained dark-cyberpunk static HTML string (CSS bars + 3 SVG donut rings + totals strip +
+Now/Next/Later + next-12 + struck completed-24h + archive + source-of-truth footer). Renders fully
+WITHOUT JS; a SAME-ORIGIN-only refresh script re-reads `./continuum-data.json` (no external URL/
+eval/timers). `tools/build-continuum.mjs` (in `npm run build`) writes `public/continuum.html` +
+`public/continuum-data.json` each build, so a page refresh shows the latest PACKAGED state.
+READ-ONLY: no live writes/auth/signing/relay-publish/admin actions/navigation. Open it from the
+title-screen `⛩ PROJECT DASHBOARD` link (`./continuum.html`).
 
 `githubReleaseSource` (LEAN-5, v0.2.157) is the pure GitHub Releases source adapter:
 `normalizeRelease`/`selectLatestRelease`/`evaluateFromSource` turn a `releases/latest`
