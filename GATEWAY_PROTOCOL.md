@@ -353,11 +353,29 @@ linked by signed spatial events, with **no central router**.
   `/zone/<slug>` routes never need either), and the activation `routeAllowlist` ignores trivially-permissive
   prefixes shorter than 2 chars so a `['/']` allowlist fails CLOSED (matches nothing) rather than silently
   allowing every same-origin route; meaningful prefixes such as `['/zone/']` are unaffected.
+- `src/engine/gateway/gatewayPortalActivation.js` (v0.2.180) — the **portal-boundary seam** that bridges an
+  in-world gateway COMPONENT to the v0.2.178 confirmed same-origin hop. `portalActivationInput(component, context)`
+  maps `gatewayDestination(component).target`→`zoneId` and DROPS the external `website` so an external profile
+  URL is never built or navigated (only the INTERNAL same-origin destination travels); `sanitizePortalAllowlist`
+  keeps only same-origin `/`-prefixes of length ≥2 and FOLDS `['/']`→`['/zone/']`, so the boundary can never be
+  permit-everything (stronger than the executor's fail-closed); `withinPortalRange(playerPos, portalPos, radius)`
+  is a scalar squared-distance check (no `Vector3` allocation, hot-path safe). `activatePortalHandoff(component,
+  context, grant, opts)` builds the input, sanitises the allowlist, and DELEGATES to `activateGatewayHandoff`, so
+  all three gates above (`confirmed===true`, consent-gated plan `ok`, route-allowlist prefix) still apply.
+  `createGatewayPortalBoundary(opts)` captures the injected window/transport/host ONCE at construction and is a
+  one-shot `arm(component, context)`→`confirm(grant)` controller (`cancel`/`state`/`armed`/`routeAllowlist`/
+  `stagedZoneId`), refusing with `not-armed` when not armed. `external`/`worldReloaded`/`signed`/`published`/
+  `network` pinned false; the window is INJECTED, never reached at module scope; no NIP-07/payments/relay-writes/
+  external navigation. The signed/relay-mediated tier still gates behind SEC-2 and is NOT live. Read-only at
+  `ToriiDebug.shells.gatewayPortalActivation()` (acts through an in-memory recording host). SDK
+  `gatewayPortalActivation` (experimental).
 - `src/world/handoff.js` — the (skeleton) host seam where a future build will inject the live app/browser
-  window into `gatewayActivation` (above): it will hand a `createBrowserHostTransport(window)` transport (or
-  the host router) + a same-origin route allowlist to `activateGatewayHandoff` so a confirmed in-world hop
-  performs the controlled same-origin navigation. The activation seam now exists and is wired in-memory; the
-  remaining deferred step is injecting the REAL host window + the in-world portal mesh trigger.
+  window into `gatewayActivation`/`gatewayPortalActivation` (above): it will hand a
+  `createBrowserHostTransport(window)` transport (or the host router) + a same-origin route allowlist to
+  `activateGatewayHandoff` / a `createGatewayPortalBoundary` so a confirmed in-world hop performs the controlled
+  same-origin navigation. The activation + portal-boundary seams now exist and are wired in-memory; the
+  remaining deferred step is injecting the REAL host window + the in-world portal mesh proximity trigger that
+  calls `arm`/`confirm`.
 
 Component is code. Protocol is agreement. This file is the agreement; the modules
 above are one implementation of it.

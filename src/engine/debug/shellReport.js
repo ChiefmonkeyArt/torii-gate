@@ -26,6 +26,7 @@ import { planHandoff, DEMO_HANDOFF_INPUT } from '../gateway/handoffPlan.js';
 import { executeHandoff } from '../gateway/handoffExecute.js';
 import { createRecordingHost, createHostTransport, HOST_TRANSPORT_BADGE } from '../gateway/hostTransport.js';
 import { activateGatewayHandoff, DEMO_ACTIVATION_OPTS } from '../gateway/gatewayActivation.js';
+import { activatePortalHandoff, DEMO_PORTAL_CONTEXT } from '../gateway/gatewayPortalActivation.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -595,6 +596,60 @@ export function gatewayActivationReport(input = DEMO_HANDOFF_INPUT, grant = true
     targetRoute: r.targetRoute,
     fromRoute: r.fromRoute,
     rollbackRoute: r.rollbackRoute,
+    hostRoute: host ? host.route : null,
+    pushStateCalls: host ? host.calls.pushState : [],
+    inMemory: host !== undefined,
+    navigated: r.navigated,
+    performed: r.performed,
+    external: r.external,
+    worldReloaded: r.worldReloaded,
+    signed: r.signed,
+    published: r.published,
+    network: r.network,
+    errors: r.errors,
+  };
+}
+
+// gatewayPortalActivationReport(component, context, grant, opts) → the in-world
+// GATEWAY PORTAL activation report (GATEWAY / NAP-zone handoff, v0.2.180). Maps the
+// demo gateway COMPONENT onto a same-origin activation input and runs it through the
+// v0.2.178 live-wire seam over an IN-MEMORY recording host, so the debug shell can
+// prove a CONFIRMED acting portal hop (and the no-confirm no-op) without any real
+// browser navigation. By default `confirmed:true` drives a recording-host hop to the
+// component's `/zone/<target>` route; pass `opts.confirmed:false` for the unconfirmed
+// no-op. Every external/world/network/sign/publish flag stays false.
+export function gatewayPortalActivationReport(component = DEMO_GATEWAY, context = DEMO_PORTAL_CONTEXT, grant = true, opts = {}) {
+  const o = (opts && typeof opts === 'object') ? opts : {};
+  const confirmed = o.confirmed === undefined ? true : o.confirmed === true;
+  // Default-safe demo: a recording host (NOT a real window) so the shell never
+  // navigates the live app. Callers may inject their own transport/window/host.
+  const host = o.host !== undefined || o.window !== undefined || o.transport !== undefined
+    ? undefined
+    : createRecordingHost('/');
+  const r = activatePortalHandoff(component, context, grant, {
+    confirmed,
+    host: host !== undefined ? host : o.host,
+    window: o.window,
+    transport: o.transport,
+    hostContext: o.hostContext,
+    routeAllowlist: o.routeAllowlist,
+    dryRun: o.dryRun === true,
+  });
+  return {
+    title: 'GATEWAY PORTAL ACTIVATION',
+    badge: r.badge,
+    action: r.action,
+    status: r.status,
+    ok: r.ok,
+    confirmed: r.confirmed,
+    live: r.live,
+    reason: r.reason,
+    transportKind: r.transportKind,
+    zoneId: r.zoneId,
+    targetRoute: r.targetRoute,
+    fromRoute: r.fromRoute,
+    rollbackRoute: r.rollbackRoute,
+    routeAllowlist: r.routeAllowlist,
     hostRoute: host ? host.route : null,
     pushStateCalls: host ? host.calls.pushState : [],
     inMemory: host !== undefined,

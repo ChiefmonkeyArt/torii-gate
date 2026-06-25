@@ -31,7 +31,7 @@
 //     passes them to buildContinuumModel(overrides). Anything that fails to parse falls
 //     back to the curated values below, so the page never shows an empty/garbled section.
 
-export const CONTINUUM_VERSION = 'v0.2.179-alpha';
+export const CONTINUUM_VERSION = 'v0.2.180-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // HEALTH_LASTKNOWN (v0.2.175) — the engineering-health values that are NOT cheaply
@@ -41,7 +41,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // number is obvious rather than silently wrong. The deterministic fields (profile file
 // counts, parser gaps, version, doc-sync) are GENERATED at build time and override these.
 export const HEALTH_LASTKNOWN = Object.freeze({
-  totalTests: '866 passing',
+  totalTests: '894 passing',
   timings: 'fast ~1s · foundation ~6s · full suite ~41s',
   bundle: '2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)',
   regression: '14 / 14',
@@ -233,12 +233,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.179-alpha (build truth; live trails — manual deploy)' },
-    { label: 'Tests', value: '866 passing / 61 files (profiles: test:fast ~5, test:foundation ~18)' },
+    { label: 'Source version', value: 'v0.2.180-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Tests', value: '894 passing / 62 files (profiles: test:fast ~5, test:foundation ~19)' },
     { label: 'Regression check', value: '14 / 14 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.179 LEAN-2 gateway route hardening — safeRoutePath rejects dot-dot/percent; allowlist ignores trivially-permissive prefixes (build-time, static, read-only)' },
+    { label: 'Active slice', value: 'v0.2.180 LEAN-2 in-world gateway PORTAL activation seam — maps a gateway component to a confirmed same-origin /zone hop (arm→confirm), injected transport only, scoped allowlist (never [/]) (pure/inert; no live navigation)' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
@@ -272,7 +272,7 @@ export const CONTINUUM = Object.freeze({
 
   // Now / Next / Later.
   activeNow: [
-    'v0.2.179 — LEAN-2 gateway ROUTE HARDENING (security-review follow-up): safeRoutePath now rejects any dot-dot (..) traversal segment AND any percent (%) encoding, closing /zone/../admin + /zone/%2e%2e/admin climb-outs (internal /zone/<slug> routes never need either); the activation routeAllowlist ignores trivially-permissive prefixes shorter than 2 chars so a [\'/\'] allowlist fails CLOSED (allows nothing) instead of allowing every route — meaningful prefixes like [\'/zone/\'] still work. Builds on the v0.2.178 live-wire (confirmed:true + consent + allowlist gates over an injected transport). Pure/inert; no live navigation. +5 tests.',
+    'v0.2.180 — LEAN-2 in-world gateway PORTAL activation seam (gatewayPortalActivation.js): bridges a gateway COMPONENT to the v0.2.178 confirmed same-origin hop — portalActivationInput() maps the internal target → a /zone/<slug> input (external website dropped; same-origin only), sanitizePortalAllowlist() folds any trivially-permissive [\'/\'] to the scoped default [\'/zone/\'] (never permit-all), and createGatewayPortalBoundary() exposes an ARM → CONFIRM controller (arming is inert; only confirm acts via the INJECTED transport) plus a scalar (no Vector3) proximity helper. SDK + debug-shell exposure. +28 tests.',
     'ARS-4 — finish folding reload/pointer-lock into the guarded FSM.',
     'ARS-6 / PROGRESS-1 — ongoing CODE_INDEX + living-docs upkeep.',
   ],
@@ -303,10 +303,10 @@ export const CONTINUUM = Object.freeze({
 
   // Completed last 24h — shown struck through, newest first.
   completed24h: [
+    'v0.2.180 — LEAN-2 in-world gateway PORTAL ACTIVATION seam (gatewayPortalActivation.js): bridges a gateway COMPONENT to the v0.2.178 confirmed same-origin hop. portalActivationInput() maps a gateway\'s internal target → a /zone/<slug> activation input (external website DROPPED — same-origin route only); sanitizePortalAllowlist() folds a trivially-permissive [\'/\'] to the scoped default [\'/zone/\'] (never permit-all); createGatewayPortalBoundary() is an injected-transport ARM → CONFIRM controller (arming is INERT; only confirm() resolves the transport + acts); withinPortalRange() is a scalar (no Vector3) proximity helper. No module-scope window; no external nav/world-reload/network/sign/publish; SEC-2 untouched. SDK (experimental) + debug-shell (recording host) exposure. +28 tests.',
     'v0.2.179 — LEAN-2 gateway ROUTE HARDENING (security-review follow-up before any live gateway wiring): safeRoutePath now also rejects any dot-dot (..) traversal segment and any percent (%) encoding — closing /zone/../admin + /zone/%2e%2e/admin climb-out attempts (internally-built /zone/<slug> routes never need either) — and _routeAllowed ignores allowlist prefixes shorter than 2 chars so a [\'/\'] allowlist fails CLOSED (matches nothing) rather than allowing every same-origin route; meaningful prefixes such as [\'/zone/\'] still allow /zone/foo. Pure/node-safe, never navigates. +5 tests.',
     'v0.2.178 — LEAN-2 gateway handoff ACTIVATION (gatewayActivation.js): live-wired the confirmed same-origin host transport into the v0.2.168 executor. resolveHostTransport() picks an injected transport / a browser History-pushState transport from a window / a recording host; activateGatewayHandoff() double-gates on a literal confirmed:true AND the consent-gated dry-run plan AND an optional same-origin route allowlist before resolving any transport — so preview/render/unconfirmed paths can never navigate. Rollback/back-home reachable; external/world/sign/publish/network all stay false. SDK (experimental tier) + debug-shell (in-memory recording host) exposure. +tests.',
     'v0.2.177 — DASHBOARD LAYOUT/READABILITY pass (DASHBOARD-LAYOUT-1): visual-hierarchy + scannability pass on /continuum.html — the ACTIVE-milestone headline is promoted above At-a-glance, sections gain one-line lead captions + live item counts, the Now/Archive/Done columns reflow on a responsive auto-fit grid, and spacing/typography are tightened. DERIVED/GENERATED/LAST-KNOWN/SEED chips stay visible. No new script/asset; CSP/refresh-script hash unchanged. +tests.',
-    'v0.2.176 — MILESTONE + LAYOUT pass: an explicit Milestones section surfaces the 15-hour MVP route as the one ACTIVE milestone — pure buildMilestoneModel() folds the leanRoute slices into DERIVED task counts (total/done/active/pending) + a directional % progress bar — alongside clearly-labelled SEED future milestones (1 active + N seed). Grouped card values now render as bullet lists, not dense comma/dot-separated prose. CSP/refresh-script unchanged. +tests.',
   ],
 
   // Archive clusters, newest first.

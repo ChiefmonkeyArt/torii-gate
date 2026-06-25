@@ -56,6 +56,7 @@ export * as handoffPlan from '../engine/gateway/handoffPlan.js';
 export * as handoffExecute from '../engine/gateway/handoffExecute.js';
 export * as hostTransport from '../engine/gateway/hostTransport.js';
 export * as gatewayActivation from '../engine/gateway/gatewayActivation.js';
+export * as gatewayPortalActivation from '../engine/gateway/gatewayPortalActivation.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
@@ -188,6 +189,14 @@ export const SDK_SURFACE = Object.freeze({
   // v0.2.168 executor. Same-origin history.pushState ONLY — NO external nav/world-reload/
   // network/sign/publish/relay; default no-op without a window/transport.
   gatewayActivation: { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/gatewayActivation.js' },
+  // In-world GATEWAY PORTAL activation seam (GATEWAY / NAP-zone handoff, v0.2.180) —
+  // bridges a gateway COMPONENT to the v0.2.178 confirmed same-origin hop: maps the
+  // internal `target` → a `/zone/<slug>` activation input (external website dropped),
+  // sanitises the route allowlist to a meaningful scoped prefix (never `['/']`), and
+  // exposes an ARM → CONFIRM boundary controller (arming is inert; only confirm acts)
+  // plus a scalar proximity helper. Injected transport only — NO module-scope window,
+  // NO external nav/world-reload/network/sign/publish; SEC-2 signed tier untouched.
+  gatewayPortalActivation: { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/gatewayPortalActivation.js' },
   // torii.quest GitHub release/update-check helpers (LEAN-5, v0.2.138) — pure
   // compare + inert view-model; NO network fetch, NO auto-update.
   updateCheck:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateCheck.js' },

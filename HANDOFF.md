@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.179-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.180-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -97,6 +97,14 @@ Breaking one should fail CI/the check, not ship.
   consent-gated dry-run plan AND an optional same-origin route allowlist before any
   transport is resolved; rollback/back-home reachable; external/world/sign/publish/
   network pinned false; window is injected, never reached at module scope);
+  v0.2.180 added `gatewayPortalActivation` (the pure portal-boundary seam that
+  bridges an in-world gateway COMPONENT to that confirmed hop — `portalActivationInput`
+  maps the component's `target`→`zoneId` and DROPS the external `website`,
+  `sanitizePortalAllowlist` folds `['/']`→`['/zone/']` so the boundary is never
+  permit-everything, `withinPortalRange` is a scalar squared-distance check (no
+  Vector3), and `createGatewayPortalBoundary` is a one-shot arm→confirm controller
+  that captures the injected window/transport ONCE and delegates to
+  `activateGatewayHandoff`; external/world/sign/publish/network pinned false);
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
@@ -290,7 +298,7 @@ click `#btn-enter`, inspect `window.ToriiDebug.snapshot()`.
 - `.snapshot()` — one JSON-serialisable object: version, phase, run state, player
   pos, combat last shot/hit/miss, physics+crate summary, tuning. Safe anytime.
 - `.combat.report()` / `.physics.report()` — focused JSON sub-reports.
-- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,handoffPlan,handoffExecute,hostTransport,gatewayActivation,report,summary,diff,surfaceSpecs,surfaceSpecCheck,anchorTransforms,surfaceRender,surfaceBindings,surfaceGate}()` —
+- `.shells.{gateway,gatewayPreview,product,productPreview,leaderboard,leaderboardPreview,updatePreview,mvpLoop,handoffPlan,handoffExecute,hostTransport,gatewayActivation,gatewayPortalActivation,report,summary,diff,surfaceSpecs,surfaceSpecCheck,anchorTransforms,surfaceRender,surfaceBindings,surfaceGate}()` —
   read-only reports over the VIEW shells + visible preview blocks (demo fixtures by
   default; pass overrides). No signer, no relay/publish, no navigation, no checkout,
   no fetch/auto-update
@@ -400,7 +408,18 @@ only; no server is touched). It aligns with the update-check safety boundary in
   preview/render/unconfirmed path can never navigate. Failed navigates roll back to
   the rollback route (back-home); `external/worldReloaded/signed/published/network`
   stay false; reachable read-only via `ToriiDebug.shells.gatewayActivation()` over an
-  in-memory recording host.** Next: drive `gatewayActivation` from a real injected
+  in-memory recording host.** **v0.2.180 added the PORTAL-BOUNDARY seam
+  (`gatewayPortalActivation.js`) that bridges an in-world gateway COMPONENT to that
+  confirmed hop: `portalActivationInput(component,context)` maps the component's
+  `target`→`zoneId` and DROPS the external `website` (an external profile URL is
+  never built/navigated), `sanitizePortalAllowlist` folds `['/']`→`['/zone/']` (the
+  boundary can never be permit-everything), `withinPortalRange` is a scalar
+  squared-distance check (no Vector3), and `createGatewayPortalBoundary(opts)` is a
+  one-shot `arm`→`confirm` controller that captures the injected
+  window/transport/host ONCE and delegates to `activateGatewayHandoff` (so all three
+  gates above still apply); `external/worldReloaded/signed/published/network` pinned
+  false, reachable read-only via `ToriiDebug.shells.gatewayPortalActivation()` over a
+  recording host.** Next: drive `gatewayPortalActivation` from a real injected
   host router (app/browser window + CSP-scoped allowlist) + the
   gateway's portal mesh (actually move the player), the real leaderboard
   signer/publisher + relay read, the in-world product panel mesh, and the
