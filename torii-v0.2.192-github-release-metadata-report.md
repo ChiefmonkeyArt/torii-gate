@@ -163,4 +163,4 @@ and was intentionally NOT made in this metadata/docs/tests slice.
 idempotent ✅, `npm run docs:stale` ✅ no drift, `npm run test:release` ✅ ALL GREEN
 (Test Files 71, Tests 1100, regression-check ALL GREEN).
 
-**Follow-up commit:** `__FOLLOWUP_HASH__` — `v0.2.192-alpha: point release metadata at ChiefmonkeyArt/torii-gate` (local-only; not pushed).
+**Follow-up commit:** `733a874` — `v0.2.192-alpha: point release metadata at ChiefmonkeyArt/torii-gate` (local-only; not pushed).
