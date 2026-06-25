@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.172-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.173-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no signing/publishing, no auto-update, and no navigation —
@@ -643,9 +643,15 @@ PURE/node-safe — composes plain data only; renders and acts on nothing.
 | `tools/bundleSizes.mjs` (bundle-size advisory, regression check [13] / `npm run bundle:report`) | `tests/bundle-sizes.test.js` |
 | `tools/docConsistency.mjs` (docs/status consistency guard, regression check [14]) | `tests/doc-consistency.test.js` |
 | `tools/handoffStatus.mjs` (AI-handoff status snapshot, `npm run handoff:status`) | `tests/handoff-status.test.js` |
+| `tools/testProfiles.mjs` (PURE test-profile registry, v0.2.173) + `tools/test-profile.mjs` CLI (`npm run test:fast` ~5 files / `test:foundation` ~16 files) | `tests/test-profiles.test.js` |
 
 Run all with `npm test` (Vitest, node env). `npm run check` separately guards the
-scaffold + version markers statically.
+scaffold + version markers statically. For tight inner loops use the **test
+profiles** (v0.2.173): `npm run test:fast` (5 core pure files) or
+`npm run test:foundation` (16 pure/guard files) — curated, deterministic, no
+git-diff heuristics. Every public deploy/publish still requires `npm run test:release`
+(full Vitest + `check` + `bundle:report` + `handoff:status`) or equivalent full parent
+verification.
 
 ---
 

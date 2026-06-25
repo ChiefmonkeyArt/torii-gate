@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.172-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.173-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -220,13 +220,24 @@ npm run dev      # local dev server (vite)
 npm run build    # production build → dist/ (runs build:continuum first → public/continuum.html + continuum-data.json)
 npm run build:continuum  # (re)generate the Torii Continuum dashboard page + packaged data from progress.md model
 npm run check    # static regression guardrails (tools/regression-check.mjs)
-npm test         # vitest run (unit tests, node env)
+npm test         # vitest run (FULL unit suite, node env)
+npm run test:fast        # ~5 core files (state/events/classifier/aim/snapshot) — innermost edit→test loop
+npm run test:foundation  # ~16 files (fast + engine seams + SDK contract + guard suites) — broader confidence
+npm run test:release     # build + FULL vitest + check + bundle:report + handoff:status — the release gate
 npm run preview  # serve the built dist/ (used for headless smoke)
 npm run bundle:report  # advisory built-bundle size baseline (raw+gzip; reads dist/)
 ```
 
+**Test profiles (v0.2.173).** The `test:fast`/`test:foundation` profiles are explicit,
+deterministic curated file lists (`tools/testProfiles.mjs`; no git-diff heuristics) run via
+`tools/test-profile.mjs`, which validates every listed test still exists on disk and that
+`fast ⊆ foundation`, then prints a timing footer. **Agents may run `test:fast`/`test:foundation`
+during implementation, but every public deploy/publish/push still requires `npm run test:release`
+(the FULL suite + check + build + bundle + handoff) or equivalent full parent verification — the
+profiles speed up iteration, they NEVER replace the release gate.**
+
 A change is "green" when **build + check + test** all pass. Current baseline:
-**505 tests / 44 files**, all 14 regression checks GREEN, build clean. Built bundle
+**797 tests / 59 files**, all 14 regression checks GREEN, build clean. Built bundle
 sizes are tracked as an advisory baseline — `npm run bundle:report` (full table) or the
 non-failing `[13]` line in `npm run check` (v0.2.153). Docs/status drift is guarded by
 check `[14]` (v0.2.154) — the continuity docs (`todo.md`/`progress.md`/`HANDOFF.md`) must

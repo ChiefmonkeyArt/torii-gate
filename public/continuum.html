@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'sha256-otKqhP2RYAA6ZkrRVcAQSBm7B1ssPR70QQR5dXePHmw='" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
-<title>Torii Continuum · v0.2.172-alpha</title>
+<title>Torii Continuum · v0.2.173-alpha</title>
 <style>
   :root{
     --bg:#070a12; --panel:#0d1320; --panel2:#111a2b; --edge:#1d2a44;
@@ -85,10 +85,10 @@
 <body>
   <header>
     <div class="gate">⛩ TORII CONTINUUM</div>
-    <h1>Torii Continuum <span class="v">v0.2.172-alpha</span></h1>
+    <h1>Torii Continuum <span class="v">v0.2.173-alpha</span></h1>
     <div class="sub">Project oversight dashboard</div>
     <div class="badge">PROJECT OVERSIGHT · STATIC · READ-ONLY</div>
-    <div class="live">Live: torii-quest.pplx.app · godMode false · build truth (live trails — manual deploy) · packaged: <span id="generated-at">2026-06-25T02:27:26.900Z</span></div>
+    <div class="live">Live: torii-quest.pplx.app · godMode false · build truth (live trails — manual deploy) · packaged: <span id="generated-at">2026-06-25T02:45:11.795Z</span></div>
   </header>
   <main>
     <section>
@@ -99,12 +99,12 @@
     <section>
       <h2>At a glance</h2>
       <div class="grid">
-        <div class="metric"><span class="metric-label">Source version</span><span class="metric-value">v0.2.172-alpha (build truth; live trails — manual deploy)</span></div>
-        <div class="metric"><span class="metric-label">Tests</span><span class="metric-value">775+ passing / 58+ files</span></div>
+        <div class="metric"><span class="metric-label">Source version</span><span class="metric-value">v0.2.173-alpha (build truth; live trails — manual deploy)</span></div>
+        <div class="metric"><span class="metric-label">Tests</span><span class="metric-value">797+ passing / 59+ files (profiles: test:fast ~5, test:foundation ~16)</span></div>
         <div class="metric"><span class="metric-label">Regression check</span><span class="metric-value">14 / 14 GREEN</span></div>
         <div class="metric"><span class="metric-label">Bundle (advisory)</span><span class="metric-value">~2.9 MB raw / ~1018 KB gzip (rapier chunk &gt;700 KB, expected)</span></div>
         <div class="metric"><span class="metric-label">Gates</span><span class="metric-value">SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced</span></div>
-        <div class="metric"><span class="metric-label">Active slice</span><span class="metric-value">v0.2.172 Continuum dashboard CSP hardening</span></div>
+        <div class="metric"><span class="metric-label">Active slice</span><span class="metric-value">v0.2.173 test-profile system (fast / foundation / release)</span></div>
         <div class="metric"><span class="metric-label">Contributors <span class="seed">SEED · not live</span></span><span class="metric-value">1 human · 3 clankers</span></div>
       </div>
       <div class="totals">
@@ -198,7 +198,7 @@
       <div>
         <h3>NOW · Active</h3>
         <ul class="bullets">
-        <li>v0.2.172 — Torii Continuum dashboard CSP hardening (this static page): strict Content-Security-Policy meta, hashed inline refresh script, same-origin-only data refresh.</li>
+        <li>v0.2.173 — test-profile system for faster agent loops: npm run test:fast (~5 files) / test:foundation (~16 files) for inner loops; test:release runs the FULL suite + check/build/bundle/handoff before any deploy/publish.</li>
         <li>ARS-4 — finish folding reload/pointer-lock into the guarded FSM.</li>
         <li>ARS-6 / PROGRESS-1 — ongoing CODE_INDEX + living-docs upkeep.</li>
         </ul>
@@ -218,10 +218,10 @@
       <div>
         <h3>DONE · Last 24h</h3>
         <ul>
+        <li class="done">v0.2.173 — TEST-PROFILE system for faster agent loops: npm run test:fast (~5 core files) + test:foundation (~16 pure/guard files) for inner loops, test:release = FULL suite + check/build/bundle/handoff (release gate unchanged). Explicit curated lists (tools/testProfiles.mjs, no git-diff heuristics) validated against disk + a timing footer. +11 tests.</li>
         <li class="done">v0.2.172 — Continuum dashboard CSP HARDENING: strict Content-Security-Policy meta on the generated page (script-src self + sha256 of the one packaged refresh script, NO unsafe-inline script; style-src self unsafe-inline for the data-driven bars; connect-src self for the same-origin JSON refresh). Resolves the prior inline-script WARN; page stays fully static/read-only.</li>
         <li class="done">v0.2.171 — Torii Continuum project-oversight DASHBOARD: a thin static page (public/continuum.html) generated from a curated, node-safe progress.md data model (engine/dashboard/continuumData.js) — bars/rings/totals, Now/Next/Later, next-12, struck completed-24h, archive; docs/tooling only, no gameplay change.</li>
         <li class="done">v0.2.170 — same-origin host TRANSPORT adapter (engine/gateway/hostTransport.js): the injectable seam the v0.2.168 executor drives; recording host by default, createBrowserHostTransport runtime seam not yet wired. +21 tests.</li>
-        <li class="done">v0.2.169 — graphical progress dashboard rewrite (progress.md): compact bars/percentages/badges/totals, 24h struck completions, concise archive. Docs/tooling only.</li>
         </ul>
       </div>
     </section>
@@ -229,18 +229,18 @@
     <section>
       <h2>Next 12 tasks</h2>
       <ol class="next">
-        <li><span class="num">1</span>v0.2.173 — test profile system for faster agent loops (npm run test:fast / test:foundation / test:release), with test:release running the FULL suite before any deploy/publish.</li>
-        <li><span class="num">2</span>Wire createBrowserHostTransport(window) (v0.2.170) into world/handoff.js (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.</li>
-        <li><span class="num">3</span>Gateway portal mesh — actually move the player in-world on a confirmed hop.</li>
-        <li><span class="num">4</span>SEC-2 handoff verification gate — cryptographic checks before acting on live relay travel intents.</li>
-        <li><span class="num">5</span>Real leaderboard signer/publisher + relay read (SEC-1 explicit NIP-07 consent first).</li>
-        <li><span class="num">6</span>In-world product panel mesh over productPanelShell + a real Plebeian.Market listing.</li>
-        <li><span class="num">7</span>SEC-3 product URL validation — URL-object parsing (scheme+host), not regex-only.</li>
-        <li><span class="num">8</span>Read-only GitHub releases fetch (CSP-scoped) + in-world update-prompt mesh.</li>
-        <li><span class="num">9</span>LEAN-1 / TQ-MANUAL-113 — manual smoke on real hardware, then publish source-built artifact.</li>
-        <li><span class="num">10</span>ARS-4 FSM fold close-out.</li>
-        <li><span class="num">11</span>Player boundary full extraction (movement tick, combat, lifecycle, body-state behind the seam).</li>
-        <li><span class="num">12</span>BotAgent runtime migration — wire decideActions, migrate stateful tick/shoot/blowback.</li>
+        <li><span class="num">1</span>Wire createBrowserHostTransport(window) (v0.2.170) into world/handoff.js (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.</li>
+        <li><span class="num">2</span>Gateway portal mesh — actually move the player in-world on a confirmed hop.</li>
+        <li><span class="num">3</span>SEC-2 handoff verification gate — cryptographic checks before acting on live relay travel intents.</li>
+        <li><span class="num">4</span>Real leaderboard signer/publisher + relay read (SEC-1 explicit NIP-07 consent first).</li>
+        <li><span class="num">5</span>In-world product panel mesh over productPanelShell + a real Plebeian.Market listing.</li>
+        <li><span class="num">6</span>SEC-3 product URL validation — URL-object parsing (scheme+host), not regex-only.</li>
+        <li><span class="num">7</span>Read-only GitHub releases fetch (CSP-scoped) + in-world update-prompt mesh.</li>
+        <li><span class="num">8</span>LEAN-1 / TQ-MANUAL-113 — manual smoke on real hardware, then publish source-built artifact.</li>
+        <li><span class="num">9</span>ARS-4 FSM fold close-out.</li>
+        <li><span class="num">10</span>Player boundary full extraction (movement tick, combat, lifecycle, body-state behind the seam).</li>
+        <li><span class="num">11</span>BotAgent runtime migration — wire decideActions, migrate stateful tick/shoot/blowback.</li>
+        <li><span class="num">12</span>Formalise NAP zone registry for the gateway/NAP-to-NAP travel preview.</li>
       </ol>
     </section>
 

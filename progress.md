@@ -1,7 +1,7 @@
 # Torii Quest — Progress Dashboard
 
 > Visual execution dashboard. `strategy.md` = vision/decision rules · `todo.md` = active task queue.
-> Current version: **v0.2.172-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
+> Current version: **v0.2.173-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
 > **ACTIVE FOCUS — 15-hour proof-of-concept route.** Shooter is maintenance-only unless demo-breaking; the active MVP is the freedom-tech loop (gateway/NAP-to-NAP preview → Plebeian/Nostr product panel → leaderboard preview → torii.quest update-check). Polish comes after PoC validation.
 
 ---
@@ -10,12 +10,12 @@
 
 | Metric | Value |
 |---|---|
-| Source version | **v0.2.172-alpha** (build truth; live trails — manual maintainer deploy) |
-| Tests | **786 passing / 58 files** |
+| Source version | **v0.2.173-alpha** (build truth; live trails — manual maintainer deploy) |
+| Tests | **797 passing / 59 files** (profiles: `test:fast` ~5 files, `test:foundation` ~16 files) |
 | Regression check | **14 / 14 GREEN** |
-| Bundle (advisory) | 2.9 MB raw / ~1017 KB gzip (rapier chunk >700 KB, expected) |
+| Bundle (advisory) | 2.9 MB raw / ~1018 KB gzip (rapier chunk >700 KB, expected) |
 | Gates | SEC-1 / SEC-2 / SEC-3 intact · godMode `false` · continuum CSP enforced |
-| Active slice | v0.2.172 Continuum dashboard CSP hardening |
+| Active slice | v0.2.173 test-profile system (fast / foundation / release) |
 
 Legend: `█` done · `░` remaining · ✅ landed · 🔄 in progress · ⏳ pending · 🚫 blocked · 🟢 no-blocker
 
@@ -55,7 +55,7 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 ## Active now
 
-- 🔄 **v0.2.172 — Continuum dashboard CSP hardening** (`engine/dashboard/continuumData.js` + `public/continuum.html`): strict `Content-Security-Policy` meta (`script-src 'self'` + sha256 of the one packaged refresh script, NO unsafe-inline script; `style-src 'self' 'unsafe-inline'` for the data-driven bars; `connect-src 'self'` for the same-origin JSON refresh). Resolves the prior inline-script WARN; page stays fully static/read-only.
+- 🔄 **v0.2.173 — test-profile system** (`tools/testProfiles.mjs` + `tools/test-profile.mjs`): `npm run test:fast` (~5 files) / `test:foundation` (~16 files) for inner agent loops; `test:release` runs the FULL suite + check/build/bundle/handoff before any deploy/publish. Agents run fast/foundation while implementing; every public deploy/publish/push still requires `test:release`.
 - 🔄 **ARS-4** — finish folding reload/pointer-lock into the guarded FSM.
 - 🔄 **ARS-6 / PROGRESS-1** — ongoing CODE_INDEX + living-docs upkeep.
 
@@ -63,18 +63,18 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 ## Next 12 tasks
 
-1. **v0.2.173 — test profile system** for faster agent loops: `npm run test:fast` (quick foundation subset), `test:foundation` (pure node-safe modules), `test:release` (FULL suite, required before any deploy/publish). Keeps inner agent loops fast without weakening the release gate.
-2. Wire `createBrowserHostTransport(window)` (v0.2.170) into `world/handoff.js` (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.
-3. Gateway portal mesh — actually move the player in-world on a confirmed hop.
-4. **SEC-2** handoff verification gate — cryptographic checks before acting on live relay travel intents.
-5. Real leaderboard signer/publisher + relay read (**SEC-1** explicit NIP-07 consent first).
-6. In-world product panel mesh over `productPanelShell` + a real Plebeian.Market listing.
-7. **SEC-3** product URL validation — `URL`-object parsing (scheme+host), not regex-only.
-8. Read-only GitHub releases fetch (CSP-scoped) + in-world update-prompt mesh.
-9. LEAN-1 / TQ-MANUAL-113 — manual smoke on real hardware, then publish source-built artifact.
-10. ARS-4 FSM fold close-out.
-11. Player boundary full extraction (movement tick, combat, lifecycle, body-state behind the seam).
-12. BotAgent runtime migration — wire `decideActions`, migrate stateful tick/shoot/blowback.
+1. Wire `createBrowserHostTransport(window)` (v0.2.170) into `world/handoff.js` (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.
+2. Gateway portal mesh — actually move the player in-world on a confirmed hop.
+3. **SEC-2** handoff verification gate — cryptographic checks before acting on live relay travel intents.
+4. Real leaderboard signer/publisher + relay read (**SEC-1** explicit NIP-07 consent first).
+5. In-world product panel mesh over `productPanelShell` + a real Plebeian.Market listing.
+6. **SEC-3** product URL validation — `URL`-object parsing (scheme+host), not regex-only.
+7. Read-only GitHub releases fetch (CSP-scoped) + in-world update-prompt mesh.
+8. LEAN-1 / TQ-MANUAL-113 — manual smoke on real hardware, then publish source-built artifact.
+9. ARS-4 FSM fold close-out.
+10. Player boundary full extraction (movement tick, combat, lifecycle, body-state behind the seam).
+11. BotAgent runtime migration — wire `decideActions`, migrate stateful tick/shoot/blowback.
+12. Formalise NAP zone registry for the gateway/NAP-to-NAP travel preview.
 
 ---
 
@@ -97,22 +97,11 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 Struck-through items stay ~24h, then collapse into Archive. Newest first.
 
+- ~~**v0.2.173** — **test-profile system** for faster agent loops (`tools/testProfiles.mjs` PURE registry + `tools/test-profile.mjs` CLI): `npm run test:fast` (5 core files — state/events/classifier/aim/snapshot) + `test:foundation` (16 pure/guard files) for inner loops, `test:release` = FULL suite + check/build/bundle/handoff (release gate unchanged). Explicit curated lists (no git-diff heuristics) validated against disk (`fast ⊆ foundation`, no stale entries) + a timing footer so savings are visible. Agents iterate on fast/foundation; every deploy/publish/push still runs `test:release`. +11 tests.~~
 - ~~**v0.2.172** — Continuum dashboard **CSP hardening**: strict `Content-Security-Policy` `<meta>` on the generated `public/continuum.html` — `script-src 'self'` + the sha256 of the one packaged refresh script (NO `'unsafe-inline'` script), `style-src 'self' 'unsafe-inline'` (data-driven track bars), `connect-src 'self'` (same-origin JSON refresh), `default-src 'self'` with `object-src`/`base-uri`/`form-action`/`frame-ancestors` locked to `'none'`. Script body + hash kept in sync by a node:crypto test (cannot drift). Resolves the prior inline-script WARN; page stays fully static/read-only. +7 tests.~~
 - ~~**v0.2.171** — Torii Continuum project-oversight **dashboard**: a thin static page (`public/continuum.html`) generated from a curated, node-safe `progress.md` data model (`engine/dashboard/continuumData.js`) — CSS bars + SVG donut rings + totals strip, Now/Next/Later, next-12, struck completed-24h, archive, seed contributors/clankers metric, source-of-truth footer. Regenerated from packaged data each build (`build:continuum`); a same-origin-only refresh script re-reads `continuum-data.json` (no external URL/eval/timers). Safe relative link added to the title screen. Docs/tooling only, no gameplay change. +22 tests.~~
 - ~~**v0.2.170** — same-origin host **transport adapter** (`engine/gateway/hostTransport.js`): the injectable seam the v0.2.168 executor drives — `createHostTransport`/`createRecordingHost` (default-safe in-memory) + `createBrowserHostTransport` runtime seam (pushState/replaceState only, not yet wired); `safeRoutePath` re-validated, back-home rollback, browser APIs behind DI; null host → executor no-op. +21 tests.~~
 - ~~**v0.2.169** — graphical **progress dashboard** rewrite (this file): compact bars/percentages/badges/totals, 24h struck-through completions, concise archive. Docs/tooling only.~~
-- ~~**v0.2.168** — first SAME-ORIGIN travel **executor** (`engine/gateway/handoffExecute.js`): acts on a READY v0.2.167 plan ONLY via an injected `transport.navigate`, re-validates the route with `safeRoutePath`, single synchronous rollback, safety flags pinned; never touches `location`/`history`/`window.open`/network/sign/publish. +19 tests.~~
-- ~~**v0.2.167** — host travel handoff **seam** (`handoffPlan.js`): inert dry-run handoff/rollback PLAN over the v0.2.165 intent; same-origin route + https preview only, READY only under a matching grant. +21 tests.~~
-- ~~**v0.2.166** — consent UX **view-model** (`consentView.js`): inert prompt copy + preview rows for every gate action; no wired confirm/sign/publish. +27 tests.~~
-- ~~**v0.2.165** — gateway travel **confirm/intent** behind the consent gate (`travelConfirm.js`): sanitised destination, blocked-by-default, allowed-but-never-performed. +18 tests.~~
-- ~~**v0.2.164** — gateway destination **relay-read proof** (`gatewayRead.js`): kind-30078 `#t:torii-gateway` filter → sanitised travel-preview model, newest-per-zone. +22 tests.~~
-- ~~**v0.2.163** — leaderboard submit **intent** behind the consent gate (`submitIntent.js`): unsigned kind-30000 draft, blocked-by-default. +20 tests.~~
-- ~~**v0.2.162** — consent-gate **foundation** (`consentGate.js`): frozen action registry, read-tier allowed / write-tier grant-gated, never performs. +19 tests.~~
-- ~~**v0.2.161** — identity/profile **read proof** (`profileRead.js`): kind:0 metadata → sanitised display-only view-model, https-only URLs, newest-per-author. +17 tests.~~
-- ~~**v0.2.160** — leaderboard **relay-read proof** (`leaderboardRelayRead.js`): kind-30000 filter → ranked board, dedupe newest-per-run. +12 tests.~~
-- ~~**v0.2.159** — read-only Nostr **relay-read foundation** (`relayRead.js`): pure NIP-01 validate/normalise/filter + injected read-only adapter; no socket/publish/sign. +17 tests.~~
-- ~~**v0.2.157/158** — GitHub release-check source + in-game update-status panel (`githubReleaseSource.js`/`updateStatus.js`): host-only injected fetcher, no auto-update. +39 tests.~~
-- ~~**v0.2.153–156** — infra/handoff tooling: bundle-size baseline `[13]`, doc-consistency guard `[14]` (+noise cleanup), AI-handoff status snapshot (`npm run handoff:status`).~~
 
 ---
 
@@ -120,6 +109,8 @@ Struck-through items stay ~24h, then collapse into Archive. Newest first.
 
 Concise clusters, newest first. Per-version detail lives in git history + the `torii-*-report.md` files.
 
+- **v0.2.159–168 — gateway-travel chain + Nostr read foundation.** Read-only NIP-01 relay-read foundation → leaderboard/profile/gateway-destination read proofs → consent-gate foundation → leaderboard submit + gateway travel-confirm intents → consent UX view-model → dry-run handoff plan → first same-origin travel executor (injected transport). All PURE & INERT; never navigates/signs/publishes/writes network.
+- **v0.2.153–158 — infra/handoff tooling + update-check source.** Bundle-size baseline `[13]`, doc-consistency guard `[14]`, AI-handoff status snapshot (`npm run handoff:status`); GitHub release-check source + in-game update-status panel (host-only injected fetcher, no auto-update).
 - **v0.2.147–152 — proof-surface pipeline.** Pure spec layer → spec↔registry cross-check → anchor→transform contract → first display-only in-world mesh pass → parent binding → promotion/regression GATE (regression check `[12]`). All inert; no click/raycast/navigation.
 - **v0.2.144–146 — docs + review symmetry.** `VPS_INSTALL.md` self-hosting guide; `SDK_DEBUG_INDEX.md` + `shells.summary()`; `shells.diff()` preview→live promotion checklist.
 - **v0.2.138–143 — MVP loop made visible.** Pivot to the 15-hour PoC route; four inert title-screen preview cards (gateway/product/leaderboard/update) + MVP-loop header; LEAN-5 update-check architecture. Rendered via `textContent` only.

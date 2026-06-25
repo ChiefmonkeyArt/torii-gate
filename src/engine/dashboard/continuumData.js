@@ -27,7 +27,7 @@
 //   - Curated/static data is fine for this first version; it is isolated in
 //     CONTINUUM below so future automation can update (or generate) it.
 
-export const CONTINUUM_VERSION = 'v0.2.172-alpha';
+export const CONTINUUM_VERSION = 'v0.2.173-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CONTINUUM_REFRESH_SCRIPT (v0.2.172) — the EXACT inline-script body the page ships,
@@ -91,12 +91,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.172-alpha (build truth; live trails — manual deploy)' },
-    { label: 'Tests', value: '775+ passing / 58+ files' },
+    { label: 'Source version', value: 'v0.2.173-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Tests', value: '797+ passing / 59+ files (profiles: test:fast ~5, test:foundation ~16)' },
     { label: 'Regression check', value: '14 / 14 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1018 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.172 Continuum dashboard CSP hardening' },
+    { label: 'Active slice', value: 'v0.2.173 test-profile system (fast / foundation / release)' },
   ],
 
   // Contributors / clankers — SEED placeholder, NOT live data. "clankers" are the
@@ -125,13 +125,12 @@ export const CONTINUUM = Object.freeze({
 
   // Now / Next / Later.
   activeNow: [
-    'v0.2.172 — Torii Continuum dashboard CSP hardening (this static page): strict Content-Security-Policy meta, hashed inline refresh script, same-origin-only data refresh.',
+    'v0.2.173 — test-profile system for faster agent loops: npm run test:fast (~5 files) / test:foundation (~16 files) for inner loops; test:release runs the FULL suite + check/build/bundle/handoff before any deploy/publish.',
     'ARS-4 — finish folding reload/pointer-lock into the guarded FSM.',
     'ARS-6 / PROGRESS-1 — ongoing CODE_INDEX + living-docs upkeep.',
   ],
 
   next12: [
-    'v0.2.173 — test profile system for faster agent loops (npm run test:fast / test:foundation / test:release), with test:release running the FULL suite before any deploy/publish.',
     'Wire createBrowserHostTransport(window) (v0.2.170) into world/handoff.js (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.',
     'Gateway portal mesh — actually move the player in-world on a confirmed hop.',
     'SEC-2 handoff verification gate — cryptographic checks before acting on live relay travel intents.',
@@ -143,6 +142,7 @@ export const CONTINUUM = Object.freeze({
     'ARS-4 FSM fold close-out.',
     'Player boundary full extraction (movement tick, combat, lifecycle, body-state behind the seam).',
     'BotAgent runtime migration — wire decideActions, migrate stateful tick/shoot/blowback.',
+    'Formalise NAP zone registry for the gateway/NAP-to-NAP travel preview.',
   ],
 
   risks: [
@@ -156,10 +156,10 @@ export const CONTINUUM = Object.freeze({
 
   // Completed last 24h — shown struck through, newest first.
   completed24h: [
+    'v0.2.173 — TEST-PROFILE system for faster agent loops: npm run test:fast (~5 core files) + test:foundation (~16 pure/guard files) for inner loops, test:release = FULL suite + check/build/bundle/handoff (release gate unchanged). Explicit curated lists (tools/testProfiles.mjs, no git-diff heuristics) validated against disk + a timing footer. +11 tests.',
     'v0.2.172 — Continuum dashboard CSP HARDENING: strict Content-Security-Policy meta on the generated page (script-src self + sha256 of the one packaged refresh script, NO unsafe-inline script; style-src self unsafe-inline for the data-driven bars; connect-src self for the same-origin JSON refresh). Resolves the prior inline-script WARN; page stays fully static/read-only.',
     'v0.2.171 — Torii Continuum project-oversight DASHBOARD: a thin static page (public/continuum.html) generated from a curated, node-safe progress.md data model (engine/dashboard/continuumData.js) — bars/rings/totals, Now/Next/Later, next-12, struck completed-24h, archive; docs/tooling only, no gameplay change.',
     'v0.2.170 — same-origin host TRANSPORT adapter (engine/gateway/hostTransport.js): the injectable seam the v0.2.168 executor drives; recording host by default, createBrowserHostTransport runtime seam not yet wired. +21 tests.',
-    'v0.2.169 — graphical progress dashboard rewrite (progress.md): compact bars/percentages/badges/totals, 24h struck completions, concise archive. Docs/tooling only.',
   ],
 
   // Archive clusters, newest first.

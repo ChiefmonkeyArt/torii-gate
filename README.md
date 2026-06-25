@@ -56,9 +56,16 @@ The game is a gateway to a decentralised open world powered by the Nostr protoco
 npm install
 npm run dev      # local dev server
 npm run build    # production build → dist/
+
+# tests
+npm test             # full Vitest suite (node env)
+npm run test:fast    # ~5 core pure files — quick inner loop
+npm run test:foundation  # ~16 pure/guard files — broader pre-commit check
+npm run test:release # full release gate: build + Vitest + check + bundle + handoff
 ```
 
-Requires Node 18+.
+Requires Node 18+. Use `test:fast`/`test:foundation` while iterating, but every
+public deploy/publish must pass `npm run test:release` (or equivalent full verification).
 
 ## Project Structure
 
