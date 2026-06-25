@@ -122,6 +122,6 @@ controls, or live Nostr write behaviour touched.
 
 ## Commit
 - Local only: `v0.2.188-alpha: show release readiness and next task in Continuum dashboard`
-- Commit hash: _(appended below after commit)_
+- Commit hash: `e7ed89535803ed0b923d10ca2a9485eb1269a7b3`
 
 > Do NOT push or publish — parent will verify, review, deploy, publish, push, and upload docs.
