@@ -2,6 +2,8 @@
 
 ## Status: IMPLEMENTED — committed locally (no push/deploy/publish)
 
+**Commit:** `b46b919` on branch `v0.2.172` (off `c1215f7`).
+
 A focused Content-Security-Policy hardening pass for the Torii Continuum
 project-oversight dashboard introduced in v0.2.171. The generated `/continuum.html`
 now ships a strict CSP `<meta>` that closes the prior inline-script WARN while keeping
