@@ -1,6 +1,6 @@
 {
   "name": "torii-quest",
-  "version": "0.2.188-alpha",
+  "version": "0.2.189-alpha",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
     "handoff:status": "node tools/handoff-status.mjs",
     "zones:check": "node tools/zone-fallback-check.mjs",
     "release:status": "node tools/release-readiness.mjs",
+    "release:status:json": "node tools/release-readiness.mjs --json",
     "test": "vitest run",
     "test:fast": "node tools/test-profile.mjs fast",
     "test:foundation": "node tools/test-profile.mjs foundation",

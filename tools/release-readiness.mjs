@@ -1,5 +1,7 @@
 // tools/release-readiness.mjs — local, read-only RELEASE-READINESS summary CLI (v0.2.187).
 // Run with: node tools/release-readiness.mjs  (or: npm run release:status).
+// Add --json (npm run release:status:json) to emit the machine-readable status envelope
+// instead of the human block — for dashboard/handoff/updater/agent consumption (v0.2.189).
 //
 // Aggregates the local, network-free readiness signals an AI/dev handoff needs before
 // shipping — version sync, test-profile counts, the regression-check gate, the advisory
@@ -21,7 +23,7 @@ import { execSync } from 'node:child_process';
 import { gzipSync } from 'node:zlib';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildReleaseReadiness, formatReleaseReadiness } from './releaseReadiness.mjs';
+import { buildReleaseReadiness, formatReleaseReadiness, buildReleaseStatusJson } from './releaseReadiness.mjs';
 import { summarizeBundle, DEFAULT_WARN_LIMIT } from './bundleSizes.mjs';
 import { checkZoneFallbackReadiness, REQUIRED_FALLBACK_DOCS } from './zoneFallbackReadiness.mjs';
 import { checkDocConsistency, CONTINUITY_DOCS, ADVISORY_DOCS } from './docConsistency.mjs';
@@ -167,6 +169,14 @@ const invokedDirectly = (() => {
 
 if (invokedDirectly) {
   const summary = gatherReleaseReadiness(process.cwd());
+  // --json (or: npm run release:status:json) emits the machine-readable status envelope on
+  // stdout so a dashboard/handoff/updater/agent can consume the verdict WITHOUT parsing the
+  // human block. generatedAt is the only non-deterministic field (a real ISO stamp here).
+  if (process.argv.slice(2).includes('--json')) {
+    const json = buildReleaseStatusJson(summary, { generatedAt: new Date().toISOString() });
+    process.stdout.write(JSON.stringify(json, null, 2) + '\n');
+    process.exit(0);
+  }
   console.log('');
   console.log(formatReleaseReadiness(summary));
   console.log('');

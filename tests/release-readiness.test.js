@@ -5,7 +5,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   REGRESSION_CHECK_COUNT, RELEASE_READINESS_BADGE, RELEASE_GATE_COMMAND,
-  buildReleaseReadiness, formatReleaseReadiness,
+  RELEASE_STATUS_SCHEMA, RELEASE_STATUS_SCHEMA_VERSION,
+  buildReleaseReadiness, formatReleaseReadiness, buildReleaseStatusJson,
 } from '../tools/releaseReadiness.mjs';
 import { PROFILES } from '../tools/testProfiles.mjs';
 
@@ -151,5 +152,89 @@ describe('formatReleaseReadiness', () => {
 
   it('is safe on bad input', () => {
     expect(formatReleaseReadiness(null)).toContain('no summary');
+  });
+});
+
+describe('buildReleaseStatusJson — machine-readable envelope (v0.2.189)', () => {
+  it('wraps a summary in a stable schema envelope and preserves the verdict', () => {
+    const summary = buildReleaseReadiness(greenInputs());
+    const json = buildReleaseStatusJson(summary);
+    expect(json.schema).toBe(RELEASE_STATUS_SCHEMA);
+    expect(json.schemaVersion).toBe(RELEASE_STATUS_SCHEMA_VERSION);
+    expect(json.status).toBe('ready');
+    expect(json.statusLabel).toBe('READY');
+    expect(json.ready).toBe(true);
+    expect(json.blockers).toEqual([]);
+    expect(json.unknowns).toEqual([]);
+    expect(json.version).toBe(V);
+    expect(json.packageVersion).toBe(PKG);
+    expect(json.gitCommit).toBe('abc1234');
+    expect(json.badge).toBe(RELEASE_READINESS_BADGE);
+    expect(json.gateCommand).toBe(RELEASE_GATE_COMMAND);
+    expect(Object.keys(json.signals)).toEqual(
+      expect.arrayContaining(['versionSync', 'tests', 'regression', 'bundle', 'zoneFallback', 'docs']),
+    );
+  });
+
+  it('omits the timestamp by default (deterministic) and isolates it when supplied', () => {
+    const summary = buildReleaseReadiness(greenInputs());
+    const a = buildReleaseStatusJson(summary);
+    const b = buildReleaseStatusJson(summary);
+    expect(a.generatedAt).toBeNull();
+    expect(a).toEqual(b); // fully reproducible with no stamp
+    const stamped = buildReleaseStatusJson(summary, { generatedAt: '2026-06-25T00:00:00.000Z' });
+    expect(stamped.generatedAt).toBe('2026-06-25T00:00:00.000Z');
+    // The stamp is the ONLY difference — strip it and the envelopes match.
+    const { generatedAt: _s, ...restStamped } = stamped;
+    const { generatedAt: _a, ...restA } = a;
+    expect(restStamped).toEqual(restA);
+  });
+
+  it('ignores a non-string timestamp and stays JSON-serialisable', () => {
+    const summary = buildReleaseReadiness(greenInputs());
+    const json = buildReleaseStatusJson(summary, { generatedAt: 12345 });
+    expect(json.generatedAt).toBeNull();
+    expect(() => JSON.parse(JSON.stringify(json))).not.toThrow();
+  });
+
+  it('carries blockers and the not-ready verdict through to the envelope', () => {
+    const summary = buildReleaseReadiness(greenInputs({ packageVersion: '0.2.186-alpha' }));
+    const json = buildReleaseStatusJson(summary);
+    expect(json.status).toBe('not-ready');
+    expect(json.ready).toBe(false);
+    expect(json.blockers).toContain('versionSync');
+  });
+
+  it('carries the incomplete verdict + unknown signals through', () => {
+    const summary = buildReleaseReadiness(greenInputs({ regression: null, zoneFallback: null, docs: null }));
+    const json = buildReleaseStatusJson(summary);
+    expect(json.status).toBe('incomplete');
+    expect(json.ready).toBe(false);
+    expect(json.unknowns).toEqual(expect.arrayContaining(['regression', 'zoneFallback', 'docs']));
+  });
+
+  it('degrades to an honest unknown envelope on a missing/garbled summary (never throws)', () => {
+    for (const bad of [null, undefined, 42, 'nope', []]) {
+      const json = buildReleaseStatusJson(bad);
+      expect(json.schema).toBe(RELEASE_STATUS_SCHEMA);
+      expect(json.schemaVersion).toBe(RELEASE_STATUS_SCHEMA_VERSION);
+      expect(json.status).toBe('unknown');
+      expect(json.ready).toBe(false);
+      expect(json.error).toBe('no-summary');
+      expect(json.signals).toEqual({});
+      expect(json.blockers).toEqual([]);
+      expect(() => JSON.parse(JSON.stringify(json))).not.toThrow();
+    }
+  });
+
+  it('does not mutate the source summary arrays/signals', () => {
+    const summary = buildReleaseReadiness(greenInputs({ latestReports: ['r1.md'] }));
+    const json = buildReleaseStatusJson(summary);
+    json.blockers.push('x');
+    json.latestReports.push('x.md');
+    json.signals.tests.fast = -1;
+    expect(summary.latestReports).toEqual(['r1.md']);
+    expect(summary.blockers).toEqual([]);
+    expect(summary.signals.tests.fast).toBe(PROFILES.fast.length);
   });
 });

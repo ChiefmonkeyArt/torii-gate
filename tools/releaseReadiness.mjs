@@ -149,6 +149,59 @@ export function buildReleaseReadiness({
   };
 }
 
+// The machine-readable JSON envelope (v0.2.189). A stable schema id + integer version so a
+// dashboard/handoff/updater/agent can consume the readiness verdict WITHOUT parsing the human
+// terminal block. Bump RELEASE_STATUS_SCHEMA_VERSION on any breaking shape change.
+export const RELEASE_STATUS_SCHEMA = 'torii.release-status';
+export const RELEASE_STATUS_SCHEMA_VERSION = 1;
+
+// buildReleaseStatusJson(summary, { generatedAt }) → a plain, JSON-serialisable status envelope
+// over a buildReleaseReadiness() summary. PURE + deterministic: the ONLY non-deterministic field
+// is generatedAt, which is OPTIONAL and isolated — omit it (default null) and the output is fully
+// reproducible for tests; the CLI passes a real ISO timestamp at print time. A missing/garbled
+// summary degrades to an honest unknown envelope (never throws).
+export function buildReleaseStatusJson(summary, { generatedAt = null } = {}) {
+  const stamp = typeof generatedAt === 'string' && generatedAt ? generatedAt : null;
+  if (!summary || typeof summary !== 'object' || Array.isArray(summary)) {
+    return {
+      schema: RELEASE_STATUS_SCHEMA,
+      schemaVersion: RELEASE_STATUS_SCHEMA_VERSION,
+      generatedAt: stamp,
+      status: 'unknown',
+      statusLabel: 'NO SUMMARY',
+      ready: false,
+      error: 'no-summary',
+      badge: RELEASE_READINESS_BADGE,
+      gateCommand: RELEASE_GATE_COMMAND,
+      blockers: [],
+      unknowns: [],
+      version: null,
+      packageVersion: null,
+      gitCommit: null,
+      signals: {},
+      latestReports: [],
+    };
+  }
+  return {
+    schema: RELEASE_STATUS_SCHEMA,
+    schemaVersion: RELEASE_STATUS_SCHEMA_VERSION,
+    generatedAt: stamp,
+    status: summary.status ?? 'unknown',
+    statusLabel: summary.statusLabel ?? null,
+    ready: !!summary.ready,
+    badge: summary.badge ?? RELEASE_READINESS_BADGE,
+    gateCommand: summary.gateCommand ?? RELEASE_GATE_COMMAND,
+    blockers: Array.isArray(summary.blockers) ? summary.blockers.slice() : [],
+    unknowns: Array.isArray(summary.unknowns) ? summary.unknowns.slice() : [],
+    version: summary.version ?? null,
+    packageVersion: summary.packageVersion ?? null,
+    gitCommit: summary.gitCommit ?? null,
+    signals: summary.signals && typeof summary.signals === 'object'
+      ? JSON.parse(JSON.stringify(summary.signals)) : {},
+    latestReports: Array.isArray(summary.latestReports) ? summary.latestReports.slice() : [],
+  };
+}
+
 // A stable glyph per signal state for the terminal block. Pure.
 function mark(state) {
   switch (state) {

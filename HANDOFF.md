@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.188-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.189-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -200,7 +200,18 @@ Breaking one should fail CI/the check, not ship.
   `continuumDataJSON` now carries `ship`. Server-rendered escaped text, NO new `<script>`/
   `data-k` key → the v0.2.172 refresh-script sha256 + CSP/XSS guard stay intact; no network,
   no deploy/publish, no gameplay/portal/physics/controls/Nostr change. Unit-tested by
-  `tests/continuum-dashboard.test.js` (+10);
+  `tests/continuum-dashboard.test.js` (+10).
+  **v0.2.189** added a release-readiness JSON export so the verdict is machine-readable
+  (dashboard/handoff/updater/agents) without parsing the human terminal block:
+  `tools/releaseReadiness.mjs` gained a pure `buildReleaseStatusJson(summary,{generatedAt})`
+  envelope (`RELEASE_STATUS_SCHEMA`='torii.release-status' / `RELEASE_STATUS_SCHEMA_VERSION`=1)
+  and `tools/release-readiness.mjs` gained a `--json` flag (`npm run release:status:json`) that
+  prints `JSON.stringify(...)` to stdout and exits 0. Deterministic by design — `generatedAt`
+  is the ONLY non-deterministic field (optional + isolated, omit → `null` for tests; the CLI
+  passes a real ISO stamp); a garbled summary degrades to `status:'unknown'`/`error:'no-summary'`,
+  never throws/mutates. The default human block + the `realpathSync` run-guard are unchanged, and
+  stdout under the flag is pure parseable JSON (the npm banner goes to stderr). Read-only/local/
+  no-network; `tests/release-readiness.test.js` (+7).
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
@@ -357,6 +368,7 @@ npm run test:release     # build + FULL vitest + check + bundle:report + handoff
 npm run preview  # serve the built dist/ (used for headless smoke)
 npm run bundle:report  # advisory built-bundle size baseline (raw+gzip; reads dist/)
 npm run release:status # one concise release-readiness verdict aggregating the local signals (v0.2.187; read-only, network-free, exits 0 — not a gate; v0.2.188 exposes `gatherReleaseReadiness(root)` so the Continuum Ship-readiness section folds the SAME verdict)
+npm run release:status:json # the SAME verdict as a machine-readable JSON envelope on stdout (v0.2.189; or: node tools/release-readiness.mjs --json) for dashboard/handoff/updater/agent consumption — read-only, network-free, exits 0; pure JSON (npm banner → stderr)
 ```
 
 **Test profiles (v0.2.173).** The `test:fast`/`test:foundation` profiles are explicit,
