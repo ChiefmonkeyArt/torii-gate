@@ -435,6 +435,17 @@ linked by signed spatial events, with **no central router**.
   does NOT fire popstate, so the existing `_applyZoneRoute()` never refreshed the notice). DISPLAY-ONLY + INERT —
   no network/relay/sign/publish/external nav; the three gates are unchanged (proximity ARMS, KeyF confirms,
   same-origin `/zone/` only). Read-only at `ToriiDebug.shells.zoneLabel(opts?)`. SDK `zoneLabel` (experimental).
+- `src/engine/gateway/travelSmoke.js` (v0.2.195) — the pure READ-ONLY/DRY-RUN **smoke harness** that
+  EXECUTABLY documents the travel-flow contracts in this file: it drives `createGatewayPortalBoundary({dryRun:true})`
+  (with NO injected transport, so it can never navigate) through ten assertions and folds them into
+  `{ok,badge,summary,signals,safety,reasons,...}`. The signals are this protocol's safety invariants made
+  testable — proximity ARMS but never navigates (§5), only an explicit confirm acts (§8), same-origin
+  `/zone/<slug>` only (§3), the route allowlist is scoped and can never become `'/'` (§8), the external gateway
+  `website` is dropped from the hop (§8), travel is consent-gated (§8), the frozen `HOSTILE_ROUTES` fixture
+  (external/protocol-relative/`javascript:`/`data:`/`//`/backslash/dot-dot) is uniformly rejected, and every
+  report pins `navigated/performed/external/signed/published/network=false`. A future change that breaks any
+  travel-flow contract fails this harness locally without a browser/router/network. Pure/node-safe, never throws;
+  read-only at `ToriiDebug.shells.travelSmoke(opts?)`. SDK `travelSmoke` (experimental); `tests/gateway-travel-smoke.test.js`.
 - `src/world/handoff.js` — the (skeleton) host seam where a future build will inject the live app/browser
   window into `gatewayActivation`/`gatewayPortalActivation` (above): it will hand a
   `createBrowserHostTransport(window)` transport (or the host router) + a same-origin route allowlist to

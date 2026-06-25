@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.194-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.195-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no signing/publishing, no auto-update, and no navigation —
@@ -46,7 +46,7 @@ frozen `SDK_SURFACE` map; `surfacesByTier(tier)` lists names at a tier.
 `travelIntent`, `gatewayHandoff`, `gatewayPortal`, `gatewayPreview`, `leaderboard`,
 `leaderboardPublisher`, `leaderboardView`, `leaderboardPreview`, `relayRead`, `leaderboardRelayRead`, `profileRead`,
 `consentGate`, `consentView`, `submitIntent`, `gatewayRead`, `travelConfirm`, `handoffPlan`, `handoffExecute`, `hostTransport`, `gatewayActivation`, `gatewayPortalActivation`, `portalTrigger`, `zoneRoute`, `portalMeshPlan`, `zoneLabel`, `updateCheck`,
-`updatePreview`, `githubReleaseSource`, `updateStatus`, `mvpLoop`, `proofSurfaceSpecs`, `anchorTransforms`, `nostrReadHealth`.
+`updatePreview`, `githubReleaseSource`, `updateStatus`, `mvpLoop`, `proofSurfaceSpecs`, `anchorTransforms`, `nostrReadHealth`, `travelSmoke`.
 
 `relayRead` (NOSTR-READ, v0.2.159) is the pure READ-ONLY Nostr relay adapter
 foundation: `validateRelayUrl` (ws/wss only, no credentials),
@@ -92,6 +92,25 @@ future-gated) fold into `runReadHealth({profileEvents,scoreEvents})→{ok,badge,
 read modules — NO relay/socket/sign/publish/DOM/network/key handling; never throws on
 null/empty input. Surfaced in the Torii Continuum dashboard as a read-only status panel
 (`buildReadHealthModel` in `continuumData.js`) and in `ToriiDebug.shells.readHealth`.
+
+`travelSmoke` (GATEWAY / TRAVEL-SMOKE, v0.2.195) is the pure READ-ONLY/DRY-RUN smoke
+harness that proves the gateway travel-flow contracts hold WITHOUT a browser, router, or
+network. Constants: `TRAVEL_SMOKE_VERSION` (1), `TRAVEL_SMOKE_BADGE`
+(`GATEWAY TRAVEL SMOKE · READ-ONLY · DRY-RUN`), `HOSTILE_ROUTES` (frozen 7-entry
+external/protocol-relative/`javascript:`/`data:`/`//`/backslash/dot-dot fixture the boundary
+must refuse); `demoGatewayComponent()` builds a deterministic in-memory gateway component;
+re-exports `DEFAULT_PORTAL_ALLOWLIST`. `runGatewayTravelSmoke(opts?)` drives
+`createGatewayPortalBoundary({dryRun:true})` (NO injected transport → can never navigate)
+through ten signals — trigger arms on proximity; proximity alone never navigates; explicit
+confirm required; same-origin `/zone/<slug>` only; allowlist scoped (never `'/'`); a valid
+slug resolves; the `HOSTILE_ROUTES` fixture all rejected; no external `website` carried into
+the hop; consent gates travel; every report pins
+`navigated/performed/external/signed/published/network=false` — folding into
+`{ok,badge,summary,signals,safety,reasons,rendered:false,actionable:false}` (a broken
+component degrades to `ok:false` with concrete `reasons`, never throws). `formatGatewayTravelSmoke`
+renders one stable text block. Composes ONLY the shipped pure gateway modules — surfaces NO
+navigate/open/sign/publish/connect method. Reachable read-only via
+`ToriiDebug.shells.travelSmoke(opts?)` / `travelSmokeReport(opts?)`.
 
 `consentGate` (CONSENT-1 / SEC-1 precursor, v0.2.162) is the pure, inert consent
 boundary every future write/sign/publish/update/travel action must pass before it may
@@ -504,6 +523,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.leaderboardRelayRead(e?,o?)` | **v0.2.160** READ-ONLY leaderboard relay-read PROOF over a deterministic LOCAL sample — `{ok,filter,count,rows,skipped,duplicates,signed:false,published:false,readOnly:true,errors}` (extract→dedupe→rank; no relay I/O) |
 | `shells.profileRead(e?,o?)` | **v0.2.161** READ-ONLY identity/profile PROOF over a deterministic LOCAL sample — `{ok,filter,count,profiles,skipped,duplicates,signed:false,published:false,readOnly:true,errors}` (kind:0 parse→sanitise→newest-per-author; https-only inert URLs, no DOM/relay I/O) |
 | `shells.readHealth(o?)` | **v0.2.194** READ-ONLY Nostr READ-PATH HEALTH proof over a deterministic LOCAL sample — `{ok,badge,signals:[{key,label,status,detail}],summary:{total:6,ok,fail},readOnly:true,signed:false,published:false,errors}` (folds the six read-path signal checks: relay verbs CLOSE/REQ only, no EVENT/publish verb, profile+leaderboard read paths present, write paths consent-gated, SEC-1/2/3 future-gated; derives from the shipped pure read modules, no relay/socket/sign/publish/DOM I/O) |
+| `shells.travelSmoke(o?)` | **v0.2.195** READ-ONLY/DRY-RUN GATEWAY TRAVEL SMOKE harness — `{title:'GATEWAY TRAVEL SMOKE',badge,ok,summary,signals:[{key,label,status,detail}],safety,reasons,rendered:false,actionable:false}` (drives `createGatewayPortalBoundary({dryRun:true})` with no transport through ten travel-contract signals: trigger arms/proximity never navigates/explicit confirm/same-origin `/zone/<slug>`/scoped allowlist never `'/'`/`HOSTILE_ROUTES` all rejected/no external website/consent-gated/no auto travel; every report pins `navigated/performed/external/signed/published/network=false`; never navigates/signs/publishes) |
 | `shells.consentGate(o?)` | **v0.2.162** READ-ONLY CONSENT-GATE foundation map — `{title,badge,count,writeActions,allowedByDefault,actions:[{action,kind,write,signed,requiresConsent,danger,allowed,blocked,reason,performed:false,summary}],readOnly:true,performed:false}` (reads allowed, writes blocked until an explicit grant; pass `{grants}` to preview; never signs/publishes/acts) |
 | `shells.leaderboardSubmit(i?,g?)` | **v0.2.163** READ-ONLY leaderboard SUBMIT INTENT/PREVIEW over a deterministic sample — `{title,badge,action,ok,allowed,blocked,reason,kind,identity,tags,summary,signed:false,published:false,performed:false,readOnly:true,errors}` (inert UNSIGNED kind-30000 draft routed through the consent gate; BLOCKED with no grant, pass a grant to preview allow; never signs/publishes/sends/connects) |
 | `shells.gatewayRead(e?)` | **v0.2.164** READ-ONLY gateway DESTINATION-RECORD read proof over a deterministic LOCAL sample — `{title,badge,ok,count,duplicates,filter,gateways,skipped,navigated:false,signed:false,published:false,performed:false,readOnly:true,errors}` (kind-30078 `#t:torii-gateway` filter; extract→sanitise→newest-per-zone; https-only inert URLs + ws/wss relays, no navigation/DOM/relay I/O) |

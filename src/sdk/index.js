@@ -62,6 +62,7 @@ export * as portalTrigger from '../engine/gateway/portalTrigger.js';
 export * as zoneRoute from '../engine/gateway/zoneRoute.js';
 export * as portalMeshPlan from '../engine/gateway/portalMeshPlan.js';
 export * as zoneLabel from '../engine/gateway/zoneLabel.js';
+export * as travelSmoke from '../engine/gateway/travelSmoke.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
@@ -228,6 +229,12 @@ export const SDK_SURFACE = Object.freeze({
   // strings (prompt names the target; entered-notice names the zone). Safe alnum
   // labels, NO DOM/nav/network. Pure polish; changes no navigation safety.
   zoneLabel:       { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/zoneLabel.js' },
+  // PURE gateway TRAVEL SMOKE harness (LEAN-2, v0.2.195) — folds the shipped travel-
+  // flow contracts (trigger arming, same-origin /zone/ route, scoped allowlist,
+  // hostile-route rejection, no external URL, consent gate, no auto travel/write)
+  // into ONE fail-fast read-only smoke report. Drives the boundary with dryRun:true
+  // and NO injected transport: it navigates/performs/signs/publishes NOTHING.
+  travelSmoke:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/travelSmoke.js' },
   // torii.quest GitHub release/update-check helpers (LEAN-5, v0.2.138) — pure
   // compare + inert view-model; NO network fetch, NO auto-update.
   updateCheck:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateCheck.js' },

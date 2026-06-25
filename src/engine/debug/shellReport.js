@@ -32,6 +32,7 @@ import { createPortalTrigger, PORTAL_PROMPT_TEXT } from '../gateway/portalTrigge
 import { parseZoneRoute, describeZoneRoute, ZONE_ROUTE_BADGE, DEMO_ZONE_ROUTE } from '../gateway/zoneRoute.js';
 import { buildPortalMeshPlan, describePortalMeshPlan, PORTAL_MESH_BADGE, DEMO_PORTAL_MESH_OPTS } from '../gateway/portalMeshPlan.js';
 import { portalPromptLabel, enteredZoneLabel, ZONE_LABEL_BADGE, DEMO_ZONE_LABEL_OPTS } from '../gateway/zoneLabel.js';
+import { runGatewayTravelSmoke } from '../gateway/travelSmoke.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -845,6 +846,28 @@ export function zoneLabelReport(opts = DEMO_ZONE_LABEL_OPTS) {
   };
 }
 
+// travelSmokeReport(opts) → the PURE gateway TRAVEL SMOKE report (GATEWAY / NAP-zone
+// handoff, v0.2.195). Folds the shipped travel-flow contracts (trigger arming, same-
+// origin /zone/ route, scoped allowlist, hostile-route rejection, no external URL,
+// consent gate, no auto travel/write) into ONE fail-fast read-only smoke verdict.
+// Drives the boundary with dryRun:true and NO injected transport, so it
+// navigates/performs/signs/publishes NOTHING — every safety flag stays false. A test
+// can inject `opts.component` to prove the harness catches a deliberately-broken flow.
+export function travelSmokeReport(opts = {}) {
+  const r = runGatewayTravelSmoke(opts);
+  return {
+    title: 'GATEWAY TRAVEL SMOKE',
+    badge: r.badge,
+    ok: r.ok,
+    summary: r.summary,
+    signals: r.signals,
+    safety: r.safety,
+    reasons: r.reasons,
+    rendered: r.rendered,
+    actionable: r.actionable,
+  };
+}
+
 // updatePreviewReport(release, opts) → the visible-but-inert torii.quest
 // update-check PREVIEW block (LEAN-5) a title/HUD card would draw. Read-only;
 // pins actionable:false so the no-fetch/no-auto-update guarantee is explicit.
@@ -963,6 +986,7 @@ export function buildShellReport(inputs = {}) {
     handoffExecute: handoffExecuteReport(executeInput, executeGrant, executeTransport, executeOpts),
     hostTransport: hostTransportReport(hostTransportInput, hostTransportGrant, hostTransportOpts),
     gatewayActivation: gatewayActivationReport(activationInput, activationGrant, activationOpts),
+    travelSmoke: travelSmokeReport(),
     updatePreview: updatePreviewReport(release),
     updateStatus: updateStatusReport(updateFeed),
     mvpLoop: mvpLoopReport(),

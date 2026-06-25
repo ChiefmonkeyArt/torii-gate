@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, readHealthReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, handoffExecuteReport, hostTransportReport, gatewayActivationReport, gatewayPortalActivationReport, portalTriggerReport, zoneRouteReport, portalMeshPlanReport, zoneLabelReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, readHealthReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, handoffExecuteReport, hostTransportReport, gatewayActivationReport, gatewayPortalActivationReport, portalTriggerReport, zoneRouteReport, portalMeshPlanReport, zoneLabelReport, travelSmokeReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 import { resolveAllAnchors } from '../world/anchorTransforms.js';
@@ -267,6 +267,13 @@ export function installToriiDebug(refs) {
       // an inert display state; traversal/percent/protocol-relative/malformed paths
       // are rejected as 'invalid'. Same-origin only; NO navigation/network.
       zoneRoute(path) { return zoneRouteReport(path); },
+      // v0.2.195 — the PURE gateway TRAVEL SMOKE verdict: folds the shipped travel-
+      // flow contracts (trigger arming, same-origin /zone/ route, scoped allowlist,
+      // hostile-route rejection, no external URL, consent gate, no auto travel/write)
+      // into ONE fail-fast read-only report (10 signals). Drives the boundary with
+      // dryRun:true + NO injected transport — navigates/performs/signs/publishes
+      // NOTHING. Inject opts.component to drive a deliberately-broken flow.
+      travelSmoke(opts) { return travelSmokeReport(opts); },
       // v0.2.142 — the visible-but-inert torii.quest update-check PREVIEW block
       // (LEAN-5) the title/HUD card draws. Read-only; actionable:false — no network
       // fetch, no auto-update, no install, no navigation (deterministic local sample).

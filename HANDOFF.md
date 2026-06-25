@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.194-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.195-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -294,7 +294,25 @@ Breaking one should fail CI/the check, not ship.
   panel (`buildReadHealthModel` in `continuumData.js` maps each signal onto the existing pill
   vocabulary → the continuum CSP/script-hash are untouched). `tests/nostr-read-health.test.js`
   (+16) + 7 dashboard-panel tests.
-  Latest slice report: `torii-v0.2.194-nostr-read-health-report.md`.
+  **v0.2.195** added a GATEWAY TRAVEL SMOKE harness — a pure, node-safe read-only smoke harness
+  (`src/engine/gateway/travelSmoke.js`) that folds the shipped gateway travel-flow contracts into
+  ONE fail-fast report so future portal/travel feature work can be regression-checked locally
+  without a browser. `runGatewayTravelSmoke(opts?)` → `{version,badge,ok,signals,summary,safety,
+  reasons,rendered:false,actionable:false}` over TEN signals: trigger arms on proximity; proximity
+  ALONE never navigates; explicit confirm required to act; hop targets a same-origin `/zone/<slug>`
+  route only; the route allowlist is scoped (never `'/'`); a valid `/zone/<slug>` resolves; the
+  `HOSTILE_ROUTES` fixture (traversal / percent-traversal / protocol-relative / absolute scheme /
+  `javascript:` / uppercase-slug / sub-path) is all rejected as INVALID; no external gateway
+  `website` is carried into the hop; consent gates travel (no grant → blocked, a grant → allowed
+  but still never performed); no auto travel/write (every exercised report pins `navigated/
+  performed/external/signed/published/network=false`). It drives the boundary with `dryRun:true`
+  and NO injected transport, so even a fully-confirmed `confirm()` is a dry-run no-op that navigates
+  NOTHING; every check is wrapped, so malformed injected input degrades to a fail and the harness
+  never throws. Surfaced via the SDK (`travelSmoke`, EXPERIMENTAL), the debug shell
+  (`ToriiDebug.shells.travelSmoke` / `travelSmokeReport()` folded into `buildShellReport`).
+  `tests/gateway-travel-smoke.test.js` (+12). No gameplay/physics/shooter/Rapier change; no Nostr
+  signing/publishing/live network write; `godMode` stays false.
+  Latest slice report: `torii-v0.2.195-gateway-travel-smoke-report.md`.
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
