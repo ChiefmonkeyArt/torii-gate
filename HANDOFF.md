@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.189-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.190-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -215,6 +215,20 @@ Breaking one should fail CI/the check, not ship.
   `npm run --silent release:status:json`, since a plain `npm run` prepends an npm lifecycle
   banner to stdout that would otherwise contaminate the JSON. Read-only/local/
   no-network; `tests/release-readiness.test.js` (+7).
+  **v0.2.190** added a handoff AUTO-SUMMARY so a fresh agent/model gets ONE concise brief
+  without re-deriving the posture from every tool: a pure `buildHandoffSummary(inputs)` in
+  `tools/handoffSummary.mjs` folds the EXISTING local status/readiness inputs — version, git
+  commit, live URL, the current gate verdict (consumed from the `releaseReadiness` summary via the
+  exported `gatherReleaseReadiness()`; no check re-implemented), regression count + test-profile
+  counts, latest reports, the recommended next SAFE task (`DEFAULT_NEXT_SAFE_TASK`), the standing
+  `KEY_CONSTRAINTS`, and the exact `VERIFY_COMMANDS` — into a stable, JSON-serialisable brief
+  (schema `torii.handoff-summary` v1). `formatHandoffSummary` (text) + `formatHandoffSummaryMarkdown`
+  (markdown) are pure. The thin CLI `tools/handoff-summary.mjs` (`npm run handoff:summary`) prints
+  text by default, with `--json`, `--markdown`/`--md`, and an opt-in `--write[=path]` (default
+  `handoff-summary.md`) — `--write` is the ONLY thing that writes; without it the tool is
+  read-only/local/network-free. Deterministic: `generatedAt` is the only non-deterministic field
+  (optional + isolated, omit → `null` for tests). A garbled/missing release input degrades to an
+  honest `unknown` gate; never throws. `tests/handoff-summary.test.js` (+13).
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
@@ -372,6 +386,7 @@ npm run preview  # serve the built dist/ (used for headless smoke)
 npm run bundle:report  # advisory built-bundle size baseline (raw+gzip; reads dist/)
 npm run release:status # one concise release-readiness verdict aggregating the local signals (v0.2.187; read-only, network-free, exits 0 — not a gate; v0.2.188 exposes `gatherReleaseReadiness(root)` so the Continuum Ship-readiness section folds the SAME verdict)
 npm run release:status:json # the SAME verdict as a machine-readable JSON envelope on stdout (v0.2.189; or: node tools/release-readiness.mjs --json) for dashboard/handoff/updater/agent consumption — read-only, network-free, exits 0; `node tools/release-readiness.mjs --json` is pure JSON, plain `npm run` prepends a lifecycle banner to stdout so scripted consumers use `npm run --silent release:status:json`
+npm run handoff:summary # ONE concise AI-handoff brief for the next agent/model (v0.2.190): version, git commit, live URL, current gate verdict (folds gatherReleaseReadiness()), regression + test-profile counts, latest reports, next SAFE task, key constraints, exact release-verify commands. Text default; --json (schema torii.handoff-summary v1; scripted: npm run --silent handoff:summary -- --json); --markdown; opt-in --write[=path] is the ONLY writer — read-only/local/network-free otherwise; exits 0
 ```
 
 **Test profiles (v0.2.173).** The `test:fast`/`test:foundation` profiles are explicit,

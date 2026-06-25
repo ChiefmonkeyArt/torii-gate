@@ -1,11 +1,11 @@
 {
-  "version": "v0.2.189-alpha",
-  "generatedAt": "2026-06-25T16:55:31.300Z",
+  "version": "v0.2.190-alpha",
+  "generatedAt": "2026-06-25T17:11:57.027Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
-    "activeTasks": 16,
-    "completedLast24h": 20,
+    "activeTasks": 3,
+    "completedLast24h": 21,
     "archivedClusters": 11,
     "trackCount": 6,
     "milestoneCount": 5,
@@ -25,18 +25,19 @@
     "isDerived": true,
     "todoCompletedMarkers": 12,
     "next12": 12,
-    "activeNow": 16,
-    "completed24h": 20,
+    "activeNow": null,
+    "completed24h": 21,
     "archiveClusters": 11
   },
   "derived": {
     "parsed": [
       "next12 (12)",
-      "activeNow (16)",
-      "completed24h (20)",
+      "completed24h (21)",
       "archive (11)"
     ],
-    "gaps": [],
+    "gaps": [
+      "activeNow: no usable items parsed from progress.md — kept curated default"
+    ],
     "sources": [
       "progress.md",
       "todo.md"
@@ -48,17 +49,17 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.189-alpha"
+        "value": "v0.2.190-alpha"
       },
       {
         "label": "Test files / profiles",
         "kind": "generated",
-        "value": "fast 5 · foundation 25 · full 68"
+        "value": "fast 5 · foundation 25 · full 69"
       },
       {
         "label": "Total tests",
         "kind": "last-known",
-        "value": "1032 passing"
+        "value": "1045 passing"
       },
       {
         "label": "Profile timings",
@@ -73,12 +74,12 @@
       {
         "label": "Parser gaps",
         "kind": "generated",
-        "value": "0 · dashboard lists fully derived"
+        "value": "1 · curated fallback used"
       },
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.189-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.190-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -98,9 +99,9 @@
         "sub": "15 / 15"
       },
       {
-        "pct": 37,
+        "pct": 36,
         "label": "Foundation coverage",
-        "sub": "25/68 files"
+        "sub": "25/69 files"
       }
     ]
   },
@@ -191,15 +192,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.189-alpha",
-    "gitCommit": "28a7cfb",
+    "version": "v0.2.190-alpha",
+    "gitCommit": "d9fc2fb",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.189-alpha / pkg 0.2.189-alpha"
+        "detail": "config v0.2.190-alpha / pkg 0.2.190-alpha"
       },
       {
         "key": "tests",

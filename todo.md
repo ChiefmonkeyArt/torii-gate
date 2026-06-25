@@ -1,7 +1,7 @@
 # Torii Quest — Master TODO
 
 > **Source of truth for active tasks.** Update this file whenever tasks are added, changed, completed, removed, or re-prioritised.
-> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.189-alpha**
+> Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app) | Current version: **v0.2.190-alpha**
 
 > Strategy source of truth: `strategy.md`.
 > Progress dashboard: `progress.md` — visual track bars, sprint status, completed-last-24h, archive, and update rules.
@@ -404,6 +404,7 @@ Low-risk follow-ups from the security/handoff review — no gameplay-risk change
 | HARD-2 | TQ | UI | ✅ **Mock chat marked non-live** (v0.2.137) — the chat `#chat-input`/`#chat-send` are an unwired static preview (no JS handler, no networking). Disabled both, greyed them out (`:disabled` CSS), retitled placeholder to "chat preview — not live", header to "LIVE CHAT (preview)", and added a comment so no one mistakes it for a transmitting surface. Still non-transmitting; no networking added. |
 | HARD-3 | TQ | SECURITY | ✅ **CSP gstatic entry reviewed + documented** (v0.2.137) — `connect-src https://www.gstatic.com` is REQUIRED: DRACOLoader fetches its decoder from `gstatic.com/draco/versioned/decoders/1.5.6/` at runtime (`arena.js`, `weapons.js`). Documented in the index.html CSP comment as required; NOT removed, NOT broadened. |
 | HARD-4 | TQ | DEBUG | ✅ **Shell debug reports added** (v0.2.137) — `engine/debug/shellReport.js` (`gatewayReport`/`productReport`/`leaderboardReport`/`buildShellReport` + safe demo fixtures) surfaced on `ToriiDebug.shells.{gateway,product,leaderboard,report}`. Read-only over the v0.2.136 shells: no signer, no relay/publish, no navigation. `tests/shell-report.test.js`. |
+| HARD-5 | TQ | TOOLING | ✅ **AI handoff auto-summary added** (v0.2.190) — `npm run handoff:summary` folds the existing local readiness signals into one concise brief for the next agent/model (version / git commit / live URL / gate status / regression+test counts / latest reports / next safe task / key constraints / exact release-verify commands). Pure `tools/handoffSummary.mjs` (`buildHandoffSummary`/`formatHandoffSummary`/`formatHandoffSummaryMarkdown` + `HANDOFF_SUMMARY_SCHEMA`='torii.handoff-summary'/v1, `VERIFY_COMMANDS`, `KEY_CONSTRAINTS`, `DEFAULT_NEXT_SAFE_TASK`; `generatedAt` optional/isolated → deterministic; null/garbled release → `gate.status:'unknown'`, never throws) + thin CLI `tools/handoff-summary.mjs` (reuses `gatherReleaseReadiness`; text / `--json` / `--markdown`; READ-ONLY/local/no-network and never writes unless an explicit `--write[=path]` flag is supplied). `tests/handoff-summary.test.js` (13). |
 
 ---
 
