@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.185-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.186-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no signing/publishing, no auto-update, and no navigation —
@@ -397,6 +397,21 @@ Now/Archive/Done lists moved into ONE `<div class="cols">` reflowing on a respon
 1080px `main`, larger section margins, subtle card hover). All server-rendered escaped text, NO new
 `<script>`/asset — CSP hash unchanged; DERIVED/GENERATED/LAST-KNOWN/SEED chips stay visible. A
 larger visual redesign remains a documented future follow-up.
+
+**Deployment readiness (v0.2.186):** a PURE browser-safe `buildReadinessModel({zoneFallback})` +
+`READINESS_BADGE` surface a **Deployment readiness** `<section>` that shows the v0.2.185 `/zone/*`
+static-host fallback verdict at a glance. It folds the read-only `checkZoneFallbackReadiness({docs,
+dist})` result (passed in — the module does NO fs/network) into a render-ready `{badge,status,
+statusLabel,checks,errors,warnings,note}` model with honest states — **READY** (docs ok + dist
+checked) / **DOCS READY · BUILD CHECK PENDING** (docs ok, no build yet) / **NOT READY** (a required
+doc/dist shape fails) / **NOT CHECKED** (no input) — and a four-row per-check table (SPA fallback
+documented, built dist route shape, host fallback = MANUAL, auto-update = MANUAL). It never throws
+and each check `state` reuses the existing pill vocabulary (`no-blocker`/`gated`/`manual`/
+`deferred`) so `_readinessSection` adds NO new CSS. `tools/build-continuum.mjs` reads the required
+docs + walks `dist/` at packaging time (absent → dist check SKIPPED; regression-check [15] is the
+authoritative dist check) and feeds the real verdict; with no override a curated NOT-CHECKED model
+ships. `continuumDataJSON` carries `readiness`. Server-rendered escaped text, NO new `<script>`/
+`data-k` → CSP hash unchanged. `tests/continuum-dashboard.test.js` (+8).
 
 `githubReleaseSource` (LEAN-5, v0.2.157) is the pure GitHub Releases source adapter:
 `normalizeRelease`/`selectLatestRelease`/`evaluateFromSource` turn a `releases/latest`

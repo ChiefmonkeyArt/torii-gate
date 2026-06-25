@@ -7,17 +7,19 @@
 // WRITES two static files under public/. No network, no install, no external writes, no
 // game code. As of v0.2.174 it DERIVES the dashboard's list sections from the project
 // docs via the pure tools/continuumParse.mjs and merges them over the curated fallback.
-import { writeFileSync, readFileSync, mkdirSync, readdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { writeFileSync, readFileSync, mkdirSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   buildContinuumModel,
   buildHealthModel,
+  buildReadinessModel,
   HEALTH_LASTKNOWN,
   renderContinuumPage,
   continuumDataJSON,
 } from '../src/engine/dashboard/continuumData.js';
 import { deriveContinuumData } from './continuumParse.mjs';
+import { REQUIRED_FALLBACK_DOCS, checkZoneFallbackReadiness } from './zoneFallbackReadiness.mjs';
 import { PROFILES } from './testProfiles.mjs';
 import { VERSION } from '../src/config.js';
 
@@ -57,10 +59,43 @@ const health = buildHealthModel({
   lastKnown: HEALTH_LASTKNOWN,
 });
 
+// Deployment readiness (v0.2.186) — run the v0.2.185 read-only zone-fallback guard over the
+// required docs + the dist/ present AT PACKAGING TIME (build:continuum runs before vite
+// build, so dist/ may be the previous build or absent — the verdict is honest either way:
+// no dist → "build check pending"). The authoritative dist check is regression-check [15].
+function readDocSafe(rel) {
+  try { return readFileSync(join(ROOT, rel), 'utf8'); } catch { return null; }
+}
+function distPathsAtPackaging() {
+  const distDir = join(ROOT, 'dist');
+  if (!existsSync(distDir)) return null; // null → dist check SKIPPED (no build yet)
+  const out = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else out.push(relative(distDir, p).replace(/\\/g, '/'));
+    }
+  };
+  walk(distDir);
+  return out;
+}
+const readinessDocs = {};
+for (const name of REQUIRED_FALLBACK_DOCS) {
+  const text = readDocSafe(name);
+  if (typeof text === 'string') readinessDocs[name] = text;
+}
+const distPaths = distPathsAtPackaging();
+const zoneFallback = checkZoneFallbackReadiness({
+  docs: readinessDocs,
+  dist: distPaths ? { paths: distPaths } : {},
+});
+const readiness = buildReadinessModel({ zoneFallback });
+
 // Stamp the packaged build time so the page can show when the data was packaged.
 const generatedAt = new Date().toISOString();
 const model = {
-  ...buildContinuumModel({ ...overrides, health, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
+  ...buildContinuumModel({ ...overrides, health, readiness, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
   generatedAt,
 };
 
@@ -75,3 +110,4 @@ console.log(`[continuum] derived from ${SOURCES.join(' + ')}: ${parsed.length ? 
 console.log(`[continuum] parser gaps (kept curated): ${gaps.length ? gaps.length : 'none'}`);
 for (const g of gaps) console.log(`[continuum]   gap: ${g}`);
 console.log(`[continuum] health: profiles fast ${PROFILES.fast.length}/foundation ${PROFILES.foundation.length}, full ${countTestFiles()} files, docs ${docsInSync ? 'in sync' : 'DRIFT'}`);
+console.log(`[continuum] readiness: ${readiness.statusLabel} (zone-fallback ${zoneFallback.ok ? 'ok' : 'FAIL'}; dist ${distPaths ? 'checked' : 'skipped — no build yet'})`);

@@ -11,6 +11,7 @@ import {
   CONTINUUM_REFRESH_SCRIPT, CONTINUUM_SCRIPT_SHA256, CONTINUUM_CSP,
   HEALTH_LASTKNOWN, buildHealthModel,
   SEED_MILESTONES, buildMilestoneModel,
+  READINESS_BADGE, buildReadinessModel,
   escapeHtml, clampPct, barCells, ringDash,
   computeTotals, buildContinuumModel, continuumDataJSON, renderContinuumPage,
 } from '../src/engine/dashboard/continuumData.js';
@@ -19,7 +20,7 @@ import { VERSION } from '../src/config.js';
 
 describe('module shape', () => {
   it('pins the version (tracks the build) and the read-only oversight badge', () => {
-    expect(CONTINUUM_VERSION).toBe('v0.2.185-alpha');
+    expect(CONTINUUM_VERSION).toBe('v0.2.186-alpha');
     expect(CONTINUUM_VERSION).toBe(VERSION);
     expect(CONTINUUM_BADGE).toBe('PROJECT OVERSIGHT · STATIC · READ-ONLY');
   });
@@ -124,7 +125,7 @@ describe('continuumDataJSON', () => {
   it('is JSON-serialisable and carries totals + the seed contributors', () => {
     const j = continuumDataJSON();
     const round = JSON.parse(JSON.stringify(j));
-    expect(round.version).toBe('v0.2.185-alpha');
+    expect(round.version).toBe('v0.2.186-alpha');
     expect(round.totals.pocProgressPct).toBe(46);
     expect(round.contributors.isSeed).toBe(true);
   });
@@ -136,7 +137,7 @@ describe('renderContinuumPage', () => {
   it('returns a self-contained HTML document with the version', () => {
     expect(typeof html).toBe('string');
     expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('v0.2.185-alpha');
+    expect(html).toContain('v0.2.186-alpha');
     expect(html).toContain('Torii Continuum');
   });
 
@@ -387,6 +388,90 @@ describe('milestones (v0.2.176)', () => {
   });
 });
 
+describe('deployment readiness (v0.2.186)', () => {
+  it('degrades to an honest NOT-CHECKED model with no input (never throws)', () => {
+    const r = buildReadinessModel();
+    expect(r.status).toBe('unknown');
+    expect(r.statusLabel).toBe('NOT CHECKED');
+    expect(r.badge).toBe(READINESS_BADGE);
+    expect(Array.isArray(r.checks)).toBe(true);
+    expect(r.checks).toHaveLength(4);
+    // docs + dist checks read "not checked / no dist" → deferred; the two host steps are manual.
+    expect(r.checks.map((c) => c.state)).toEqual(['deferred', 'deferred', 'manual', 'manual']);
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toEqual([]);
+  });
+
+  it('READY when docs ok AND dist checked ok', () => {
+    const r = buildReadinessModel({
+      zoneFallback: { ok: true, docs: { ok: true }, dist: { ok: true, skipped: false }, errors: [], warnings: [] },
+    });
+    expect(r.status).toBe('ready');
+    expect(r.statusLabel).toBe('READY');
+    expect(r.checks[0].state).toBe('no-blocker');
+    expect(r.checks[1].state).toBe('no-blocker');
+  });
+
+  it('DOCS READY · BUILD CHECK PENDING when docs ok but dist skipped (no build)', () => {
+    const r = buildReadinessModel({
+      zoneFallback: { ok: true, docs: { ok: true }, dist: { skipped: true }, errors: [], warnings: [] },
+    });
+    expect(r.status).toBe('docs-ready');
+    expect(r.statusLabel).toBe('DOCS READY · BUILD CHECK PENDING');
+    expect(r.checks[0].state).toBe('no-blocker');
+    expect(r.checks[1].state).toBe('deferred');
+  });
+
+  it('NOT READY (gated) when a required doc is missing the fallback', () => {
+    const r = buildReadinessModel({
+      zoneFallback: { ok: false, docs: { ok: false }, dist: { skipped: true }, errors: ['VPS_INSTALL.md missing fallback'], warnings: [] },
+    });
+    expect(r.status).toBe('blocked');
+    expect(r.statusLabel).toBe('NOT READY');
+    expect(r.checks[0].state).toBe('gated');
+    expect(r.errors).toEqual(['VPS_INSTALL.md missing fallback']);
+  });
+
+  it('every check uses only the existing pill vocabulary (no new CSS)', () => {
+    const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+    for (const input of [undefined,
+      { zoneFallback: { ok: true, docs: { ok: true }, dist: { ok: true, skipped: false } } },
+      { zoneFallback: { ok: false, docs: { ok: false }, dist: { ok: false, skipped: false } } }]) {
+      for (const c of buildReadinessModel(input).checks) expect(allowed.has(c.state)).toBe(true);
+    }
+  });
+
+  it('continuumDataJSON carries the readiness model', () => {
+    const j = continuumDataJSON();
+    expect(j.readiness).toBeTruthy();
+    expect(typeof j.readiness.statusLabel).toBe('string');
+    expect(Array.isArray(j.readiness.checks)).toBe(true);
+  });
+
+  it('renderContinuumPage shows the Deployment-readiness section with a status pill + badge', () => {
+    const html = renderContinuumPage();
+    expect(html).toContain('Deployment readiness');
+    expect(html).toContain(READINESS_BADGE);
+    expect(html).toContain('pill pill-');
+    expect(html).toContain('Host SPA fallback configured');
+    expect(html).toContain('Auto-update');
+  });
+
+  it('SAFETY: the readiness section injects no unsafe token + no new script', () => {
+    const blocked = buildReadinessModel({
+      zoneFallback: { ok: false, docs: { ok: false }, dist: { ok: false, skipped: false }, errors: ['boom'], warnings: ['heads up'] },
+    });
+    const html = renderContinuumPage(buildContinuumModel({ readiness: blocked }));
+    for (const bad of ['javascript:', 'window.location', 'location.href', 'eval(', 'window.open']) {
+      expect(html).not.toContain(bad);
+    }
+    expect((html.match(/<script/g) || []).length).toBe(1);
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    const pageHash = 'sha256-' + createHash('sha256').update(m[1], 'utf8').digest('base64');
+    expect(pageHash).toBe(CONTINUUM_SCRIPT_SHA256);
+  });
+});
+
 describe('layout / readability pass (v0.2.177)', () => {
   const html = renderContinuumPage();
 
@@ -438,7 +523,7 @@ describe('layout / readability pass (v0.2.177)', () => {
 
 describe('SDK exposure', () => {
   it('re-exports the continuum module at the experimental tier', () => {
-    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.185-alpha');
+    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.186-alpha');
     expect(typeof SDK.continuum.renderContinuumPage).toBe('function');
     expect(SDK.SDK_SURFACE.continuum.tier).toBe(SDK.STABILITY.EXPERIMENTAL);
   });

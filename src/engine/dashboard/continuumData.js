@@ -31,7 +31,7 @@
 //     passes them to buildContinuumModel(overrides). Anything that fails to parse falls
 //     back to the curated values below, so the page never shows an empty/garbled section.
 
-export const CONTINUUM_VERSION = 'v0.2.185-alpha';
+export const CONTINUUM_VERSION = 'v0.2.186-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // HEALTH_LASTKNOWN (v0.2.175) — the engineering-health values that are NOT cheaply
@@ -41,7 +41,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // number is obvious rather than silently wrong. The deterministic fields (profile file
 // counts, parser gaps, version, doc-sync) are GENERATED at build time and override these.
 export const HEALTH_LASTKNOWN = Object.freeze({
-  totalTests: '993 passing',
+  totalTests: '1001 passing',
   timings: 'fast ~1s · foundation ~6s · full suite ~44s',
   bundle: '2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)',
   regression: '15 / 15',
@@ -172,6 +172,86 @@ export function buildMilestoneModel(input = {}) {
   };
 }
 
+// READINESS_BADGE (v0.2.186) — names the deployment-readiness section so it can't be
+// mistaken for a deploy action. Like the rest of this module, it is read-only oversight.
+export const READINESS_BADGE = 'DEPLOY READINESS · STATIC HOST · READ-ONLY';
+
+// buildReadinessModel(input) — PURE, browser-safe builder (v0.2.186) that surfaces the
+// torii.quest/VPS static-host DEPLOYMENT READINESS on the dashboard, so project oversight
+// shows the VPS/static-host posture at a glance. It folds the plain result of the v0.2.185
+// `checkZoneFallbackReadiness({ docs, dist })` guard (passed in as `input.zoneFallback`)
+// into a render-ready { badge, status, statusLabel, checks, errors, warnings, note } model.
+// NO fs/network/THREE/DOM — the CLI / build-continuum.mjs / regression-check do the fs reads
+// and hand the plain verdict here. With no input it degrades to an honest NOT-CHECKED model
+// (never throws). Each check's `state` reuses the existing pill vocabulary
+// (no-blocker / gated / manual / deferred) so the renderer needs no new CSS. This is an
+// INFORMATIONAL surface only: it never deploys, never contacts a server, never auto-updates.
+export function buildReadinessModel(input = {}) {
+  const zf = input && typeof input === 'object' ? input.zoneFallback : null;
+  const has = zf && typeof zf === 'object';
+  const docs = has && zf.docs && typeof zf.docs === 'object' ? zf.docs : null;
+  const dist = has && zf.dist && typeof zf.dist === 'object' ? zf.dist : null;
+  const docsOk = docs ? !!docs.ok : null;
+  const distSkipped = dist ? !!dist.skipped : true;
+  const distOk = dist ? !!dist.ok : null;
+  const overallOk = has ? !!zf.ok : null;
+
+  const checks = [
+    {
+      item: 'SPA /zone/* fallback documented',
+      state: docsOk == null ? 'deferred' : docsOk ? 'no-blocker' : 'gated',
+      note: docsOk == null
+        ? 'not checked this build — run npm run zones:check'
+        : docsOk
+          ? 'VPS_INSTALL.md + HANDOFF.md describe serving index.html for /zone/* deep-links'
+          : 'a required doc is missing the index.html SPA fallback — run npm run zones:check',
+    },
+    {
+      item: 'Built dist route shape',
+      state: distSkipped ? 'deferred' : distOk ? 'no-blocker' : 'gated',
+      note: distSkipped
+        ? 'no dist/ this build — run npm run build then npm run zones:check'
+        : distOk
+          ? 'dist/index.html present; no static file under /zone/* shadows the fallback'
+          : 'dist route shape cannot rely on the fallback (missing index.html or a /zone/* shadow)',
+    },
+    {
+      item: 'Host SPA fallback configured',
+      state: 'manual',
+      note: 'serve index.html for unmatched paths on torii.quest — manual maintainer step, outside this repo',
+    },
+    {
+      item: 'Auto-update',
+      state: 'manual',
+      note: 'none — the update-check is read-only and actionable:false; deploys stay a manual maintainer action',
+    },
+  ];
+
+  let status; let statusLabel;
+  if (overallOk == null) { status = 'unknown'; statusLabel = 'NOT CHECKED'; }
+  else if (overallOk && !distSkipped) { status = 'ready'; statusLabel = 'READY'; }
+  else if (overallOk && distSkipped) { status = 'docs-ready'; statusLabel = 'DOCS READY · BUILD CHECK PENDING'; }
+  else { status = 'blocked'; statusLabel = 'NOT READY'; }
+
+  return {
+    badge: READINESS_BADGE,
+    status,
+    statusLabel,
+    checks,
+    errors: has && Array.isArray(zf.errors) ? zf.errors.slice() : [],
+    warnings: has && Array.isArray(zf.warnings) ? zf.warnings.slice() : [],
+    note: 'Static-host deployment readiness for the gateway /zone/* travel feature. The repo-side ' +
+      'prerequisites (docs describe the index.html SPA fallback; a built dist/ has index.html with ' +
+      'no /zone/* file shadowing it) are verified LOCALLY by npm run zones:check / regression-check [15]. ' +
+      'Configuring the real host fallback and deploying stay MANUAL maintainer steps — this surface only INFORMS.',
+  };
+}
+
+// The curated fallback readiness model — built at module load so renderContinuumPage() with
+// NO overrides (tests + the no-JS fallback) shows an honest NOT-CHECKED readiness section.
+// The build-time generator re-runs buildReadinessModel with the freshly measured verdict.
+const CURATED_READINESS = buildReadinessModel();
+
 // CONTINUUM_REFRESH_SCRIPT (v0.2.172) — the EXACT inline-script body the page ships,
 // kept as the single source of that text so its CSP hash can never silently drift.
 // It is STATIC (no model interpolation), so its sha256 is stable across deploys: a
@@ -233,12 +313,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.185-alpha (build truth; live trails — manual deploy)' },
-    { label: 'Tests', value: '993 passing / 67 files (profiles: test:fast ~5, test:foundation ~24)' },
+    { label: 'Source version', value: 'v0.2.186-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Tests', value: '1001 passing / 67 files (profiles: test:fast ~5, test:foundation ~24)' },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.185 deployment-readiness FOUNDATION — makes the outstanding torii.quest static-host requirement (serve index.html for /zone/* on cold hard-refresh/deep-link) operationally explicit and LOCALLY CHECKABLE. New pure helper (zoneFallbackReadiness.mjs) + read-only network-free CLI (npm run zones:check) + regression-check [15] verify the docs carry the SPA fallback and a built dist/ has index.html with no /zone/* file shadowing it. Docs-only/no-runtime: ZONE_FALLBACK_READINESS.md checklist + VPS_INSTALL §11; no server access/deploy/auto-update; navigation model unchanged. +20 tests' },
+    { label: 'Active slice', value: 'v0.2.186 deployment-readiness VISIBILITY — surfaces the v0.2.185 /zone/* static-host fallback verdict as a first-class Deployment-readiness section in the Torii Continuum dashboard (data + visible page). A new pure builder (buildReadinessModel) folds the read-only zoneFallbackReadiness result into honest READY / DOCS READY · BUILD CHECK PENDING / NOT READY / NOT CHECKED states with a per-check table; build-continuum.mjs feeds the real verdict at packaging time. Dashboard/tooling-only/no-runtime: reuses existing pill CSS, CSP/script-hash untouched; no server access/deploy/auto-update; navigation model unchanged.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
@@ -272,7 +352,7 @@ export const CONTINUUM = Object.freeze({
 
   // Now / Next / Later.
   activeNow: [
-    'v0.2.185 — deployment-readiness FOUNDATION (no runtime change): make the outstanding torii.quest/VPS static-host prerequisite for the gateway travel feature — serve index.html for any /zone/<slug> path on a COLD hard-refresh/deep-link — operationally explicit and LOCALLY checkable before publish. A new pure node-safe helper (tools/zoneFallbackReadiness.mjs) + a read-only, network-free CLI (npm run zones:check) + regression-check [15] verify the required docs (VPS_INSTALL.md/HANDOFF.md) describe the index.html SPA fallback and that a built dist/ has an index.html with NO static file under /zone/* that would shadow it. Ships docs + check only: ZONE_FALLBACK_READINESS.md checklist, VPS_INSTALL §11, UPDATE_CHECK pointer. NON-GOALS held: no server access/SSH/credentials, no deploy/publish/upload, no auto-update, no navigation/runtime change (proximity arms, KeyF confirms, same-origin /zone/ only). +20 tests.',
+    'v0.2.186 — deployment-readiness VISIBILITY (dashboard/tooling only, no runtime change): surface the v0.2.185 /zone/* static-host fallback verdict as a first-class Deployment-readiness section in the Torii Continuum (data model + visible page). A new pure node-safe builder (buildReadinessModel) folds the read-only zoneFallbackReadiness result into honest states — READY / DOCS READY · BUILD CHECK PENDING / NOT READY / NOT CHECKED — with a per-check table (docs fallback, dist route shape, host fallback MANUAL, auto-update MANUAL); build-continuum.mjs feeds the real verdict at packaging time and falls back to a curated NOT-CHECKED model. Reuses existing pill CSS so the continuum CSP + script-hash are untouched; continuumDataJSON now carries readiness. NON-GOALS held: no server access/SSH/credentials, no deploy/publish/upload, no auto-update, no navigation/runtime/gameplay change.',
     'ARS-4 — finish folding reload/pointer-lock into the guarded FSM.',
     'ARS-6 / PROGRESS-1 — ongoing CODE_INDEX + living-docs upkeep.',
   ],
@@ -303,10 +383,10 @@ export const CONTINUUM = Object.freeze({
 
   // Completed last 24h — shown struck through, newest first.
   completed24h: [
+    'v0.2.186 — deployment-readiness VISIBILITY (dashboard/tooling only, no runtime change): the v0.2.185 /zone/* static-host fallback verdict is now a first-class Deployment-readiness section in the Torii Continuum (data + visible page). New pure builder buildReadinessModel folds the read-only zoneFallbackReadiness result into honest READY / DOCS READY · BUILD CHECK PENDING / NOT READY / NOT CHECKED states with a per-check table (docs fallback, dist route shape, host fallback MANUAL, auto-update MANUAL); build-continuum.mjs feeds the real verdict at packaging time. Reuses existing pill CSS so the continuum CSP/script-hash are untouched; continuumDataJSON carries readiness. NON-GOALS: no server access/SSH/credentials, no deploy/publish/upload, no auto-update, no navigation/runtime/gameplay change.',
     'v0.2.185 — deployment-readiness FOUNDATION (docs + local check, no runtime change): the outstanding torii.quest/VPS static-host requirement — serve index.html for /zone/* on a cold hard-refresh/deep-link — is now operationally explicit and LOCALLY checkable. Pure node-safe helper (tools/zoneFallbackReadiness.mjs) + read-only network-free CLI (npm run zones:check) + regression-check [15] verify VPS_INSTALL.md/HANDOFF.md describe the index.html SPA fallback and a built dist/ has index.html with no /zone/* file shadowing it. New ZONE_FALLBACK_READINESS.md checklist + VPS_INSTALL §11 + UPDATE_CHECK pointer. NON-GOALS: no server access/SSH/credentials, no deploy/publish/upload, no auto-update, no navigation/runtime change. +20 tests.',
     'v0.2.184 — LEAN-2 portal/zone CLARITY (zoneLabel.js): pure display-label helpers name the portal target in the in-range prompt ("Press F to travel to Plebeian Market Bazaar") and announce the entered zone after a successful KeyF hop ("Entered: Plebeian Market Bazaar"). Labels are safe Title-Case alnum strings (slug/route via humanizeZoneSlug; free-form/hostile input sanitised — no markup/dangerous token survives); HUD sink is textContent only. PURE POLISH — proximity still only arms, KeyF still confirms, route stays same-origin /zone/ only; no network/relay/sign/publish/external nav added. SDK (experimental) + debug-shell exposure. +15 tests.',
     'v0.2.183 — LEAN-2 in-world GATEWAY PORTAL marker: a pure render plan (portalMeshPlan.js) + a browser-only THREE adapter (portalMesh.js) draw a small, inert visual landmark at the v0.2.181 trigger position so a player can SEE the travel point. The outer ring radius EQUALS the proximity range (the visible boundary is exactly where the portal arms). DISPLAY-ONLY: no collider, no raycast/input, no nav/relay/sign/publish — the safety model is unchanged (proximity arms, KeyF confirms, same-origin /zone/ only). Meshes built ONCE; the per-frame tick mutates only scalars (no vector/matrix allocation). SDK (experimental) + debug-shell (plan report + render state) exposure. +18 tests.',
-    'v0.2.182 — LEAN-2 pure SPA /zone/<slug> ROUTE PARSER (zoneRoute.js): the safe client-side READ of the same-origin URL the v0.2.181 portal hop pushes, so a refresh/deep-link on /zone/* is not brittle. parseZoneRoute() runs the route through safeRoutePath (rejects dot-dot/percent/protocol-relative/js-scheme/data-scheme/markup/control/whitespace/over-length), strips query/hash, then classifies HOME (root or non-/zone path) vs ZONE (strict slug: lowercase alnum joined by single hyphens, ≤64) vs INVALID (sub-path, malformed, hostile, non-string); a valid zone maps to an INERT display state (title + HUD notice text only). navigated/performed/external/signed/published/network ALL stay false — it interprets a URL, never acts. The browser location-path read + a popstate listener are wired ONLY at the main.js composition root; the module is pure/node-safe with NO module-scope window. Hard-refresh deep-link resolution still requires a static-host SPA fallback (serve index.html for /zone/*) — DOCUMENTED in HANDOFF.md/GATEWAY_PROTOCOL.md, not faked in app code. SDK (experimental) + debug-shell exposure. +28 tests.',
   ],
 
   // Archive clusters, newest first.
@@ -413,6 +493,7 @@ export function buildContinuumModel(overrides = {}) {
     tracks: (base.tracks || []).map((t) => ({ ...t, bar: barCells(t.percent) })),
     totals: computeTotals(base),
     milestones: base.milestones || buildMilestoneModel({ leanRoute: base.leanRoute }),
+    readiness: base.readiness || CURATED_READINESS,
     taskTotals,
     derived,
   };
@@ -431,6 +512,7 @@ export function continuumDataJSON(model = buildContinuumModel()) {
     derived: model.derived || null,
     health: model.health || null,
     milestones: model.milestones || null,
+    readiness: model.readiness || null,
   };
 }
 
@@ -610,6 +692,43 @@ ${note}
     </section>`;
 }
 
+// _readinessSection(readiness) — the Deployment-readiness section (v0.2.186): an overall
+// status pill plus a per-check table (item / state / note) reusing the existing pill
+// vocabulary + risk-table markup, and the read-only/manual note. Empty string when absent
+// so an override-free legacy model omits the section. Server-rendered + escaped; no new
+// script, no new data-k key → CSP/refresh-script hash untouched. Pure.
+function _readinessSection(readiness) {
+  if (!readiness || !Array.isArray(readiness.checks) || !readiness.checks.length) return '';
+  // Map the overall status onto the existing pill classes (no new CSS): ready→no-blocker,
+  // docs-ready→manual, blocked→gated, unknown→deferred.
+  const pillState = readiness.status === 'ready' ? 'no-blocker'
+    : readiness.status === 'docs-ready' ? 'manual'
+    : readiness.status === 'blocked' ? 'gated'
+    : 'deferred';
+  const rows = readiness.checks.map((c) =>
+    `        <tr><td>${escapeHtml(c.item)}</td><td><span class="pill pill-${escapeHtml(c.state)}">${escapeHtml(c.state)}</span></td><td>${escapeHtml(c.note)}</td></tr>`
+  ).join('\n');
+  const errs = (readiness.errors || []).length
+    ? `      <div class="focus"><b>Blocking:</b><ul class="mini">${readiness.errors.map((e) => `<li>${escapeHtml(e)}</li>`).join('')}</ul></div>`
+    : '';
+  const warns = (readiness.warnings || []).length
+    ? `      <div class="focus"><b>Advisory:</b><ul class="mini">${readiness.warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul></div>`
+    : '';
+  const note = readiness.note ? `      <div class="focus">${escapeHtml(readiness.note)}</div>` : '';
+  return `
+    <section>
+      <div class="h2row"><h2>Deployment readiness</h2> <span class="pill pill-${pillState}">${escapeHtml(readiness.statusLabel)}</span> <span class="badge">${escapeHtml(readiness.badge)}</span></div>
+      <div class="lead">Static-host posture for the gateway /zone/* travel feature — repo-side prerequisites are checked locally; configuring the host + deploying stay manual.</div>
+      <table>
+        <thead><tr><th>Check</th><th>State</th><th>Note</th></tr></thead>
+        <tbody>
+${rows}
+        </tbody>
+      </table>
+${errs}${warns}${note}
+    </section>`;
+}
+
 // renderContinuumPage(model) — full self-contained static HTML document string.
 // Dark Torii/nostrich/cyberpunk feel via inline CSS only; CSS bars + SVG rings.
 // The page renders fully WITHOUT JavaScript. A tiny, optional, same-origin-only
@@ -781,6 +900,7 @@ ${_rings(t)}
       </div>
     </section>
 ${_healthSection(m.health)}
+${_readinessSection(m.readiness)}
 
     <section>
       ${_h2('Track overview', m.tracks.length)}

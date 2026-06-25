@@ -1,11 +1,11 @@
 {
-  "version": "v0.2.185-alpha",
-  "generatedAt": "2026-06-25T11:56:26.214Z",
+  "version": "v0.2.186-alpha",
+  "generatedAt": "2026-06-25T12:19:15.907Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
-    "activeTasks": 13,
-    "completedLast24h": 15,
+    "activeTasks": 14,
+    "completedLast24h": 17,
     "archivedClusters": 11,
     "trackCount": 6,
     "milestoneCount": 5,
@@ -25,15 +25,15 @@
     "isDerived": true,
     "todoCompletedMarkers": 12,
     "next12": 12,
-    "activeNow": 13,
-    "completed24h": 15,
+    "activeNow": 14,
+    "completed24h": 17,
     "archiveClusters": 11
   },
   "derived": {
     "parsed": [
       "next12 (12)",
-      "activeNow (13)",
-      "completed24h (15)",
+      "activeNow (14)",
+      "completed24h (17)",
       "archive (11)"
     ],
     "gaps": [],
@@ -48,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.185-alpha"
+        "value": "v0.2.186-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -58,7 +58,7 @@
       {
         "label": "Total tests",
         "kind": "last-known",
-        "value": "993 passing"
+        "value": "1001 passing"
       },
       {
         "label": "Profile timings",
@@ -78,7 +78,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.185-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.186-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -152,5 +152,35 @@
       "done": 0
     },
     "note": "One real ACTIVE milestone (its tasks are the 15-hour MVP slices, DERIVED from the route states); the rest are SEED/future milestones — labelled as such, not pretending to carry real task counts yet. Future hook: derive seed milestones from strategy.md."
+  },
+  "readiness": {
+    "badge": "DEPLOY READINESS · STATIC HOST · READ-ONLY",
+    "status": "ready",
+    "statusLabel": "READY",
+    "checks": [
+      {
+        "item": "SPA /zone/* fallback documented",
+        "state": "no-blocker",
+        "note": "VPS_INSTALL.md + HANDOFF.md describe serving index.html for /zone/* deep-links"
+      },
+      {
+        "item": "Built dist route shape",
+        "state": "no-blocker",
+        "note": "dist/index.html present; no static file under /zone/* shadows the fallback"
+      },
+      {
+        "item": "Host SPA fallback configured",
+        "state": "manual",
+        "note": "serve index.html for unmatched paths on torii.quest — manual maintainer step, outside this repo"
+      },
+      {
+        "item": "Auto-update",
+        "state": "manual",
+        "note": "none — the update-check is read-only and actionable:false; deploys stay a manual maintainer action"
+      }
+    ],
+    "errors": [],
+    "warnings": [],
+    "note": "Static-host deployment readiness for the gateway /zone/* travel feature. The repo-side prerequisites (docs describe the index.html SPA fallback; a built dist/ has index.html with no /zone/* file shadowing it) are verified LOCALLY by npm run zones:check / regression-check [15]. Configuring the real host fallback and deploying stay MANUAL maintainer steps — this surface only INFORMS."
   }
 }

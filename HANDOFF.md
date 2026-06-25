@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.185-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.186-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -166,6 +166,23 @@ Breaking one should fail CI/the check, not ship.
   `UPDATE_CHECK.md` §4 pointer. NON-GOALS held: no server access/SSH/credentials, no
   deploy/publish/upload, no auto-update, no navigation/runtime change (proximity arms, KeyF
   confirms, same-origin `/zone/` only). Unit-tested by `tests/zone-fallback-readiness.test.js`);
+  v0.2.186 added NO new SDK namespace — it SURFACES the v0.2.185 verdict on the dashboard
+  (deployment-readiness VISIBILITY, dashboard/tooling only, no runtime change). The pure
+  node-safe `buildReadinessModel({zoneFallback})` (auto-exported under the existing
+  `continuum` namespace via `export *`) folds the read-only `checkZoneFallbackReadiness`
+  result into a render-ready `{badge,status,statusLabel,checks,errors,warnings,note}` model
+  with honest states — READY / DOCS READY · BUILD CHECK PENDING / NOT READY / NOT CHECKED —
+  and a four-row per-check table (SPA fallback documented, dist route shape, host fallback =
+  MANUAL, auto-update = MANUAL); it never throws (no input → NOT CHECKED) and each check
+  `state` reuses the existing pill vocabulary so the renderer adds NO new CSS. A new
+  `_readinessSection` renders the **Deployment readiness** section after Engineering health;
+  `tools/build-continuum.mjs` reads the required docs + walks `dist/` at packaging time
+  (absent → dist check SKIPPED — `build:continuum` runs before `vite build`, so
+  regression-check [15] stays the authoritative dist check) and feeds the real verdict in.
+  `continuumDataJSON` now carries `readiness`. Server-rendered escaped text, NO new
+  `<script>`/`data-k` key → the v0.2.172 refresh-script sha256 + CSP/XSS guard stay intact;
+  no server access/SSH/credentials, no deploy/publish/upload, no auto-update, no nav/runtime/
+  gameplay change. Unit-tested by `tests/continuum-dashboard.test.js`);
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
