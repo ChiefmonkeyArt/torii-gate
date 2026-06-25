@@ -1,6 +1,6 @@
 {
-  "version": "v0.2.199-alpha",
-  "generatedAt": "2026-06-25T21:40:22.312Z",
+  "version": "v0.2.200-alpha",
+  "generatedAt": "2026-06-25T22:00:47.901Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
@@ -49,7 +49,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.199-alpha"
+        "value": "v0.2.200-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -59,7 +59,7 @@
       {
         "label": "Total tests",
         "kind": "last-known",
-        "value": "1180 passing"
+        "value": "1246 passing / 78 files"
       },
       {
         "label": "Profile timings",
@@ -79,7 +79,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.199-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.200-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -192,15 +192,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.199-alpha",
-    "gitCommit": "86a5d3a",
+    "version": "v0.2.200-alpha",
+    "gitCommit": "511f31c",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.199-alpha / pkg 0.2.199-alpha"
+        "detail": "config v0.2.200-alpha / pkg 0.2.200-alpha"
       },
       {
         "key": "tests",

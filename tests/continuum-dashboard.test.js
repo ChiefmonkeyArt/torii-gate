@@ -6,9 +6,13 @@
 // SVG present), and SDK exposure. Pure module → node-safe.
 import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
+import { readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import {
   CONTINUUM_VERSION, CONTINUUM_BADGE, CONTINUUM,
   CONTINUUM_REFRESH_SCRIPT, CONTINUUM_SCRIPT_SHA256, CONTINUUM_CSP,
+  CURRENT_TEST_STATUS, testCountLabel,
   HEALTH_LASTKNOWN, buildHealthModel,
   SEED_MILESTONES, buildMilestoneModel,
   READINESS_BADGE, buildReadinessModel,
@@ -19,10 +23,11 @@ import {
 } from '../src/engine/dashboard/continuumData.js';
 import * as SDK from '../src/sdk/index.js';
 import { VERSION } from '../src/config.js';
+import { DEFAULT_TEST_STATUS } from '../src/engine/status/mvpReadiness.js';
 
 describe('module shape', () => {
   it('pins the version (tracks the build) and the read-only oversight badge', () => {
-    expect(CONTINUUM_VERSION).toBe('v0.2.199-alpha');
+    expect(CONTINUUM_VERSION).toBe('v0.2.200-alpha');
     expect(CONTINUUM_VERSION).toBe(VERSION);
     expect(CONTINUUM_BADGE).toBe('PROJECT OVERSIGHT · STATIC · READ-ONLY');
   });
@@ -127,7 +132,7 @@ describe('continuumDataJSON', () => {
   it('is JSON-serialisable and carries totals + the seed contributors', () => {
     const j = continuumDataJSON();
     const round = JSON.parse(JSON.stringify(j));
-    expect(round.version).toBe('v0.2.199-alpha');
+    expect(round.version).toBe('v0.2.200-alpha');
     expect(round.totals.pocProgressPct).toBe(47);
     expect(round.contributors.isSeed).toBe(true);
   });
@@ -139,7 +144,7 @@ describe('renderContinuumPage', () => {
   it('returns a self-contained HTML document with the version', () => {
     expect(typeof html).toBe('string');
     expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('v0.2.199-alpha');
+    expect(html).toContain('v0.2.200-alpha');
     expect(html).toContain('Torii Continuum');
   });
 
@@ -712,9 +717,51 @@ describe('Nostr read-path health panel (v0.2.194)', () => {
   });
 });
 
+describe('test-count freshness (v0.2.200 — single source of truth)', () => {
+  it('CURRENT_TEST_STATUS is a frozen, well-shaped curated capture', () => {
+    expect(Object.isFrozen(CURRENT_TEST_STATUS)).toBe(true);
+    expect(Number.isInteger(CURRENT_TEST_STATUS.passing)).toBe(true);
+    expect(CURRENT_TEST_STATUS.passing).toBeGreaterThan(0);
+    expect(Number.isInteger(CURRENT_TEST_STATUS.files)).toBe(true);
+    expect(CURRENT_TEST_STATUS.files).toBeGreaterThan(0);
+  });
+
+  it('the curated file count matches the real number of test files on disk (drift guard)', () => {
+    const testsDir = dirname(fileURLToPath(import.meta.url));
+    const onDisk = readdirSync(testsDir).filter((f) => f.endsWith('.test.js')).length;
+    expect(CURRENT_TEST_STATUS.files).toBe(onDisk);
+  });
+
+  it('testCountLabel derives the canonical "<N> passing / <M> files" string', () => {
+    expect(testCountLabel()).toBe(
+      `${CURRENT_TEST_STATUS.passing} passing / ${CURRENT_TEST_STATUS.files} files`);
+    // safe on a partial/garbled status — falls back to curated fields
+    expect(testCountLabel(null)).toBe(testCountLabel());
+    expect(testCountLabel({ passing: 9 })).toBe(`9 passing / ${CURRENT_TEST_STATUS.files} files`);
+  });
+
+  it('BOTH displayed surfaces derive from CURRENT_TEST_STATUS so they cannot drift apart', () => {
+    // engineering-health "Total tests" is now derived (was the stale '1180 passing' copy)
+    expect(HEALTH_LASTKNOWN.totalTests).toBe(testCountLabel());
+    expect(HEALTH_LASTKNOWN.totalTests).not.toMatch(/1180/);
+    // "at a glance" Tests metric is derived from the same source
+    const tests = CONTINUUM.metrics.find((m) => m.label === 'Tests');
+    expect(tests.value).toContain(testCountLabel());
+    expect(tests.value).toContain(`test:fast ~${CURRENT_TEST_STATUS.fastProfile}`);
+    expect(tests.value).toContain(`test:foundation ~${CURRENT_TEST_STATUS.foundationProfile}`);
+  });
+
+  it('the curated count agrees across both captures (dashboard vs MVP rollup)', () => {
+    // mvpReadiness.DEFAULT_TEST_STATUS is the other curated test-count capture; keep them
+    // in lock-step so the MVP percentage/status can never be computed off a stale number.
+    expect(DEFAULT_TEST_STATUS.passing).toBe(CURRENT_TEST_STATUS.passing);
+    expect(DEFAULT_TEST_STATUS.files).toBe(CURRENT_TEST_STATUS.files);
+  });
+});
+
 describe('SDK exposure', () => {
   it('re-exports the continuum module at the experimental tier', () => {
-    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.199-alpha');
+    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.200-alpha');
     expect(typeof SDK.continuum.renderContinuumPage).toBe('function');
     expect(SDK.SDK_SURFACE.continuum.tier).toBe(SDK.STABILITY.EXPERIMENTAL);
   });

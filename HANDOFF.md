@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.199-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.200-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -397,7 +397,25 @@ Breaking one should fail CI/the check, not ship.
   touching this curated `HANDOFF.md`. `tests/agent-handoff.test.js` (+13). Read-only except the
   explicit `--write` output; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/
   live network write; `godMode` stays false.
-  Latest slice report: `torii-v0.2.199-agent-handoff-readiness-report.md`.
+  **v0.2.200** added a DASHBOARD METRIC FRESHNESS CLEANUP — resolves the recurring stale LAST-KNOWN
+  test-count drift flagged in security reviews. `HEALTH_LASTKNOWN.totalTests` was a SECOND
+  hand-maintained copy stuck at `'1180 passing'` while the suite was 1246/78, so the engineering-health
+  "Total tests" metric and the metrics "Tests" row had diverged. `engine/dashboard/continuumData.js`
+  now exports ONE curated source of truth `CURRENT_TEST_STATUS` (`{passing:1246, files:78,
+  fastProfile:5, foundationProfile:25}`, frozen) + a `testCountLabel(status?)` helper (canonical
+  `"<passing> passing / <files> files"`, null/partial-safe); `HEALTH_LASTKNOWN.totalTests` now DERIVES
+  from `testCountLabel()` and the metrics "Tests" row renders `testCountLabel()` + the profile counts,
+  so the two displayed surfaces can no longer drift apart. A new `tests/continuum-dashboard.test.js`
+  block ("test-count freshness — single source of truth", +5) asserts the source is frozen +
+  well-shaped, the curated `files` equals the REAL on-disk `*.test.js` count via `readdirSync(tests/)`
+  (forces a bump when files change), `testCountLabel()` is correct + degrades safely, BOTH surfaces
+  derive from the single source and `totalTests` no longer matches `/1180/`, and
+  `mvpReadiness.DEFAULT_TEST_STATUS` (bumped to 1246/78) agrees with `CURRENT_TEST_STATUS` via a
+  cross-capture test WITHOUT cross-importing (keeps dashboard↔status concerns split).
+  DASHBOARD/STATUS-DATA-ONLY: server-rendered escaped text, NO new `<script>`/`data-k` key → the CSP
+  refresh-script sha256 unchanged; no gameplay/physics/shooter/Rapier change; no Nostr signing/
+  publishing/live network write; `godMode` stays false.
+  Latest slice report: `torii-v0.2.200-dashboard-metric-freshness-report.md`.
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
