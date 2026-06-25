@@ -5,8 +5,10 @@
 // fetch, no setTimeout/eval, struck completed-24h, source-of-truth note, donut
 // SVG present), and SDK exposure. Pure module → node-safe.
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 import {
   CONTINUUM_VERSION, CONTINUUM_BADGE, CONTINUUM,
+  CONTINUUM_REFRESH_SCRIPT, CONTINUUM_SCRIPT_SHA256, CONTINUUM_CSP,
   escapeHtml, clampPct, barCells, ringDash,
   computeTotals, buildContinuumModel, continuumDataJSON, renderContinuumPage,
 } from '../src/engine/dashboard/continuumData.js';
@@ -15,7 +17,7 @@ import { VERSION } from '../src/config.js';
 
 describe('module shape', () => {
   it('pins the version (tracks the build) and the read-only oversight badge', () => {
-    expect(CONTINUUM_VERSION).toBe('v0.2.171-alpha');
+    expect(CONTINUUM_VERSION).toBe('v0.2.172-alpha');
     expect(CONTINUUM_VERSION).toBe(VERSION);
     expect(CONTINUUM_BADGE).toBe('PROJECT OVERSIGHT · STATIC · READ-ONLY');
   });
@@ -120,7 +122,7 @@ describe('continuumDataJSON', () => {
   it('is JSON-serialisable and carries totals + the seed contributors', () => {
     const j = continuumDataJSON();
     const round = JSON.parse(JSON.stringify(j));
-    expect(round.version).toBe('v0.2.171-alpha');
+    expect(round.version).toBe('v0.2.172-alpha');
     expect(round.totals.pocProgressPct).toBe(46);
     expect(round.contributors.isSeed).toBe(true);
   });
@@ -132,7 +134,7 @@ describe('renderContinuumPage', () => {
   it('returns a self-contained HTML document with the version', () => {
     expect(typeof html).toBe('string');
     expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('v0.2.171-alpha');
+    expect(html).toContain('v0.2.172-alpha');
     expect(html).toContain('Torii Continuum');
   });
 
@@ -167,9 +169,60 @@ describe('renderContinuumPage', () => {
   });
 });
 
+describe('CSP hardening (v0.2.172)', () => {
+  const html = renderContinuumPage();
+
+  it('emits a Content-Security-Policy meta tag carrying the strict policy', () => {
+    expect(html).toContain('<meta http-equiv="Content-Security-Policy"');
+    expect(html).toContain(CONTINUUM_CSP);
+  });
+
+  it('script-src is self + the script hash with NO unsafe-inline (XSS surface closed)', () => {
+    expect(CONTINUUM_CSP).toContain("script-src 'self' '" + CONTINUUM_SCRIPT_SHA256 + "'");
+    // 'unsafe-inline'/'unsafe-eval' must NEVER appear in script-src.
+    expect(CONTINUUM_CSP).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+    expect(CONTINUUM_CSP).not.toContain("'unsafe-eval'");
+  });
+
+  it('default-src/object-src/base-uri/form-action/frame-ancestors are locked down', () => {
+    expect(CONTINUUM_CSP).toContain("default-src 'self'");
+    expect(CONTINUUM_CSP).toContain("object-src 'none'");
+    expect(CONTINUUM_CSP).toContain("base-uri 'none'");
+    expect(CONTINUUM_CSP).toContain("form-action 'none'");
+    expect(CONTINUUM_CSP).toContain("frame-ancestors 'none'");
+  });
+
+  it('connect-src is same-origin only — no relay/external endpoint', () => {
+    expect(CONTINUUM_CSP).toContain("connect-src 'self'");
+    expect(CONTINUUM_CSP).not.toMatch(/connect-src[^;]*(https?:|wss?:)/i);
+  });
+
+  it('the declared script hash is the REAL sha256 of the shipped inline script', () => {
+    const real = 'sha256-' + createHash('sha256').update(CONTINUUM_REFRESH_SCRIPT, 'utf8').digest('base64');
+    expect(CONTINUUM_SCRIPT_SHA256).toBe(real);
+  });
+
+  it('the rendered page ships exactly that inline script (hash cannot drift)', () => {
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    expect(m).not.toBeNull();
+    expect(m[1]).toBe(CONTINUUM_REFRESH_SCRIPT);
+    const pageHash = 'sha256-' + createHash('sha256').update(m[1], 'utf8').digest('base64');
+    expect(html).toContain("'" + pageHash + "'");
+  });
+
+  it('exactly one inline <script> and no external/eval/inline-handler surfaces', () => {
+    expect((html.match(/<script/g) || []).length).toBe(1);
+    expect(html).not.toMatch(/<script[^>]+src=/i); // no external script
+    expect(html).not.toMatch(/\bon\w+\s*=\s*["']/i); // no inline event handlers
+    expect(html).not.toMatch(/javascript:/i);
+    expect(html).not.toMatch(/\beval\(/);
+    expect(html).not.toMatch(/window\.open|window\.location|location\.href/);
+  });
+});
+
 describe('SDK exposure', () => {
   it('re-exports the continuum module at the experimental tier', () => {
-    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.171-alpha');
+    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.172-alpha');
     expect(typeof SDK.continuum.renderContinuumPage).toBe('function');
     expect(SDK.SDK_SURFACE.continuum.tier).toBe(SDK.STABILITY.EXPERIMENTAL);
   });

@@ -1,7 +1,7 @@
 # Torii Quest — Progress Dashboard
 
 > Visual execution dashboard. `strategy.md` = vision/decision rules · `todo.md` = active task queue.
-> Current version: **v0.2.171-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
+> Current version: **v0.2.172-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
 > **ACTIVE FOCUS — 15-hour proof-of-concept route.** Shooter is maintenance-only unless demo-breaking; the active MVP is the freedom-tech loop (gateway/NAP-to-NAP preview → Plebeian/Nostr product panel → leaderboard preview → torii.quest update-check). Polish comes after PoC validation.
 
 ---
@@ -10,12 +10,12 @@
 
 | Metric | Value |
 |---|---|
-| Source version | **v0.2.171-alpha** (build truth; live trails — manual maintainer deploy) |
-| Tests | **779 passing / 58 files** |
+| Source version | **v0.2.172-alpha** (build truth; live trails — manual maintainer deploy) |
+| Tests | **786 passing / 58 files** |
 | Regression check | **14 / 14 GREEN** |
 | Bundle (advisory) | 2.9 MB raw / ~1017 KB gzip (rapier chunk >700 KB, expected) |
-| Gates | SEC-1 / SEC-2 / SEC-3 intact · godMode `false` |
-| Active slice | v0.2.171 Torii Continuum project-oversight dashboard |
+| Gates | SEC-1 / SEC-2 / SEC-3 intact · godMode `false` · continuum CSP enforced |
+| Active slice | v0.2.172 Continuum dashboard CSP hardening |
 
 Legend: `█` done · `░` remaining · ✅ landed · 🔄 in progress · ⏳ pending · 🚫 blocked · 🟢 no-blocker
 
@@ -55,7 +55,7 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 ## Active now
 
-- 🔄 **v0.2.171 — Torii Continuum oversight dashboard** (`engine/dashboard/continuumData.js` + `public/continuum.html`): curated `progress.md` model + self-contained static HTML render (bars/rings/totals); regenerated from packaged data each build.
+- 🔄 **v0.2.172 — Continuum dashboard CSP hardening** (`engine/dashboard/continuumData.js` + `public/continuum.html`): strict `Content-Security-Policy` meta (`script-src 'self'` + sha256 of the one packaged refresh script, NO unsafe-inline script; `style-src 'self' 'unsafe-inline'` for the data-driven bars; `connect-src 'self'` for the same-origin JSON refresh). Resolves the prior inline-script WARN; page stays fully static/read-only.
 - 🔄 **ARS-4** — finish folding reload/pointer-lock into the guarded FSM.
 - 🔄 **ARS-6 / PROGRESS-1** — ongoing CODE_INDEX + living-docs upkeep.
 
@@ -63,18 +63,18 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 ## Next 12 tasks
 
-1. Wire `createBrowserHostTransport(window)` (v0.2.170) into `world/handoff.js` (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.
-2. Gateway portal mesh — actually move the player in-world on a confirmed hop.
-3. **SEC-2** handoff verification gate — cryptographic checks before acting on live relay travel intents.
-4. Real leaderboard signer/publisher + relay read (**SEC-1** explicit NIP-07 consent first).
-5. In-world product panel mesh over `productPanelShell` + a real Plebeian.Market listing.
-6. **SEC-3** product URL validation — `URL`-object parsing (scheme+host), not regex-only.
-7. Read-only GitHub releases fetch (CSP-scoped) + in-world update-prompt mesh.
-8. LEAN-1 / TQ-MANUAL-113 — manual smoke on real hardware, then publish source-built artifact.
-9. ARS-4 FSM fold close-out.
-10. Player boundary full extraction (movement tick, combat, lifecycle, body-state behind the seam).
-11. BotAgent runtime migration — wire `decideActions`, migrate stateful tick/shoot/blowback.
-12. Formalise NAP zone + handoff skeletons into working boundaries before Nostr/world features scale.
+1. **v0.2.173 — test profile system** for faster agent loops: `npm run test:fast` (quick foundation subset), `test:foundation` (pure node-safe modules), `test:release` (FULL suite, required before any deploy/publish). Keeps inner agent loops fast without weakening the release gate.
+2. Wire `createBrowserHostTransport(window)` (v0.2.170) into `world/handoff.js` (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.
+3. Gateway portal mesh — actually move the player in-world on a confirmed hop.
+4. **SEC-2** handoff verification gate — cryptographic checks before acting on live relay travel intents.
+5. Real leaderboard signer/publisher + relay read (**SEC-1** explicit NIP-07 consent first).
+6. In-world product panel mesh over `productPanelShell` + a real Plebeian.Market listing.
+7. **SEC-3** product URL validation — `URL`-object parsing (scheme+host), not regex-only.
+8. Read-only GitHub releases fetch (CSP-scoped) + in-world update-prompt mesh.
+9. LEAN-1 / TQ-MANUAL-113 — manual smoke on real hardware, then publish source-built artifact.
+10. ARS-4 FSM fold close-out.
+11. Player boundary full extraction (movement tick, combat, lifecycle, body-state behind the seam).
+12. BotAgent runtime migration — wire `decideActions`, migrate stateful tick/shoot/blowback.
 
 ---
 
@@ -97,6 +97,7 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 Struck-through items stay ~24h, then collapse into Archive. Newest first.
 
+- ~~**v0.2.172** — Continuum dashboard **CSP hardening**: strict `Content-Security-Policy` `<meta>` on the generated `public/continuum.html` — `script-src 'self'` + the sha256 of the one packaged refresh script (NO `'unsafe-inline'` script), `style-src 'self' 'unsafe-inline'` (data-driven track bars), `connect-src 'self'` (same-origin JSON refresh), `default-src 'self'` with `object-src`/`base-uri`/`form-action`/`frame-ancestors` locked to `'none'`. Script body + hash kept in sync by a node:crypto test (cannot drift). Resolves the prior inline-script WARN; page stays fully static/read-only. +7 tests.~~
 - ~~**v0.2.171** — Torii Continuum project-oversight **dashboard**: a thin static page (`public/continuum.html`) generated from a curated, node-safe `progress.md` data model (`engine/dashboard/continuumData.js`) — CSS bars + SVG donut rings + totals strip, Now/Next/Later, next-12, struck completed-24h, archive, seed contributors/clankers metric, source-of-truth footer. Regenerated from packaged data each build (`build:continuum`); a same-origin-only refresh script re-reads `continuum-data.json` (no external URL/eval/timers). Safe relative link added to the title screen. Docs/tooling only, no gameplay change. +22 tests.~~
 - ~~**v0.2.170** — same-origin host **transport adapter** (`engine/gateway/hostTransport.js`): the injectable seam the v0.2.168 executor drives — `createHostTransport`/`createRecordingHost` (default-safe in-memory) + `createBrowserHostTransport` runtime seam (pushState/replaceState only, not yet wired); `safeRoutePath` re-validated, back-home rollback, browser APIs behind DI; null host → executor no-op. +21 tests.~~
 - ~~**v0.2.169** — graphical **progress dashboard** rewrite (this file): compact bars/percentages/badges/totals, 24h struck-through completions, concise archive. Docs/tooling only.~~

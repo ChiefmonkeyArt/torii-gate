@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.171-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.172-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no signing/publishing, no auto-update, and no navigation —
@@ -234,6 +234,13 @@ eval/timers). `tools/build-continuum.mjs` (in `npm run build`) writes `public/co
 `public/continuum-data.json` each build, so a page refresh shows the latest PACKAGED state.
 READ-ONLY: no live writes/auth/signing/relay-publish/admin actions/navigation. Open it from the
 title-screen `⛩ PROJECT DASHBOARD` link (`./continuum.html`).
+**CSP hardening (v0.2.172):** `renderContinuumPage` now emits a strict `Content-Security-Policy`
+`<meta>` (`CONTINUUM_CSP`) — `default-src 'self'`; `object-src`/`base-uri`/`form-action`/
+`frame-ancestors` `'none'`; `connect-src 'self'` (same-origin JSON refresh only); `script-src
+'self' '<sha256>'` (NO `'unsafe-inline'` script — the one refresh IIFE is hashed via
+`CONTINUUM_SCRIPT_SHA256` over `CONTINUUM_REFRESH_SCRIPT`, kept in sync by a `node:crypto` test so
+it cannot drift); `style-src 'self' 'unsafe-inline'` (data-driven bar widths only — styles cannot
+execute JS). Resolves the prior inline-script WARN; page stays fully static/read-only.
 
 `githubReleaseSource` (LEAN-5, v0.2.157) is the pure GitHub Releases source adapter:
 `normalizeRelease`/`selectLatestRelease`/`evaluateFromSource` turn a `releases/latest`

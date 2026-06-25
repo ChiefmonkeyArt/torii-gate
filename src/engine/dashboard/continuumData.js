@@ -27,8 +27,55 @@
 //   - Curated/static data is fine for this first version; it is isolated in
 //     CONTINUUM below so future automation can update (or generate) it.
 
-export const CONTINUUM_VERSION = 'v0.2.171-alpha';
+export const CONTINUUM_VERSION = 'v0.2.172-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
+
+// CONTINUUM_REFRESH_SCRIPT (v0.2.172) — the EXACT inline-script body the page ships,
+// kept as the single source of that text so its CSP hash can never silently drift.
+// It is STATIC (no model interpolation), so its sha256 is stable across deploys: a
+// page refresh re-reads the packaged SAME-ORIGIN JSON to update the totals strip.
+// No external URL, no eval, no timers — degrades silently on any failure. The page
+// renders fully WITHOUT this script; it is pure progressive enhancement.
+export const CONTINUUM_REFRESH_SCRIPT = `
+  // Best-effort refresh from the packaged SAME-ORIGIN data file. No external URL,
+  // no eval, no timers — silently keeps the server-rendered values on any failure.
+  (function(){
+    try{
+      fetch('./continuum-data.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(d){
+        if(!d||!d.totals)return;
+        var map={tasksAhead:d.totals.tasksAhead,activeTasks:d.totals.activeTasks,completedLast24h:d.totals.completedLast24h,archivedClusters:d.totals.archivedClusters,trackCount:d.totals.trackCount,milestones:(d.totals.milestonesAchieved+' / '+d.totals.milestoneCount)};
+        Object.keys(map).forEach(function(k){var el=document.querySelector('[data-k="'+k+'"]');if(el&&map[k]!=null)el.textContent=map[k];});
+        var g=document.getElementById('generated-at');if(g&&d.generatedAt)g.textContent=d.generatedAt;
+      }).catch(function(){});
+    }catch(e){}
+  })();
+  `;
+
+// CONTINUUM_SCRIPT_SHA256 (v0.2.172) — base64 sha256 of CONTINUUM_REFRESH_SCRIPT, in
+// the `'sha256-…'` source-expression form a CSP `script-src` consumes. Hardcoded
+// (this module stays crypto-free so it remains node- AND browser-bundle-safe, like
+// the hash in index.html); `tests/continuum-dashboard.test.js` recomputes it with
+// node:crypto and FAILS the build if the script body and this constant ever diverge.
+export const CONTINUUM_SCRIPT_SHA256 = "sha256-otKqhP2RYAA6ZkrRVcAQSBm7B1ssPR70QQR5dXePHmw=";
+
+// CONTINUUM_CSP (v0.2.172) — strict Content-Security-Policy for the generated
+// dashboard, resolving the prior "inline script with no CSP" WARN:
+//   - script-src 'self' + the script hash → NO 'unsafe-inline' for script (the XSS
+//     surface is closed); only the one packaged refresh script may run.
+//   - style-src 'self' 'unsafe-inline' → the static <style> block AND the data-driven
+//     `style="width:N%"` track-bar attributes keep working. Inline STYLE ATTRIBUTES
+//     cannot be element-hashed, and adding any style hash would disable 'unsafe-inline'
+//     and break the bars; style injection cannot execute script, so this is the
+//     maintainable low-risk choice.
+//   - connect-src 'self' → ONLY the same-origin continuum-data.json refresh; no relay,
+//     no external API.
+//   - default-src 'self'; object-src/base-uri/form-action/frame-ancestors locked down
+//     → no plugins, no <base> hijack, no form posting, no framing.
+export const CONTINUUM_CSP =
+  "default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; " +
+  "frame-ancestors 'none'; img-src 'self'; connect-src 'self'; " +
+  "style-src 'self' 'unsafe-inline'; " +
+  `script-src 'self' '${CONTINUUM_SCRIPT_SHA256}'`;
 
 // Curated snapshot of progress.md (the dashboard source document). Keep this the
 // ONLY place the curated copy lives so future automation has a single seam.
@@ -44,12 +91,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.171-alpha (build truth; live trails — manual deploy)' },
-    { label: 'Tests', value: '772+ passing / 58+ files' },
+    { label: 'Source version', value: 'v0.2.172-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Tests', value: '775+ passing / 58+ files' },
     { label: 'Regression check', value: '14 / 14 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1018 KB gzip (rapier chunk >700 KB, expected)' },
-    { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false' },
-    { label: 'Active slice', value: 'v0.2.171 Torii Continuum oversight dashboard' },
+    { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
+    { label: 'Active slice', value: 'v0.2.172 Continuum dashboard CSP hardening' },
   ],
 
   // Contributors / clankers — SEED placeholder, NOT live data. "clankers" are the
@@ -78,12 +125,13 @@ export const CONTINUUM = Object.freeze({
 
   // Now / Next / Later.
   activeNow: [
-    'v0.2.171 — Torii Continuum oversight dashboard (this static page): curated progress.md model + self-contained HTML render.',
+    'v0.2.172 — Torii Continuum dashboard CSP hardening (this static page): strict Content-Security-Policy meta, hashed inline refresh script, same-origin-only data refresh.',
     'ARS-4 — finish folding reload/pointer-lock into the guarded FSM.',
     'ARS-6 / PROGRESS-1 — ongoing CODE_INDEX + living-docs upkeep.',
   ],
 
   next12: [
+    'v0.2.173 — test profile system for faster agent loops (npm run test:fast / test:foundation / test:release), with test:release running the FULL suite before any deploy/publish.',
     'Wire createBrowserHostTransport(window) (v0.2.170) into world/handoff.js (real router/history adapter + same-origin allowlist + CSP) so the v0.2.168 executor can ACT.',
     'Gateway portal mesh — actually move the player in-world on a confirmed hop.',
     'SEC-2 handoff verification gate — cryptographic checks before acting on live relay travel intents.',
@@ -95,7 +143,6 @@ export const CONTINUUM = Object.freeze({
     'ARS-4 FSM fold close-out.',
     'Player boundary full extraction (movement tick, combat, lifecycle, body-state behind the seam).',
     'BotAgent runtime migration — wire decideActions, migrate stateful tick/shoot/blowback.',
-    'Formalise NAP zone + handoff skeletons into working boundaries before Nostr/world features scale.',
   ],
 
   risks: [
@@ -109,10 +156,10 @@ export const CONTINUUM = Object.freeze({
 
   // Completed last 24h — shown struck through, newest first.
   completed24h: [
+    'v0.2.172 — Continuum dashboard CSP HARDENING: strict Content-Security-Policy meta on the generated page (script-src self + sha256 of the one packaged refresh script, NO unsafe-inline script; style-src self unsafe-inline for the data-driven bars; connect-src self for the same-origin JSON refresh). Resolves the prior inline-script WARN; page stays fully static/read-only.',
     'v0.2.171 — Torii Continuum project-oversight DASHBOARD: a thin static page (public/continuum.html) generated from a curated, node-safe progress.md data model (engine/dashboard/continuumData.js) — bars/rings/totals, Now/Next/Later, next-12, struck completed-24h, archive; docs/tooling only, no gameplay change.',
     'v0.2.170 — same-origin host TRANSPORT adapter (engine/gateway/hostTransport.js): the injectable seam the v0.2.168 executor drives; recording host by default, createBrowserHostTransport runtime seam not yet wired. +21 tests.',
     'v0.2.169 — graphical progress dashboard rewrite (progress.md): compact bars/percentages/badges/totals, 24h struck completions, concise archive. Docs/tooling only.',
-    'v0.2.168 — first SAME-ORIGIN travel executor (engine/gateway/handoffExecute.js): acts on a READY v0.2.167 plan ONLY via an injected transport.navigate, single synchronous rollback, safety flags pinned. +19 tests.',
   ],
 
   // Archive clusters, newest first.
@@ -316,6 +363,7 @@ export function renderContinuumPage(model = buildContinuumModel()) {
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="${CONTINUUM_CSP}" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
 <title>${escapeHtml(m.title)} · ${escapeHtml(m.version)}</title>
@@ -483,20 +531,7 @@ ${_li(m.sourceOfTruth)}
     </ul>
     Static, read-only oversight surface — generated from packaged project data each deploy; a page refresh shows the latest packaged state. No live writes, signing, relay publishing, or admin actions. Regenerate with <b>npm run build:continuum</b>.
   </footer>
-  <script>
-  // Best-effort refresh from the packaged SAME-ORIGIN data file. No external URL,
-  // no eval, no timers — silently keeps the server-rendered values on any failure.
-  (function(){
-    try{
-      fetch('./continuum-data.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(d){
-        if(!d||!d.totals)return;
-        var map={tasksAhead:d.totals.tasksAhead,activeTasks:d.totals.activeTasks,completedLast24h:d.totals.completedLast24h,archivedClusters:d.totals.archivedClusters,trackCount:d.totals.trackCount,milestones:(d.totals.milestonesAchieved+' / '+d.totals.milestoneCount)};
-        Object.keys(map).forEach(function(k){var el=document.querySelector('[data-k="'+k+'"]');if(el&&map[k]!=null)el.textContent=map[k];});
-        var g=document.getElementById('generated-at');if(g&&d.generatedAt)g.textContent=d.generatedAt;
-      }).catch(function(){});
-    }catch(e){}
-  })();
-  </script>
+  <script>${CONTINUUM_REFRESH_SCRIPT}</script>
 </body>
 </html>
 `;
