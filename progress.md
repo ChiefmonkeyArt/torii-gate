@@ -1,7 +1,7 @@
 # Torii Quest — Progress Dashboard
 
 > Visual execution dashboard. `strategy.md` = vision/decision rules · `todo.md` = active task queue.
-> Current version: **v0.2.174-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
+> Current version: **v0.2.175-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
 > **ACTIVE FOCUS — 15-hour proof-of-concept route.** Shooter is maintenance-only unless demo-breaking; the active MVP is the freedom-tech loop (gateway/NAP-to-NAP preview → Plebeian/Nostr product panel → leaderboard preview → torii.quest update-check). Polish comes after PoC validation.
 
 ---
@@ -10,12 +10,12 @@
 
 | Metric | Value |
 |---|---|
-| Source version | **v0.2.174-alpha** (build truth; live trails — manual maintainer deploy) |
-| Tests | **812 passing / 60 files** (profiles: `test:fast` ~5 files, `test:foundation` ~17 files) |
+| Source version | **v0.2.175-alpha** (build truth; live trails — manual maintainer deploy) |
+| Tests | **821 passing / 60 files** (profiles: `test:fast` ~5 files, `test:foundation` ~17 files) |
 | Regression check | **14 / 14 GREEN** |
-| Bundle (advisory) | 2.9 MB raw / ~1018 KB gzip (rapier chunk >700 KB, expected) |
+| Bundle (advisory) | 2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected) |
 | Gates | SEC-1 / SEC-2 / SEC-3 intact · godMode `false` · continuum CSP enforced |
-| Active slice | v0.2.174 dashboard data automation (derive lists from progress.md/todo.md) |
+| Active slice | v0.2.175 engineering health metrics (build-time, static, read-only Continuum section) |
 
 Legend: `█` done · `░` remaining · ✅ landed · 🔄 in progress · ⏳ pending · 🚫 blocked · 🟢 no-blocker
 
@@ -55,6 +55,7 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 ## Active now
 
+- 🔄 **v0.2.175 — engineering health metrics** (`buildHealthModel` in `continuumData.js` + `tools/build-continuum.mjs`): a build-time, static, read-only **Engineering health** section on `/continuum.html` surfaces the efficiency loop (**measure · profile · standardise · automate · modularise · document**) — profile/test-file counts, parser-gap count, version + doc-sync GENERATED at build; total tests, profile timings, bundle baseline, last-green gate LABELLED last-known. CSP/refresh-script hash unchanged; page stays fully static/read-only.
 - 🔄 **v0.2.174 — dashboard data automation** (`tools/continuumParse.mjs` + `tools/build-continuum.mjs`): the continuum page now DERIVES its next-12 / active-now / completed-24h / archive lists + a docs-derived task-count metric from `progress.md` + `todo.md` at build time, falling back to the curated `continuumData.js` defaults (with parser-gap reporting) on any miss. CSP unchanged; page stays fully static/read-only.
 - 🔄 **ARS-4** — finish folding reload/pointer-lock into the guarded FSM.
 - 🔄 **ARS-6 / PROGRESS-1** — ongoing CODE_INDEX + living-docs upkeep.
@@ -97,6 +98,7 @@ Baseline totals marked **[baseline]** — nudge them as work lands; directional 
 
 Struck-through items stay ~24h, then collapse into Archive. Newest first.
 
+- ~~**v0.2.175** — **engineering health metrics**: a new build-time, static, read-only **Engineering health** section on `/continuum.html` (provenance-chipped cards + SVG rings) surfaces the efficiency loop (measure · profile · standardise · automate · modularise · document). Pure `buildHealthModel()` + a `HEALTH_LASTKNOWN` baseline in `continuumData.js` run at module load (curated fallback) AND in `build-continuum.mjs` with freshly GENERATED inputs (profile/test-file counts, parser gaps, version, doc-sync); total tests / timings / bundle baseline / last-green gate are LABELLED last-known via a chip so a stale number is obvious. `continuumDataJSON` carries `health`. CSP/refresh-script hash unchanged; page stays fully static/read-only. +9 tests.~~
 - ~~**v0.2.174** — dashboard **data automation**: a pure `tools/continuumParse.mjs` parses `progress.md` + `todo.md` at build time so the continuum page DERIVES its next-12 / active-now / completed-24h / archive lists + a docs-derived task-count metric; `buildContinuumModel(overrides)` merges them over the curated fallback with parser-gap reporting; CSP unchanged, page stays fully static/read-only. +15 tests.~~
 - ~~**v0.2.173** — **test-profile system** for faster agent loops (`tools/testProfiles.mjs` PURE registry + `tools/test-profile.mjs` CLI): `npm run test:fast` (5 core files — state/events/classifier/aim/snapshot) + `test:foundation` (16 pure/guard files) for inner loops, `test:release` = FULL suite + check/build/bundle/handoff (release gate unchanged). Explicit curated lists (no git-diff heuristics) validated against disk (`fast ⊆ foundation`, no stale entries) + a timing footer so savings are visible. Agents iterate on fast/foundation; every deploy/publish/push still runs `test:release`. +11 tests.~~
 - ~~**v0.2.172** — Continuum dashboard **CSP hardening**: strict `Content-Security-Policy` `<meta>` on the generated `public/continuum.html` — `script-src 'self'` + the sha256 of the one packaged refresh script (NO `'unsafe-inline'` script), `style-src 'self' 'unsafe-inline'` (data-driven track bars), `connect-src 'self'` (same-origin JSON refresh), `default-src 'self'` with `object-src`/`base-uri`/`form-action`/`frame-ancestors` locked to `'none'`. Script body + hash kept in sync by a node:crypto test (cannot drift). Resolves the prior inline-script WARN; page stays fully static/read-only. +7 tests.~~

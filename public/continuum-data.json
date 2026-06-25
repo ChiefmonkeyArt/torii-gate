@@ -1,11 +1,11 @@
 {
-  "version": "v0.2.174-alpha",
-  "generatedAt": "2026-06-25T07:19:33.842Z",
+  "version": "v0.2.175-alpha",
+  "generatedAt": "2026-06-25T07:40:17.372Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
-    "activeTasks": 3,
-    "completedLast24h": 5,
+    "activeTasks": 4,
+    "completedLast24h": 6,
     "archivedClusters": 11,
     "trackCount": 6,
     "milestoneCount": 5,
@@ -25,21 +25,83 @@
     "isDerived": true,
     "todoCompletedMarkers": 12,
     "next12": 12,
-    "activeNow": 3,
-    "completed24h": 5,
+    "activeNow": 4,
+    "completed24h": 6,
     "archiveClusters": 11
   },
   "derived": {
     "parsed": [
       "next12 (12)",
-      "activeNow (3)",
-      "completed24h (5)",
+      "activeNow (4)",
+      "completed24h (6)",
       "archive (11)"
     ],
     "gaps": [],
     "sources": [
       "progress.md",
       "todo.md"
+    ]
+  },
+  "health": {
+    "note": "Engineering health — the efficiency/oversight loop: measure · profile · standardise · automate · modularise · document. GENERATED at build time where deterministic (profile sizes, parser gaps, version, doc-sync); LAST-KNOWN where captured from the most recent green release-gate run (total tests, timings, bundle).",
+    "metrics": [
+      {
+        "label": "Build version",
+        "kind": "generated",
+        "value": "v0.2.175-alpha"
+      },
+      {
+        "label": "Test files / profiles",
+        "kind": "generated",
+        "value": "fast 5 · foundation 17 · full 60"
+      },
+      {
+        "label": "Total tests",
+        "kind": "last-known",
+        "value": "821 passing"
+      },
+      {
+        "label": "Profile timings",
+        "kind": "last-known",
+        "value": "fast ~1s · foundation ~6s · full suite ~41s"
+      },
+      {
+        "label": "Bundle baseline",
+        "kind": "last-known",
+        "value": "2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)"
+      },
+      {
+        "label": "Parser gaps",
+        "kind": "generated",
+        "value": "0 · dashboard lists fully derived"
+      },
+      {
+        "label": "Release gate",
+        "kind": "last-known",
+        "value": "14 / 14 regression checks GREEN · last green v0.2.175-alpha"
+      },
+      {
+        "label": "Source-of-truth docs",
+        "kind": "generated",
+        "value": "progress.md · todo.md · strategy.md carry this version"
+      }
+    ],
+    "rings": [
+      {
+        "pct": 100,
+        "label": "Tests passing",
+        "sub": "last green"
+      },
+      {
+        "pct": 100,
+        "label": "Regression checks",
+        "sub": "14 / 14"
+      },
+      {
+        "pct": 28,
+        "label": "Foundation coverage",
+        "sub": "17/60 files"
+      }
     ]
   }
 }

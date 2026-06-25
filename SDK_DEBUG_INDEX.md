@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.174-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.175-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no signing/publishing, no auto-update, and no navigation —
@@ -241,6 +241,15 @@ title-screen `⛩ PROJECT DASHBOARD` link (`./continuum.html`).
 `CONTINUUM_SCRIPT_SHA256` over `CONTINUUM_REFRESH_SCRIPT`, kept in sync by a `node:crypto` test so
 it cannot drift); `style-src 'self' 'unsafe-inline'` (data-driven bar widths only — styles cannot
 execute JS). Resolves the prior inline-script WARN; page stays fully static/read-only.
+**Engineering health (v0.2.175):** a PURE `buildHealthModel(input)` + frozen `HEALTH_LASTKNOWN`
+baseline drive an **Engineering health** `<section>` (cards + 3 SVG rings + the efficiency-loop
+note: measure · profile · standardise · automate · modularise · document). It runs at module load
+for the curated `CONTINUUM.health` fallback AND in `tools/build-continuum.mjs` with GENERATED
+inputs (profile/test-file counts, parser gaps, version, doc-sync). Each metric carries
+`kind: 'generated' | 'last-known'` shown as a provenance chip (`.hk-gen`/`.hk-lk`) so a stale
+number is obvious; GENERATED = profile sizes/parser gaps/version/doc-sync, LAST-KNOWN = total
+tests/timings/bundle/last-green gate. Server-rendered escaped text, NO new `<script>` — CSP hash
+unchanged. `continuumDataJSON` carries `health`.
 
 `githubReleaseSource` (LEAN-5, v0.2.157) is the pure GitHub Releases source adapter:
 `normalizeRelease`/`selectLatestRelease`/`evaluateFromSource` turn a `releases/latest`

@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto';
 import {
   CONTINUUM_VERSION, CONTINUUM_BADGE, CONTINUUM,
   CONTINUUM_REFRESH_SCRIPT, CONTINUUM_SCRIPT_SHA256, CONTINUUM_CSP,
+  HEALTH_LASTKNOWN, buildHealthModel,
   escapeHtml, clampPct, barCells, ringDash,
   computeTotals, buildContinuumModel, continuumDataJSON, renderContinuumPage,
 } from '../src/engine/dashboard/continuumData.js';
@@ -17,7 +18,7 @@ import { VERSION } from '../src/config.js';
 
 describe('module shape', () => {
   it('pins the version (tracks the build) and the read-only oversight badge', () => {
-    expect(CONTINUUM_VERSION).toBe('v0.2.174-alpha');
+    expect(CONTINUUM_VERSION).toBe('v0.2.175-alpha');
     expect(CONTINUUM_VERSION).toBe(VERSION);
     expect(CONTINUUM_BADGE).toBe('PROJECT OVERSIGHT · STATIC · READ-ONLY');
   });
@@ -122,7 +123,7 @@ describe('continuumDataJSON', () => {
   it('is JSON-serialisable and carries totals + the seed contributors', () => {
     const j = continuumDataJSON();
     const round = JSON.parse(JSON.stringify(j));
-    expect(round.version).toBe('v0.2.174-alpha');
+    expect(round.version).toBe('v0.2.175-alpha');
     expect(round.totals.pocProgressPct).toBe(46);
     expect(round.contributors.isSeed).toBe(true);
   });
@@ -134,7 +135,7 @@ describe('renderContinuumPage', () => {
   it('returns a self-contained HTML document with the version', () => {
     expect(typeof html).toBe('string');
     expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('v0.2.174-alpha');
+    expect(html).toContain('v0.2.175-alpha');
     expect(html).toContain('Torii Continuum');
   });
 
@@ -220,9 +221,91 @@ describe('CSP hardening (v0.2.172)', () => {
   });
 });
 
+describe('engineering health (v0.2.175)', () => {
+  it('buildHealthModel returns metrics + rings + the efficiency-loop note', () => {
+    const h = buildHealthModel({
+      version: 'v9.9.9-test', profiles: { fast: 5, foundation: 17 },
+      fullFileCount: 60, parserGaps: 0, docsInSync: true,
+    });
+    expect(Array.isArray(h.metrics)).toBe(true);
+    expect(h.metrics.length).toBeGreaterThanOrEqual(6);
+    expect(Array.isArray(h.rings)).toBe(true);
+    expect(h.note).toMatch(/measure .*profile .*standardise .*automate .*modularise .*document/);
+  });
+
+  it('GENERATED fields reflect the passed build inputs', () => {
+    const h = buildHealthModel({
+      version: 'v9.9.9-test', profiles: { fast: 5, foundation: 17 },
+      fullFileCount: 60, parserGaps: 0, docsInSync: true,
+    });
+    const byLabel = Object.fromEntries(h.metrics.map((m) => [m.label, m]));
+    expect(byLabel['Build version'].value).toBe('v9.9.9-test');
+    expect(byLabel['Build version'].kind).toBe('generated');
+    expect(byLabel['Test files / profiles'].value).toContain('fast 5');
+    expect(byLabel['Test files / profiles'].value).toContain('foundation 17');
+    expect(byLabel['Test files / profiles'].value).toContain('full 60');
+    expect(byLabel['Parser gaps'].value).toMatch(/^0 /);
+    expect(byLabel['Source-of-truth docs'].kind).toBe('generated');
+  });
+
+  it('non-zero parser gaps + doc drift are reported honestly', () => {
+    const h = buildHealthModel({ parserGaps: 3, docsInSync: false });
+    const byLabel = Object.fromEntries(h.metrics.map((m) => [m.label, m]));
+    expect(byLabel['Parser gaps'].value).toMatch(/3 /);
+    expect(byLabel['Source-of-truth docs'].value).toMatch(/drift/i);
+  });
+
+  it('LAST-KNOWN fields come from HEALTH_LASTKNOWN and are labelled last-known', () => {
+    const h = buildHealthModel({});
+    const byLabel = Object.fromEntries(h.metrics.map((m) => [m.label, m]));
+    expect(byLabel['Total tests'].kind).toBe('last-known');
+    expect(byLabel['Total tests'].value).toBe(HEALTH_LASTKNOWN.totalTests);
+    expect(byLabel['Bundle baseline'].value).toBe(HEALTH_LASTKNOWN.bundle);
+    expect(byLabel['Release gate'].value).toContain(HEALTH_LASTKNOWN.lastGreen);
+  });
+
+  it('foundation-coverage ring is the foundation/full percentage', () => {
+    const h = buildHealthModel({ profiles: { fast: 5, foundation: 15 }, fullFileCount: 60 });
+    const ring = h.rings.find((r) => r.label === 'Foundation coverage');
+    expect(ring.pct).toBe(25);
+    expect(ring.sub).toBe('15/60 files');
+  });
+
+  it('curated CONTINUUM.health is present and complete', () => {
+    expect(CONTINUUM.health).toBeTruthy();
+    expect(Array.isArray(CONTINUUM.health.metrics)).toBe(true);
+    expect(CONTINUUM.health.metrics.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('continuumDataJSON carries the health model', () => {
+    const j = continuumDataJSON();
+    expect(j.health).toBeTruthy();
+    expect(Array.isArray(j.health.metrics)).toBe(true);
+  });
+
+  it('renderContinuumPage shows the Engineering health section with provenance chips', () => {
+    const html = renderContinuumPage();
+    expect(html).toContain('Engineering health');
+    expect(html).toContain('hk-gen');
+    expect(html).toContain('hk-lk');
+    expect(html).toContain('GENERATED');
+    expect(html).toContain('LAST-KNOWN');
+  });
+
+  it('SAFETY: the health section adds no new script and preserves the CSP script hash', () => {
+    const html = renderContinuumPage();
+    // Still exactly one inline script, and its hash still matches (health is static text).
+    expect((html.match(/<script/g) || []).length).toBe(1);
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    expect(m[1]).toBe(CONTINUUM_REFRESH_SCRIPT);
+    const pageHash = 'sha256-' + createHash('sha256').update(m[1], 'utf8').digest('base64');
+    expect(pageHash).toBe(CONTINUUM_SCRIPT_SHA256);
+  });
+});
+
 describe('SDK exposure', () => {
   it('re-exports the continuum module at the experimental tier', () => {
-    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.174-alpha');
+    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.175-alpha');
     expect(typeof SDK.continuum.renderContinuumPage).toBe('function');
     expect(SDK.SDK_SURFACE.continuum.tier).toBe(SDK.STABILITY.EXPERIMENTAL);
   });

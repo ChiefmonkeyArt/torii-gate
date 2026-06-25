@@ -31,8 +31,87 @@
 //     passes them to buildContinuumModel(overrides). Anything that fails to parse falls
 //     back to the curated values below, so the page never shows an empty/garbled section.
 
-export const CONTINUUM_VERSION = 'v0.2.174-alpha';
+export const CONTINUUM_VERSION = 'v0.2.175-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
+
+// HEALTH_LASTKNOWN (v0.2.175) — the engineering-health values that are NOT cheaply
+// derivable at build time without running the gate (full test count, profile timings,
+// bundle baseline, last green release). They are captured by hand from the most recent
+// green `npm run test:release` and clearly LABELLED "last-known" on the page, so a stale
+// number is obvious rather than silently wrong. The deterministic fields (profile file
+// counts, parser gaps, version, doc-sync) are GENERATED at build time and override these.
+export const HEALTH_LASTKNOWN = Object.freeze({
+  totalTests: '821 passing',
+  timings: 'fast ~1s · foundation ~6s · full suite ~41s',
+  bundle: '2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)',
+  regression: '14 / 14',
+  lastGreen: CONTINUUM_VERSION,
+});
+
+// buildHealthModel(input) — PURE, browser-safe builder for the Engineering-health
+// section (v0.2.175). Takes plain data only (no fs/network/THREE/DOM) so it runs both at
+// module load (the curated fallback below) AND at build time (tools/build-continuum.mjs
+// passes the freshly GENERATED inputs). Each metric carries a `kind`: 'generated' (derived
+// deterministically this build) or 'last-known' (captured from the last green gate run),
+// surfaced as a chip on the page so provenance is never ambiguous. Returns { note, metrics,
+// rings } — a small, dependency-free model the renderer turns into cards + SVG rings.
+export function buildHealthModel(input = {}) {
+  const {
+    version = CONTINUUM_VERSION,
+    profiles = {},
+    fullFileCount = null,
+    parserGaps = null,
+    docsInSync = null,
+    lastKnown = HEALTH_LASTKNOWN,
+  } = input || {};
+  const lk = { ...HEALTH_LASTKNOWN, ...(lastKnown || {}) };
+  const fast = profiles.fast != null ? profiles.fast : null;
+  const foundation = profiles.foundation != null ? profiles.foundation : null;
+  const G = 'generated';
+  const L = 'last-known';
+  const metrics = [
+    { label: 'Build version', kind: G, value: version },
+    { label: 'Test files / profiles', kind: G,
+      value: `fast ${fast == null ? '—' : fast} · foundation ${foundation == null ? '—' : foundation} · full ${fullFileCount == null ? '—' : fullFileCount}` },
+    { label: 'Total tests', kind: L, value: lk.totalTests },
+    { label: 'Profile timings', kind: L, value: lk.timings },
+    { label: 'Bundle baseline', kind: L, value: lk.bundle },
+    { label: 'Parser gaps', kind: G,
+      value: parserGaps == null ? '—'
+        : parserGaps === 0 ? '0 · dashboard lists fully derived'
+        : `${parserGaps} · curated fallback used` },
+    { label: 'Release gate', kind: L, value: `${lk.regression} regression checks GREEN · last green ${lk.lastGreen}` },
+    { label: 'Source-of-truth docs', kind: G,
+      value: docsInSync == null ? 'progress.md · todo.md · strategy.md'
+        : docsInSync ? 'progress.md · todo.md · strategy.md carry this version'
+        : 'doc/version drift — check the continuity docs' },
+  ];
+  const coverage = (foundation != null && fullFileCount)
+    ? Math.round((foundation / fullFileCount) * 100) : null;
+  const rings = [
+    { pct: 100, label: 'Tests passing', sub: 'last green' },
+    { pct: 100, label: 'Regression checks', sub: lk.regression },
+    { pct: coverage, label: 'Foundation coverage',
+      sub: (foundation != null && fullFileCount) ? `${foundation}/${fullFileCount} files` : 'profiles' },
+  ];
+  const note = 'Engineering health — the efficiency/oversight loop: measure · profile · ' +
+    'standardise · automate · modularise · document. GENERATED at build time where ' +
+    'deterministic (profile sizes, parser gaps, version, doc-sync); LAST-KNOWN where ' +
+    'captured from the most recent green release-gate run (total tests, timings, bundle).';
+  return { note, metrics, rings };
+}
+
+// The curated fallback health model — built from the pure builder at module load with the
+// current known counts, so renderContinuumPage() with NO overrides (tests + the no-JS
+// fallback) shows a complete, honest Engineering-health section. The build-time generator
+// re-runs buildHealthModel with freshly measured inputs and overrides this.
+const CURATED_HEALTH = buildHealthModel({
+  version: CONTINUUM_VERSION,
+  profiles: { fast: 5, foundation: 17 },
+  fullFileCount: 60,
+  parserGaps: 0,
+  docsInSync: true,
+});
 
 // CONTINUUM_REFRESH_SCRIPT (v0.2.172) — the EXACT inline-script body the page ships,
 // kept as the single source of that text so its CSP hash can never silently drift.
@@ -95,13 +174,18 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.174-alpha (build truth; live trails — manual deploy)' },
-    { label: 'Tests', value: '812+ passing / 60+ files (profiles: test:fast ~5, test:foundation ~17)' },
+    { label: 'Source version', value: 'v0.2.175-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Tests', value: '821 passing / 60 files (profiles: test:fast ~5, test:foundation ~17)' },
     { label: 'Regression check', value: '14 / 14 GREEN' },
-    { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1018 KB gzip (rapier chunk >700 KB, expected)' },
+    { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.174 dashboard data automation (derive lists from progress.md/todo.md)' },
+    { label: 'Active slice', value: 'v0.2.175 engineering health metrics (build-time, static, read-only)' },
   ],
+
+  // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
+  // page as cards + rings. Curated fallback; the build-time generator overrides the
+  // GENERATED fields (profile counts, parser gaps, version, doc-sync) with measured values.
+  health: CURATED_HEALTH,
 
   // Contributors / clankers — SEED placeholder, NOT live data. "clankers" are the
   // AI coding agents (Claude / GPT / DeepSeek) the handoff loop is built around.
@@ -129,7 +213,7 @@ export const CONTINUUM = Object.freeze({
 
   // Now / Next / Later.
   activeNow: [
-    'v0.2.174 — dashboard data automation: the continuum page now DERIVES its next-12 / active-now / completed-24h / archive lists + a docs-derived task-count metric from progress.md + todo.md at build time, falling back to curated defaults on any parse gap.',
+    'v0.2.175 — engineering health metrics: a build-time, static, read-only "Engineering health" section on /continuum.html surfaces the efficiency loop (measure · profile · standardise · automate · modularise · document) — profile/test counts, parser gaps, doc-sync, bundle baseline, last-green gate — GENERATED where deterministic, LAST-KNOWN where captured from the gate.',
     'ARS-4 — finish folding reload/pointer-lock into the guarded FSM.',
     'ARS-6 / PROGRESS-1 — ongoing CODE_INDEX + living-docs upkeep.',
   ],
@@ -160,10 +244,10 @@ export const CONTINUUM = Object.freeze({
 
   // Completed last 24h — shown struck through, newest first.
   completed24h: [
+    'v0.2.175 — ENGINEERING HEALTH metrics: a new build-time, static, read-only "Engineering health" section on /continuum.html (cards + rings) — profile/test-file counts, parser-gap count, doc-sync + version GENERATED at build; total tests, timings, bundle baseline, last-green gate LABELLED last-known. Pure buildHealthModel() runs at module load (curated fallback) AND in build-continuum (measured override). CSP/refresh-script unchanged. +tests.',
     'v0.2.174 — dashboard DATA AUTOMATION: pure tools/continuumParse.mjs parses progress.md + todo.md at build time so the continuum page DERIVES its next-12 / active-now / completed-24h / archive lists + a docs-derived task-count metric; buildContinuumModel(overrides) merges them over the curated fallback (safe fallback + parser-gap reporting on any miss). CSP unchanged. +tests.',
     'v0.2.173 — TEST-PROFILE system for faster agent loops: npm run test:fast (~5 core files) + test:foundation (~16 pure/guard files) for inner loops, test:release = FULL suite + check/build/bundle/handoff (release gate unchanged). Explicit curated lists (tools/testProfiles.mjs, no git-diff heuristics) validated against disk + a timing footer. +11 tests.',
     'v0.2.172 — Continuum dashboard CSP HARDENING: strict Content-Security-Policy meta on the generated page (script-src self + sha256 of the one packaged refresh script, NO unsafe-inline script; style-src self unsafe-inline for the data-driven bars; connect-src self for the same-origin JSON refresh). Resolves the prior inline-script WARN; page stays fully static/read-only.',
-    'v0.2.171 — Torii Continuum project-oversight DASHBOARD: a thin static page (public/continuum.html) generated from a curated, node-safe progress.md data model (engine/dashboard/continuumData.js) — bars/rings/totals, Now/Next/Later, next-12, struck completed-24h, archive; docs/tooling only, no gameplay change.',
   ],
 
   // Archive clusters, newest first.
@@ -285,6 +369,7 @@ export function continuumDataJSON(model = buildContinuumModel()) {
     contributors: model.contributors || null,
     taskTotals: model.taskTotals || null,
     derived: model.derived || null,
+    health: model.health || null,
   };
 }
 
@@ -359,6 +444,41 @@ function _riskRows(rows) {
   ).join('\n');
 }
 
+// _healthChip(kind) — provenance chip markup (our own static markup, not escaped). Only
+// the two known kinds emit a chip; anything else renders bare. Pure.
+function _healthChip(kind) {
+  if (kind === 'generated') return '<span class="hk hk-gen">GENERATED</span>';
+  if (kind === 'last-known') return '<span class="hk hk-lk">LAST-KNOWN</span>';
+  return '';
+}
+
+function _healthCards(metrics) {
+  return metrics.map((mtc) =>
+    `        <div class="metric"><span class="metric-label">${escapeHtml(mtc.label)} ${_healthChip(mtc.kind)}</span><span class="metric-value">${escapeHtml(mtc.value)}</span></div>`
+  ).join('\n');
+}
+
+// _healthSection(health) — the Engineering-health section (v0.2.175): provenance-chipped
+// metric cards + reused SVG rings + the efficiency-loop note. Empty string when absent, so
+// an override-free legacy model simply omits the section. Server-rendered + escaped; no
+// new script, no new data-k key → CSP/refresh-script hash untouched.
+function _healthSection(health) {
+  if (!health || !Array.isArray(health.metrics) || !health.metrics.length) return '';
+  const rings = Array.isArray(health.rings) && health.rings.length
+    ? `      <div class="rings">\n${health.rings.map((r) => _donut(r.pct, r.label, r.sub)).join('\n')}\n      </div>`
+    : '';
+  const note = health.note ? `      <div class="focus">${escapeHtml(health.note)}</div>` : '';
+  return `
+    <section>
+      <h2>Engineering health</h2>
+      <div class="grid">
+${_healthCards(health.metrics)}
+      </div>
+${rings}
+${note}
+    </section>`;
+}
+
 // renderContinuumPage(model) — full self-contained static HTML document string.
 // Dark Torii/nostrich/cyberpunk feel via inline CSS only; CSS bars + SVG rings.
 // The page renders fully WITHOUT JavaScript. A tiny, optional, same-origin-only
@@ -425,6 +545,9 @@ export function renderContinuumPage(model = buildContinuumModel()) {
   .metric-label{color:var(--muted);font-size:11px;letter-spacing:1px;text-transform:uppercase;}
   .metric-value{color:var(--ink);}
   .seed{color:var(--gold);font-size:9px;border:1px solid var(--gold);border-radius:4px;padding:0 4px;letter-spacing:1px;}
+  .hk{font-size:9px;border:1px solid;border-radius:4px;padding:0 4px;letter-spacing:1px;}
+  .hk-gen{color:var(--accent);border-color:var(--accent);}
+  .hk-lk{color:var(--muted);border-color:var(--muted);}
   .totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:12px;}
   .tot{text-align:center;background:var(--panel);border:1px solid var(--edge);border-radius:6px;padding:12px 6px;}
   .tot-v{display:block;font-size:24px;color:var(--accent);}
@@ -499,6 +622,7 @@ ${_totalsStrip(t)}
 ${_rings(t)}
       </div>
     </section>
+${_healthSection(m.health)}
 
     <section>
       <h2>Track overview</h2>
