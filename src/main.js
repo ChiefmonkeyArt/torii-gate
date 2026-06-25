@@ -21,7 +21,9 @@ import { initHUD, tickHUD, flashCross, drawMinimap, setNapMode, showPortalPrompt
 import { ARENA_HALF, WALL_H, NAP_X } from './config.js';
 import { createGatewayPortalBoundary } from './engine/gateway/gatewayPortalActivation.js';
 import { createPortalTrigger } from './engine/gateway/portalTrigger.js';
+import { buildPortalMesh, tickPortalMesh } from './engine/gateway/portalMesh.js';
 import { parseZoneRoute, ZONE_ROUTE_KIND } from './engine/gateway/zoneRoute.js';
+import { scene } from './scene.js';
 import { nostrLogin } from './nostr.js';
 import { playShoot, playFootstep, playJumpLand } from './audio.js';
 import { initPlayerStats } from './playerStats.js';
@@ -189,6 +191,19 @@ const _portalTrigger = createPortalTrigger({
   portalPos: { x: ARENA_HALF, y: 0, z: 0 },
   range: 3,
   onPrompt: (show, text) => { if (show) showPortalPrompt(text); else hidePortalPrompt(); },
+});
+
+// ── Visible in-world PORTAL MARKER mesh (v0.2.183) ─────────────────────────────
+// Build a dedicated, inert visual marker at the SAME position + range as the trigger
+// above, so the player can clearly SEE the travel point they are approaching. The
+// outer ring radius EQUALS the trigger range, so the ring is the proximity boundary.
+// DISPLAY-ONLY: no collider, no raycast, no input — it changes NOTHING about the
+// safety model (proximity still only arms; KeyF still confirms the same-origin hop).
+// Built ONCE here; the per-frame tick only mutates scalars (spin/pulse — no alloc).
+buildPortalMesh(scene, {
+  position: _portalTrigger.portalPos(),
+  range: _portalTrigger.range(),
+  title: 'Plebeian Market Bazaar',
 });
 
 // ── SPA /zone/<slug> route resolution (v0.2.182) ──────────────────────────────
@@ -560,6 +575,8 @@ function update(dt, frame) {
   // playing; reset() clears a stale prompt when leaving the arena (pause/home).
   if (isPlaying()) _portalTrigger.tick(playerObj.position);
   else _portalTrigger.reset();
+  // Portal marker idle animation (v0.2.183) — scalar spin/pulse only, no allocation.
+  tickPortalMesh(dt);
   tickHUD(dt);
   tickAtmosphere(dt);
   tickMirror(dt);

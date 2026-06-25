@@ -29,6 +29,7 @@ import { activateGatewayHandoff, DEMO_ACTIVATION_OPTS } from '../gateway/gateway
 import { activatePortalHandoff, createGatewayPortalBoundary, DEMO_PORTAL_CONTEXT } from '../gateway/gatewayPortalActivation.js';
 import { createPortalTrigger, PORTAL_PROMPT_TEXT } from '../gateway/portalTrigger.js';
 import { parseZoneRoute, describeZoneRoute, ZONE_ROUTE_BADGE, DEMO_ZONE_ROUTE } from '../gateway/zoneRoute.js';
+import { buildPortalMeshPlan, describePortalMeshPlan, PORTAL_MESH_BADGE, DEMO_PORTAL_MESH_OPTS } from '../gateway/portalMeshPlan.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -754,6 +755,38 @@ export function zoneRouteReport(path = DEMO_ZONE_ROUTE) {
     published: valid.published,
     inMemory: true,
     errors: valid.errors,
+  };
+}
+
+// portalMeshPlanReport(opts) → the PURE render plan for the in-world GATEWAY PORTAL
+// marker (v0.2.183). Shows that the plan builds inert marker parts whose outer ring
+// radius EQUALS the trigger range, that every part + the plan pin the inert flags
+// false, and that a bad position degrades to ok:false. Plain data — NO THREE/DOM/nav.
+export function portalMeshPlanReport(opts = DEMO_PORTAL_MESH_OPTS) {
+  const plan = buildPortalMeshPlan(opts);
+  const allPartsInert = plan.parts.every((p) =>
+    p.navigated === false && p.performed === false && p.external === false &&
+    p.signed === false && p.published === false && p.readOnly === true && p.actionable === false);
+  return {
+    title: 'PORTAL MESH PLAN',
+    badge: PORTAL_MESH_BADGE,
+    ok: plan.ok,
+    anchor: plan.anchor,
+    range: plan.range,
+    ringRadius: plan.ringRadius,
+    ringMatchesRange: plan.ringRadius === plan.range,
+    count: plan.count,
+    parts: plan.parts.map((p) => ({ id: p.id, kind: p.kind, role: p.role, spin: p.spin, pulse: p.pulse })),
+    allPartsInert,
+    summary: describePortalMeshPlan(opts),
+    rendered: plan.rendered,
+    navigated: plan.navigated,
+    performed: plan.performed,
+    external: plan.external,
+    signed: plan.signed,
+    published: plan.published,
+    actionable: plan.actionable,
+    reasons: plan.reasons,
   };
 }
 

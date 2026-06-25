@@ -382,8 +382,8 @@ linked by signed spatial events, with **no central router**.
   ONLY): `tick` runs in `update()` while playing (else `reset()`), a KeyF handler calls `interact(true)`, and
   `hud.js` `showPortalPrompt`/`hidePortalPrompt` render the inert `#portal-prompt` div. Read-only at
   `ToriiDebug.shells.portalTrigger()` (drives a recording-host boundary, never live-navigates). SDK
-  `portalTrigger` (experimental). A dedicated portal MESH remains the next deferred infra step (the SPA
-  `/zone/<slug>` route handler landed v0.2.182, below).
+  `portalTrigger` (experimental). The SPA `/zone/<slug>` route handler landed v0.2.182 and a dedicated visible
+  portal MESH marker landed v0.2.183 (`portalMesh.js`, below).
 - `src/engine/gateway/zoneRoute.js` (v0.2.182) — the pure **SPA `/zone/<slug>` route parser/handler** that
   gives the same-origin gateway URL state a safe client-side interpretation so it does not become brittle
   after a hard refresh or popstate navigation. `parseZoneRoute(path)` runs the `safeRoutePath` security gate
@@ -405,6 +405,22 @@ linked by signed spatial events, with **no central router**.
   > This is a hosting config, not app code, and is documented honestly rather than faked: Nginx
   > `try_files $uri $uri/ /index.html;`, Caddy `try_files {path} /index.html`, or a CDN 404→`/index.html`
   > rewrite (see `HANDOFF.md` §7). Without it a hard refresh on a deep link 404s before any JS runs.
+- `src/engine/gateway/portalMeshPlan.js` + `src/engine/gateway/portalMesh.js` (v0.2.183) — the dedicated
+  visible in-world **portal MARKER** at the existing `portalTrigger` position, so a player can SEE the travel
+  point they are approaching. It is split per the project's pure-plan/adapter pattern: `portalMeshPlan.js` is a
+  PURE, node-safe render plan (`buildPortalMeshPlan(opts)` → an inert `{ok,anchor,range,ringRadius,count,parts,
+  …,reasons}` describing 4 parts — an outer-ring torus whose `ringRadius` EQUALS the trigger `range` so the
+  marker footprint matches the arm radius, a violet inner ring, a transparent beam, and a spinning core), with
+  every part + the plan pinning `navigated`/`performed`/`external`/`signed`/`published`=false, `readOnly`=true,
+  `actionable`=false; no module-scope `window`/THREE/DOM, never throws. `portalMesh.js` is the browser-only THREE
+  adapter (`buildPortalMesh(scene,opts)`/`tickPortalMesh(dt)`/`disposePortalMesh()`/`portalMeshRenderState()`)
+  that consumes the plan, builds emissive meshes ONCE behind a `_built` guard, ticks ALLOCATION-FREE (scalar
+  spin + emissive pulse only — no `Vector3`/`Matrix4`/geometry/material per frame), and disposes/reuses cleanly.
+  The marker is DISPLAY-ONLY and INERT: no collider, no raycast/click, no input, no navigation — it adds NO
+  capability and changes NOTHING in the three gates (proximity ARMS, KeyF confirms, same-origin `/zone/` only).
+  WIRED in `main.js` (composition root ONLY): `buildPortalMesh(scene,…)` once + `tickPortalMesh(dt)` in the loop.
+  Read-only at `ToriiDebug.shells.portalMeshPlan(opts?)` / `ToriiDebug.shells.portalMesh()`. SDK `portalMeshPlan`
+  (experimental).
 - `src/world/handoff.js` — the (skeleton) host seam where a future build will inject the live app/browser
   window into `gatewayActivation`/`gatewayPortalActivation` (above): it will hand a
   `createBrowserHostTransport(window)` transport (or the host router) + a same-origin route allowlist to
@@ -412,8 +428,9 @@ linked by signed spatial events, with **no central router**.
   same-origin navigation. The activation + portal-boundary seams now exist and the v0.2.181 `portalTrigger`
   wires a real injected browser host + proximity/KeyF confirm at the `main.js` composition root; the SPA
   `/zone/<slug>` route handler landed v0.2.182 (`zoneRoute.js`, above) so a hard refresh / popstate resolves the
-  target zone into inert local state (given the static-host fallback). A dedicated portal MESH remains the
-  next deferred step.
+  target zone into inert local state (given the static-host fallback). A dedicated visible portal MESH marker
+  landed v0.2.183 (`portalMeshPlan.js` + `portalMesh.js`, above) — a DISPLAY-ONLY landmark at the trigger
+  position that adds no capability.
 
 Component is code. Protocol is agreement. This file is the agreement; the modules
 above are one implementation of it.

@@ -59,6 +59,7 @@ export * as gatewayActivation from '../engine/gateway/gatewayActivation.js';
 export * as gatewayPortalActivation from '../engine/gateway/gatewayPortalActivation.js';
 export * as portalTrigger from '../engine/gateway/portalTrigger.js';
 export * as zoneRoute from '../engine/gateway/zoneRoute.js';
+export * as portalMeshPlan from '../engine/gateway/portalMeshPlan.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
@@ -208,6 +209,11 @@ export const SDK_SURFACE = Object.freeze({
   // same-origin path as home/zone/invalid, validates the slug strictly, and maps a
   // valid zone to an INERT display state. NO network/relay/nav; same-origin only.
   zoneRoute:       { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/zoneRoute.js' },
+  // PURE render plan for the in-world GATEWAY PORTAL marker (LEAN-2, v0.2.183) —
+  // turns the trigger position + range into plain-data inert marker parts (outer
+  // ring radius === trigger range); NO THREE/DOM/render/nav. The browser-only
+  // adapter (portalMesh.js) consumes it and builds inert meshes ONCE.
+  portalMeshPlan:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/portalMeshPlan.js' },
   // torii.quest GitHub release/update-check helpers (LEAN-5, v0.2.138) — pure
   // compare + inert view-model; NO network fetch, NO auto-update.
   updateCheck:     { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateCheck.js' },

@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.182-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.183-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -127,6 +127,18 @@ Breaking one should fail CI/the check, not ship.
   cold hit on `/zone/<slug>` 404s at the CDN before any JS runs; once index.html IS
   served, `zoneRoute` resolves the URL into the inert notice. This is documented, NOT
   faked in code.** debug-shell `zoneRoute`);
+  v0.2.183 added `portalMeshPlan` + the browser-only `portalMesh` adapter (the visible
+  in-world PORTAL MARKER at the v0.2.181 trigger position so a player can SEE the travel
+  point. `buildPortalMeshPlan({position,range,title})` is PURE/node-safe — four inert
+  marker parts whose OUTER RING radius EQUALS the proximity range, every part + the plan
+  pinning navigated/performed/external/signed/published false + readOnly/actionable. The
+  adapter builds emissive meshes ONCE behind a `_built` guard at the trigger position and
+  `tickPortalMesh(dt)` mutates ONLY scalars (rotation/emissive — no Vector3/Matrix4/
+  geometry/material per frame); `disposePortalMesh()` frees them. Wired at the `main.js`
+  composition root (`buildPortalMesh(scene,…)` + `tickPortalMesh(dt)` in update).
+  DISPLAY-ONLY + INERT: no collider/raycast/input, no nav/relay/sign/publish — the safety
+  model is unchanged. debug-shells `portalMeshPlan` (plan report) + `portalMesh` (render
+  state));
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc

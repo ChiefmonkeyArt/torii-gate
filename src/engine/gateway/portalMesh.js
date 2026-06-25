@@ -1,0 +1,144 @@
+// engine/gateway/portalMesh.js — the browser-only THREE adapter for the dedicated
+// in-world GATEWAY PORTAL marker (v0.2.183, LEAN-2). It consumes the PURE render plan
+// (`portalMeshPlan.js`) and, only when the plan is ok and a scene is given, creates a
+// small set of inert marker meshes ONCE at the portal trigger position.
+//
+// DISPLAY-ONLY and INERT: no collider, no raycast/click handler, no input, no
+// navigation, no payments, no Nostr/relay/signing, no live data, no external fetch.
+// The marker is a visual landmark only; the safety model (proximity arms, KeyF
+// confirms, same-origin /zone/ only) is unchanged — this module adds NO capability.
+//
+// ALLOCATION DISCIPLINE: every THREE object is created EXACTLY ONCE in
+// `buildPortalMesh()` (scene-setup, not a hot path). `tickPortalMesh(dt)` mutates ONLY
+// existing scalars (rotation.y, material.emissiveIntensity) — it allocates NO Vector3/
+// Matrix4/geometry/material per frame, so the no-alloc hot-path rule is preserved. A
+// `_built` guard makes re-entry a no-op; `disposePortalMesh()` frees the geometries +
+// materials and detaches the group for a clean teardown.
+import * as THREE from 'three';
+import { buildPortalMeshPlan, PORTAL_MESH_BADGE, PORTAL_MESH_GROUP } from './portalMeshPlan.js';
+
+// Module-scope handles, all created once. Refs kept so the tick can mutate scalars and
+// dispose can free GPU resources without re-querying the scene graph.
+let _built = false;
+let _group = null;
+let _scene = null;
+let _spinMeshes = [];   // meshes whose rotation.y advances each tick
+let _pulseMats = [];     // materials whose emissiveIntensity breathes each tick
+let _geometries = [];    // every geometry created, for dispose
+let _materials = [];     // every material created, for dispose
+let _t = 0;              // accumulator for the pulse phase (seconds)
+
+// Render state mirrored for the debug surface. Frozen so a reader can never mutate it.
+let _state = Object.freeze({ rendered: false, count: 0, ok: false, badge: PORTAL_MESH_BADGE, reasons: ['not-built'] });
+
+// portalMeshRenderState() → the last build result (read-only). Surfaced at
+// ToriiDebug.shells.portalMesh() so a reviewer can confirm the inert marker rendered.
+export function portalMeshRenderState() { return _state; }
+
+// _geometryFor(part) → a THREE primitive from the plan's param-only geometry spec.
+// One-time creation; unknown types fall back to a tiny box so a build never throws.
+function _geometryFor(g) {
+  switch (g && g.type) {
+    case 'torus':
+      return new THREE.TorusGeometry(g.radius, g.tube, g.radialSegments, g.tubularSegments);
+    case 'cylinder':
+      return new THREE.CylinderGeometry(g.radiusTop, g.radiusBottom, g.height, g.radialSegments);
+    case 'octahedron':
+      return new THREE.OctahedronGeometry(g.radius, g.detail || 0);
+    default:
+      return new THREE.BoxGeometry(0.2, 0.2, 0.2);
+  }
+}
+
+// buildPortalMesh(scene, opts?) → builds the inert portal marker in `scene` IF the
+// plan is ok, else builds NOTHING. `opts` is forwarded to the plan (position/range/
+// title — typically the live trigger's portalPos()/range()). Idempotent: only the
+// first successful build renders; later calls are no-ops. Returns the render state.
+export function buildPortalMesh(scene, opts = {}) {
+  if (_built) return _state;
+
+  const plan = buildPortalMeshPlan(opts);
+  if (!plan.ok || !scene) {
+    const reasons = plan.reasons.length ? plan.reasons.slice() : [];
+    if (!scene) reasons.push('no-scene');
+    _state = Object.freeze({ rendered: false, count: 0, ok: false, badge: plan.badge, reasons });
+    return _state;
+  }
+
+  const group = new THREE.Group();
+  group.name = PORTAL_MESH_GROUP;
+  group.position.set(plan.anchor.x, plan.anchor.y, plan.anchor.z);
+
+  for (const part of plan.parts) {
+    const geom = _geometryFor(part.geometry);
+    // A glowing emissive standard material — the same family the proof-surface boards
+    // and arena floor use, so no new shader/asset is introduced.
+    const mat = new THREE.MeshStandardMaterial({
+      color: part.color,
+      emissive: part.color,
+      emissiveIntensity: part.emissiveIntensity,
+      roughness: 0.5,
+      metalness: 0.0,
+      transparent: !!part.transparent,
+      opacity: typeof part.opacity === 'number' ? part.opacity : 1,
+    });
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.position.set(part.position.x, part.position.y, part.position.z);
+    mesh.rotation.set(part.rotation.x, part.rotation.y, part.rotation.z);
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    // INERT: no collider, no userData behaviour, no raycast layer change. It is a
+    // pure visual; nothing reads input or ticks it except the scalar spin/pulse below.
+    group.add(mesh);
+
+    _geometries.push(geom);
+    _materials.push(mat);
+    if (part.spin) _spinMeshes.push(mesh);
+    if (part.pulse) _pulseMats.push(mat);
+  }
+
+  scene.add(group);
+  _group = group;
+  _scene = scene;
+  _built = true;
+  _state = Object.freeze({ rendered: true, count: plan.parts.length, ok: true, badge: plan.badge, reasons: [], anchor: Object.freeze({ ...plan.anchor }), ringRadius: plan.ringRadius });
+  return _state;
+}
+
+// tickPortalMesh(dt) → advance the marker's idle animation. Allocation-free: it only
+// mutates existing scalars (rotation.y on the spin meshes, emissiveIntensity on the
+// pulse materials). No Vector3/Matrix4/geometry/material is created. Safe to call
+// every frame; a no-op until the marker is built.
+export function tickPortalMesh(dt) {
+  if (!_built) return;
+  const d = typeof dt === 'number' && Number.isFinite(dt) ? dt : 0;
+  _t += d;
+  for (let i = 0; i < _spinMeshes.length; i++) {
+    _spinMeshes[i].rotation.y += d * 0.8; // slow idle spin
+  }
+  if (_pulseMats.length) {
+    // Gentle breathing in [0.4, 0.7]; a scalar sin, no allocation.
+    const e = 0.55 + Math.sin(_t * 1.6) * 0.15;
+    for (let i = 0; i < _pulseMats.length; i++) {
+      _pulseMats[i].emissiveIntensity = e;
+    }
+  }
+}
+
+// disposePortalMesh() → detach the group and free every geometry + material. Resets
+// the build guard so a later build can re-create the marker. For a clean teardown
+// (e.g. a future scene reset); the live app builds once and never disposes.
+export function disposePortalMesh() {
+  if (_group && _scene) _scene.remove(_group);
+  for (let i = 0; i < _geometries.length; i++) _geometries[i].dispose();
+  for (let i = 0; i < _materials.length; i++) _materials[i].dispose();
+  _group = null;
+  _scene = null;
+  _spinMeshes = [];
+  _pulseMats = [];
+  _geometries = [];
+  _materials = [];
+  _t = 0;
+  _built = false;
+  _state = Object.freeze({ rendered: false, count: 0, ok: false, badge: PORTAL_MESH_BADGE, reasons: ['disposed'] });
+}

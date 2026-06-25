@@ -38,11 +38,12 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, handoffExecuteReport, hostTransportReport, gatewayActivationReport, gatewayPortalActivationReport, portalTriggerReport, zoneRouteReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, handoffExecuteReport, hostTransportReport, gatewayActivationReport, gatewayPortalActivationReport, portalTriggerReport, zoneRouteReport, portalMeshPlanReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 import { resolveAllAnchors } from '../world/anchorTransforms.js';
 import { proofSurfaceRenderState } from '../world/proofSurfaceMeshes.js';
+import { portalMeshRenderState } from '../gateway/portalMesh.js';
 import { buildProofSurfaceRenderPlan } from '../world/proofSurfaceRenderPlan.js';
 import { resolveParentBindings } from '../world/proofSurfaceParentBinding.js';
 import { proofSurfaceGate } from './proofSurfaceGate.js';
@@ -311,6 +312,17 @@ export function installToriiDebug(refs) {
       // after the inert panels were built (gates passed); otherwise `reasons`
       // carries the gate failures. Read-only. See SDK_DEBUG_INDEX.md.
       surfaceRender() { return proofSurfaceRenderState(); },
+      // v0.2.183 — PURE render plan for the in-world GATEWAY PORTAL marker (LEAN-2):
+      // plain-data inert marker parts (outer ring radius === trigger range) the
+      // browser adapter builds ONCE. Read-only; every part + the plan pin
+      // navigated/performed/external/signed/published false. No THREE/DOM/nav.
+      portalMeshPlan(opts) { return portalMeshPlanReport(opts); },
+      // v0.2.183 — render state of the inert in-world PORTAL marker mesh:
+      // `{rendered, count, ok, badge, reasons, anchor, ringRadius}`. `rendered` is
+      // true only after the display-only marker was built at the trigger position.
+      // The marker has NO collider/raycast/input — it changes nothing about the
+      // safety model (proximity arms, KeyF confirms, same-origin /zone/ only).
+      portalMesh() { return portalMeshRenderState(); },
       // v0.2.151 — scene-graph PARENT BINDING for the proof-surface boards: groups
       // the live render plan's panels by their `parent` hint, mapping each to the
       // live scene-node name + the per-parent display-only group name the mesh
