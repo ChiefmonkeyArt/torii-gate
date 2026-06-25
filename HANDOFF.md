@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.197-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.198-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -357,7 +357,27 @@ Breaking one should fail CI/the check, not ship.
   `hostRouteSmokeReport()` folded into `buildShellReport`). `tests/host-route-smoke.test.js` (+17).
   NOT a VPS deployment — touches no real server/DNS/SSH/remote command/network; no gameplay/physics/
   shooter/Rapier change; no Nostr signing/publishing/live network write; `godMode` stays false.
-  Latest slice report: `torii-v0.2.197-host-route-smoke-report.md`.
+  **v0.2.198** added an MVP RELEASE-READINESS ROLLUP — a pure, node-safe read-only rollup
+  (`src/engine/status/mvpReadiness.js`) that folds the already-pure local readiness signals into ONE
+  verdict with an MVP percentage/status + next safe task, so the user can see how close the read-only
+  MVP proof is WITHOUT manually digging through every harness, doc, and gate. `runMvpReadiness(opts?)`
+  → `{version,badge,ok,mvpPct,status,currentVersion,signals,summary,safety,reasons,nextSafeTask,
+  rendered:false,actionable:false}` over NINE signals: version marker valid; Nostr read-path health
+  (`runReadHealth`); gateway travel smoke (`runGatewayTravelSmoke`); update-flow smoke
+  (`runUpdateFlowSmoke`); host-route smoke (`runHostRouteSmoke`); release-metadata safety floor
+  (`validateReleaseMeta` rejects a tampered `autoUpdate:true`); the injected last-known test-suite
+  verdict; the injected VPS manual-deploy dry-run verdict; the injected docs/handoff freshness
+  verdict. The four live smoke verdicts are computed from the already-pure harnesses; the fs-backed
+  signals (test counts, VPS dry-run, docs freshness) are INJECTED via opts with curated last-known
+  defaults — exactly like the dashboard ship/health models — so the module stays PURE + node-safe.
+  `mvpPct` = share of passing signals; `status` = READY/NEAR/ATTENTION. Every report pins
+  `served/deployed/published/navigated/performed/fetched/wrote/network=false`; every check is wrapped
+  (a broken injected fixture degrades to a fail with `reasons`, never throws). Surfaced via the SDK
+  (`mvpReadiness`, EXPERIMENTAL), the debug shell (`ToriiDebug.shells.mvpReadiness` /
+  `mvpReadinessReport()` folded into `buildShellReport`). `tests/mvp-readiness-rollup.test.js` (+14).
+  Read-only — serves/deploys/fetches/writes NOTHING; no gameplay/physics/shooter/Rapier change; no
+  Nostr signing/publishing/live network write; `godMode` stays false.
+  Latest slice report: `torii-v0.2.198-mvp-readiness-rollup-report.md`.
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc

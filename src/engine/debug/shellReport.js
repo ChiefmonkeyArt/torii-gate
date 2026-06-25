@@ -35,6 +35,7 @@ import { portalPromptLabel, enteredZoneLabel, ZONE_LABEL_BADGE, DEMO_ZONE_LABEL_
 import { runGatewayTravelSmoke } from '../gateway/travelSmoke.js';
 import { runUpdateFlowSmoke } from '../update/updateFlowSmoke.js';
 import { runHostRouteSmoke } from '../host/hostRouteSmoke.js';
+import { runMvpReadiness } from '../status/mvpReadiness.js';
 import { updatePreviewBlock } from '../update/updatePreview.js';
 import { updateStatusPanel } from '../update/updateStatus.js';
 import { mvpLoopSummary } from '../mvpLoop.js';
@@ -918,6 +919,32 @@ export function hostRouteSmokeReport(opts = {}) {
   };
 }
 
+// mvpReadinessReport(opts) → the PURE MVP release-readiness ROLLUP (v0.2.198).
+// Folds the local readiness signals (version marker, nostr read health, gateway
+// travel / update-flow / host-route smoke, release-metadata safety floor, and the
+// injected test/VPS/docs verdicts) into ONE read-only rollup with an MVP
+// percentage/status + next safe task. Composes plain-data verdicts only — it
+// serves/deploys/fetches/writes NOTHING and every safety flag stays false. Inject
+// opts (tests/vpsDryRun/docs/nextSafeTask) to feed live fs-backed numbers.
+export function mvpReadinessReport(opts = {}) {
+  const r = runMvpReadiness(opts);
+  return {
+    title: 'MVP READINESS ROLLUP',
+    badge: r.badge,
+    ok: r.ok,
+    mvpPct: r.mvpPct,
+    status: r.status,
+    currentVersion: r.currentVersion,
+    summary: r.summary,
+    signals: r.signals,
+    safety: r.safety,
+    reasons: r.reasons,
+    nextSafeTask: r.nextSafeTask,
+    rendered: r.rendered,
+    actionable: r.actionable,
+  };
+}
+
 // updatePreviewReport(release, opts) → the visible-but-inert torii.quest
 // update-check PREVIEW block (LEAN-5) a title/HUD card would draw. Read-only;
 // pins actionable:false so the no-fetch/no-auto-update guarantee is explicit.
@@ -1041,6 +1068,7 @@ export function buildShellReport(inputs = {}) {
     updateStatus: updateStatusReport(updateFeed),
     updateFlowSmoke: updateFlowSmokeReport(),
     hostRouteSmoke: hostRouteSmokeReport(),
+    mvpReadiness: mvpReadinessReport(),
     mvpLoop: mvpLoopReport(),
   };
 }

@@ -38,7 +38,7 @@ import * as handoff from '../../world/handoff.js';
 import * as presence from '../../identity/presence.js';
 import { buildSnapshot, buildCombatReport, buildPhysicsReport } from './snapshot.js';
 import { raycastService } from '../physics/raycastService.js';
-import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, readHealthReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, handoffExecuteReport, hostTransportReport, gatewayActivationReport, gatewayPortalActivationReport, portalTriggerReport, zoneRouteReport, portalMeshPlanReport, zoneLabelReport, travelSmokeReport, updateFlowSmokeReport, hostRouteSmokeReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
+import { gatewayReport, gatewayPreviewReport, productReport, productPreviewReport, leaderboardReport, leaderboardPreviewReport, leaderboardRelayReadReport, profileReadReport, readHealthReport, consentGateReport, consentPromptReport, leaderboardSubmitReport, gatewayReadReport, gatewayTravelReport, handoffPlanReport, handoffExecuteReport, hostTransportReport, gatewayActivationReport, gatewayPortalActivationReport, portalTriggerReport, zoneRouteReport, portalMeshPlanReport, zoneLabelReport, travelSmokeReport, updateFlowSmokeReport, hostRouteSmokeReport, mvpReadinessReport, updatePreviewReport, updateStatusReport, mvpLoopReport, buildShellReport, shellsSummary, shellsDiff } from './shellReport.js';
 import { proofSurfaceLayout } from '../world/proofSurfaceSpecs.js';
 import { checkProofSurfaceSpecs } from './proofSurfaceCheck.js';
 import { resolveAllAnchors } from '../world/anchorTransforms.js';
@@ -289,6 +289,13 @@ export function installToriiDebug(refs) {
       // report. Touches NO server/DNS/SSH/network. Inject opts fixtures
       // (distPaths/fallbackDocs/zoneSlug/hostile) to drive a deliberately-broken layout.
       hostRouteSmoke(opts) { return hostRouteSmokeReport(opts); },
+      // v0.2.198 — the PURE MVP release-readiness ROLLUP: folds the local readiness
+      // signals (version marker, nostr read health, gateway travel / update-flow /
+      // host-route smoke, release-metadata safety floor, injected test/VPS/docs
+      // verdicts) into one read-only rollup with an MVP percentage/status + next
+      // safe task. Serves/deploys/fetches NOTHING. Inject opts
+      // (tests/vpsDryRun/docs/nextSafeTask) to feed live fs-backed numbers.
+      mvpReadiness(opts) { return mvpReadinessReport(opts); },
       // v0.2.142 — the visible-but-inert torii.quest update-check PREVIEW block
       // (LEAN-5) the title/HUD card draws. Read-only; actionable:false — no network
       // fetch, no auto-update, no install, no navigation (deterministic local sample).

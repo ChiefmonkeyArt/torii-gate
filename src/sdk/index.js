@@ -69,6 +69,7 @@ export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
 export * as updateStatus from '../engine/update/updateStatus.js';
 export * as updateFlowSmoke from '../engine/update/updateFlowSmoke.js';
 export * as hostRouteSmoke from '../engine/host/hostRouteSmoke.js';
+export * as mvpReadiness from '../engine/status/mvpReadiness.js';
 export * as mvpLoop from '../engine/mvpLoop.js';
 export * as continuum from '../engine/dashboard/continuumData.js';
 export * as proofSurfaceSpecs from '../engine/world/proofSurfaceSpecs.js';
@@ -259,6 +260,12 @@ export const SDK_SURFACE = Object.freeze({
   // /zone/* SPA fallback / unknown-zone→index / safe slug parsing) into one
   // fail-fast read-only report; NO server, NO deploy, NO DNS/SSH/network.
   hostRouteSmoke:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/host/hostRouteSmoke.js' },
+  // MVP release-readiness rollup (v0.2.198) — folds the pure local readiness
+  // signals (version, nostr read health, gateway travel / update-flow / host-route
+  // smoke, release-metadata floor, injected test/VPS/docs verdicts) into ONE
+  // read-only rollup with an MVP percentage/status + next safe task; NO deploy,
+  // NO network, never acts.
+  mvpReadiness:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/status/mvpReadiness.js' },
   // MVP loop header — frames the four PoC preview cards as one Travel→Market→Score→Update loop (v0.2.143).
   mvpLoop:         { tier: STABILITY.EXPERIMENTAL, module: '../engine/mvpLoop.js' },
   // Torii Continuum project-oversight dashboard data + pure static-page renderer

@@ -1,6 +1,6 @@
 # Torii Quest — SDK & Debug Surface Index
 
-> **Status:** discoverability index (v0.2.197-alpha). A one-page map of the public
+> **Status:** discoverability index (v0.2.198-alpha). A one-page map of the public
 > SDK namespaces, the four MVP proof surfaces, and the read-only `ToriiDebug.shells`
 > reports — for AI handoffs and FOSS contributors. **Everything listed here is pure
 > and inert:** no network, no signing/publishing, no auto-update, and no navigation —
@@ -157,6 +157,28 @@ injected fixture degrades to `ok:false` with concrete `reasons`, never throws).
 helpers — surfaces NO serve/deploy/publish/upload/fetch/write/navigate method; NOT a VPS deployment
 (touches no real server/DNS/SSH/remote command/network). Reachable read-only via
 `ToriiDebug.shells.hostRouteSmoke(opts?)` / `hostRouteSmokeReport(opts?)`.
+
+`mvpReadiness` (STATUS / MVP-READINESS-ROLLUP, v0.2.198) is the pure READ-ONLY/NO-DEPLOY rollup
+that folds the already-pure local readiness signals into ONE verdict with an MVP percentage/status +
+next safe task, so the user sees how close the read-only MVP proof is WITHOUT manually digging
+through every harness, doc, and gate. Constants: `MVP_READINESS_VERSION` (1), `MVP_READINESS_BADGE`
+(`MVP READINESS ROLLUP · READ-ONLY · NO DEPLOY`); curated frozen defaults `DEFAULT_TEST_STATUS`
+(1228/77, profile full), `DEFAULT_VPS_DRY_RUN`, `DEFAULT_DOCS_STATUS`, `NEXT_SAFE_TASK`.
+`runMvpReadiness(opts?)` composes the already-pure harnesses (`runReadHealth`,
+`runGatewayTravelSmoke`, `runUpdateFlowSmoke`, `runHostRouteSmoke`, `buildReleaseMeta`/
+`validateReleaseMeta`, `VERSION`) through nine signals — version marker valid; Nostr read-path
+health; gateway travel smoke; update-flow smoke; host-route smoke; release-metadata safety floor
+(valid AND a tampered `autoUpdate:true` REJECTED); the injected last-known test-suite verdict; the
+injected VPS manual-deploy dry-run verdict; the injected docs/handoff freshness verdict — folding
+into `{version,badge,ok,mvpPct,status,currentVersion,signals,summary,safety,reasons,nextSafeTask,
+rendered:false,actionable:false}` (`mvpPct` = share of passing signals; `status` =
+READY/NEAR/ATTENTION; a broken injected fixture degrades to a fail with concrete `reasons`, never
+throws). The four live smoke verdicts are computed from the pure harnesses; the fs-backed signals
+(tests/VPS/docs) are INJECTED via opts with curated last-known defaults so the module stays pure.
+Every report pins `served/deployed/published/navigated/performed/fetched/wrote/network=false`.
+`formatMvpReadiness` renders one stable text block (safe on null). Surfaces NO
+serve/deploy/publish/fetch/write/navigate method. Reachable read-only via
+`ToriiDebug.shells.mvpReadiness(opts?)` / `mvpReadinessReport(opts?)`.
 
 `consentGate` (CONSENT-1 / SEC-1 precursor, v0.2.162) is the pure, inert consent
 boundary every future write/sign/publish/update/travel action must pass before it may
@@ -572,6 +594,7 @@ publish, or navigation. Pass overrides to inspect your own data.
 | `shells.travelSmoke(o?)` | **v0.2.195** READ-ONLY/DRY-RUN GATEWAY TRAVEL SMOKE harness — `{title:'GATEWAY TRAVEL SMOKE',badge,ok,summary,signals:[{key,label,status,detail}],safety,reasons,rendered:false,actionable:false}` (drives `createGatewayPortalBoundary({dryRun:true})` with no transport through ten travel-contract signals: trigger arms/proximity never navigates/explicit confirm/same-origin `/zone/<slug>`/scoped allowlist never `'/'`/`HOSTILE_ROUTES` all rejected/no external website/consent-gated/no auto travel; every report pins `navigated/performed/external/signed/published/network=false`; never navigates/signs/publishes) |
 | `shells.updateFlowSmoke(o?)` | **v0.2.196** READ-ONLY/NO-AUTO-UPDATE UPDATE FLOW SMOKE harness — `{title:'UPDATE FLOW SMOKE',badge,ok,summary,signals:[{key,label,status,detail}],safety,reasons,rendered:false,actionable:false}` (folds ten update-flow contract signals over frozen LOCAL fixtures: current-version read, release-metadata shape, update-available + up-to-date classification, malformed→unknown degrades safely, manual-only/no-auto-update, metadata safety floor rejects tampered autoUpdate/actionable, no fetch/install/exec surface, confirmation-gated `update:apply` consent, no auto-action; every report pins `performed/actionable/autoUpdate/installed/executed/fetched/network/signed/published/navigated=false`; NOT an updater — never fetches/installs/executes/updates) |
 | `shells.hostRouteSmoke(o?)` | **v0.2.197** READ-ONLY/NO-DEPLOY HOST ROUTE + ASSET SMOKE harness — `{title:'HOST ROUTE SMOKE',badge,ok,summary,signals:[{key,label,status,detail}],safety,reasons,rendered:false,actionable:false}` (folds ten static-host readiness signals: root index present, DIST_SPEC artifacts, dashboard + release-metadata assets, /zone/* SPA fallback documented, no built file shadows the fallback, unknown /zone/<slug> → index.html, safe slug parsing; every report pins served/deployed/navigated/performed/external/network/wrote/fetched=false; NOT a VPS deployment — touches no server/DNS/SSH/network) |
+| `shells.mvpReadiness(o?)` | **v0.2.198** READ-ONLY/NO-DEPLOY MVP RELEASE-READINESS ROLLUP — `{title:'MVP READINESS ROLLUP',badge,ok,mvpPct,status,currentVersion,summary,signals:[{key,label,status,detail}],safety,reasons,nextSafeTask,rendered:false,actionable:false}` (folds nine readiness signals — version marker, Nostr read health, gateway-travel smoke, update-flow smoke, host-route smoke, release-metadata safety floor, test-suite (injected), VPS dry-run (injected), docs/handoff (injected) — into one fail-fast rollup with `mvpPct` + READY/NEAR/ATTENTION status + next safest task; every report pins served/deployed/published/navigated/performed/fetched/wrote/network=false; composes shipped pure harnesses, no THREE/Rapier/DOM/fs/network I/O) |
 | `shells.consentGate(o?)` | **v0.2.162** READ-ONLY CONSENT-GATE foundation map — `{title,badge,count,writeActions,allowedByDefault,actions:[{action,kind,write,signed,requiresConsent,danger,allowed,blocked,reason,performed:false,summary}],readOnly:true,performed:false}` (reads allowed, writes blocked until an explicit grant; pass `{grants}` to preview; never signs/publishes/acts) |
 | `shells.leaderboardSubmit(i?,g?)` | **v0.2.163** READ-ONLY leaderboard SUBMIT INTENT/PREVIEW over a deterministic sample — `{title,badge,action,ok,allowed,blocked,reason,kind,identity,tags,summary,signed:false,published:false,performed:false,readOnly:true,errors}` (inert UNSIGNED kind-30000 draft routed through the consent gate; BLOCKED with no grant, pass a grant to preview allow; never signs/publishes/sends/connects) |
 | `shells.gatewayRead(e?)` | **v0.2.164** READ-ONLY gateway DESTINATION-RECORD read proof over a deterministic LOCAL sample — `{title,badge,ok,count,duplicates,filter,gateways,skipped,navigated:false,signed:false,published:false,performed:false,readOnly:true,errors}` (kind-30078 `#t:torii-gateway` filter; extract→sanitise→newest-per-zone; https-only inert URLs + ws/wss relays, no navigation/DOM/relay I/O) |
