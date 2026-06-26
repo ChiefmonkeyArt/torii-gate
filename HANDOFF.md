@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.202-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.203-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -415,7 +415,30 @@ Breaking one should fail CI/the check, not ship.
   DASHBOARD/STATUS-DATA-ONLY: server-rendered escaped text, NO new `<script>`/`data-k` key → the CSP
   refresh-script sha256 unchanged; no gameplay/physics/shooter/Rapier change; no Nostr signing/
   publishing/live network write; `godMode` stays false.
-  Latest slice report: `torii-v0.2.200-dashboard-metric-freshness-report.md`.
+  **v0.2.203** added an MVP MANUAL PLAYTEST ACCEPTANCE CHECKLIST — a pure, node-safe generator
+  (`tools/playtestChecklist.mjs` + thin CLI `tools/playtest-checklist.mjs`, `npm run playtest:checklist`)
+  that emits a clear MANUAL playtest / MVP acceptance checklist for the user to run against the live
+  build. It folds a frozen, hand-curated 13-area / 17-item checklist — launch/title; shooter loop;
+  movement/footsteps; aim/hit-feedback/headshots/body-shots; reload feel; gun/reflection sanity; mirror
+  sanity; crates/physics-nudge sanity; NAP monkey sanity; Continuum dashboard; release-metadata/update
+  prompt; Nostr read surfaces; gateway portal/travel-confirm shell — where every item carries
+  `{id, steps[], expected, severity (blocker/major/minor), ifFailed}` plus Result (PASS/FAIL/N/A) +
+  Notes fields, a how-to preamble, and four known deferred/non-blocking advisories; purpose-built for
+  future AI handoffs. `buildPlaytestChecklistModel({version,gitCommit,liveUrl,generatedAt})` →
+  `{schema:'torii.playtest-checklist'/v1, badge, title, manual:true, version, gitCommit, liveUrl,
+  severities[], howTo[], sections[] (deep-copied), itemCount, advisories[], safety, rendered:false,
+  actionable:false}`; null/garbled inputs degrade safely and never throw.
+  `formatPlaytestChecklist()` / `formatPlaytestChecklistMarkdown()` render stable text/markdown
+  (null-safe; markdown ships checkboxes + Result/Notes tables). The thin CLI builds the model from
+  `configVersion()`/`gitCommit()`/the SHARED live URL; modes text / `--json` (schema
+  `torii.playtest-checklist` v1) / `--markdown`; READ-ONLY except an opt-in bounded in-repo
+  `--write[=path]` (default `MVP_PLAYTEST_CHECKLIST.md`, confined via the SHARED
+  `resolveHandoffWritePath` — absolute / `..` rejected); always exits 0.
+  `tests/playtest-checklist.test.js` (+15). MANUAL CHECKLIST ONLY — runs no browser, automates
+  nothing, navigates/serves/deploys/publishes/writes (beyond the explicit `--write`) NOTHING; NOT a
+  gameplay change and not a live browser test; no gameplay/physics/shooter/Rapier change; no Nostr
+  signing/publishing/live network write; `godMode` stays false.
+  Latest slice report: `torii-v0.2.203-mvp-playtest-checklist-report.md`.
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc

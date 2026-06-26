@@ -10,8 +10,8 @@ import {
   buildAgentHandoff, formatAgentHandoff, formatAgentHandoffMarkdown,
 } from '../tools/agentHandoff.mjs';
 
-const V = 'v0.2.202-alpha';
-const PKG = '0.2.202-alpha';
+const V = 'v0.2.203-alpha';
+const PKG = '0.2.203-alpha';
 
 // A representative buildHandoffSummary() brief (the shape the CLI passes in).
 const summary = () => ({
