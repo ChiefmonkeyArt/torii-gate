@@ -20,6 +20,10 @@
 export const GITHUB_RELEASE_DRY_RUN_SCHEMA = 'torii.github-release-dry-run';
 export const GITHUB_RELEASE_DRY_RUN_SCHEMA_VERSION = 1;
 
+// Shared, non-misleading wording for the stamped source commit (this dry-run is generated
+// before its own commit — see tools/commitStamp.mjs).
+import { sourceCommitInline } from './commitStamp.mjs';
+
 // Badge naming the artifact as a local, read-only DRY-RUN — never a tag/release/publish action.
 export const GITHUB_RELEASE_DRY_RUN_BADGE =
   'GITHUB RELEASE DRY-RUN · LOCAL · READ-ONLY · NO TAG / NO RELEASE';
@@ -260,7 +264,7 @@ export function formatGithubReleaseDryRun(model) {
   L.push('─'.repeat(60));
   L.push(`${m.badge}`);
   if (m.generatedAt) L.push(`generated: ${m.generatedAt}`);
-  L.push(`verdict: ${m.statusLabel}   (${m.version ?? '(unknown)'}${m.gitCommit ? ` @ ${m.gitCommit}` : ''})`);
+  L.push(`verdict: ${m.statusLabel}   (${m.version ?? '(unknown)'}${sourceCommitInline(m.gitCommit)})`);
   if (m.liveUrl) L.push(`live: ${m.liveUrl}`);
   L.push('');
   L.push('Prerequisites:');
@@ -301,7 +305,7 @@ export function formatGithubReleaseDryRunMarkdown(model) {
   if (m.generatedAt) L.push(`> generated: ${m.generatedAt}`);
   L.push('');
   L.push(`- **Verdict:** ${m.statusLabel}`);
-  L.push(`- **Version:** ${m.version ?? '(unknown)'}${m.gitCommit ? ` @ ${m.gitCommit}` : ''}`);
+  L.push(`- **Version:** ${m.version ?? '(unknown)'}${sourceCommitInline(m.gitCommit)}`);
   if (m.packageVersion) L.push(`- **package.json:** ${m.packageVersion}`);
   if (m.liveUrl) L.push(`- **Live:** ${m.liveUrl}`);
   L.push('');

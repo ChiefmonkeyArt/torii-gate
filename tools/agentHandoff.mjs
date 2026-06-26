@@ -16,6 +16,10 @@
 // assembly/formatting is fully unit-testable (tests/agent-handoff.test.js). The --write target
 // confinement reuses resolveHandoffWritePath() from handoffSummary.mjs (no second boundary).
 
+// Shared, non-misleading wording for the stamped source commit (this file is generated
+// before its own commit — see tools/commitStamp.mjs).
+import { sourceCommitLabel, sourceCommitInline } from './commitStamp.mjs';
+
 // Badge naming the export as read-only oversight, never a deploy/publish/upload action.
 export const AGENT_HANDOFF_BADGE = 'AGENT HANDOFF READINESS · LOCAL · READ-ONLY';
 
@@ -166,7 +170,7 @@ export function formatAgentHandoff(handoff) {
   L.push('─'.repeat(60));
   L.push(`${handoff.badge}`);
   if (handoff.generatedAt) L.push(`generated: ${handoff.generatedAt}`);
-  L.push(`version:   ${handoff.version ?? '(unknown)'}  (pkg ${handoff.packageVersion ?? '?'})  @ ${handoff.gitCommit ?? 'no-git'}`);
+  L.push(`version:   ${handoff.version ?? '(unknown)'}  (pkg ${handoff.packageVersion ?? '?'})${sourceCommitInline(handoff.gitCommit)}`);
   L.push(`live (manual deploy): ${handoff.liveUrl ?? '(unknown)'}`);
   L.push('');
   L.push(`MVP readiness: ${r.pct ?? '?'}% · ${r.status ?? 'UNKNOWN'}  (${r.summary?.ok ?? '?'}/${r.summary?.total ?? '?'} signals)`);
@@ -218,7 +222,7 @@ export function formatAgentHandoffMarkdown(handoff) {
   if (handoff.generatedAt) L.push(`> generated: ${handoff.generatedAt}`);
   L.push('');
   L.push(`- **Version:** ${handoff.version ?? '(unknown)'} (pkg ${handoff.packageVersion ?? '?'})`);
-  L.push(`- **Git commit:** ${handoff.gitCommit ?? '(unavailable)'}`);
+  L.push(`- **Source commit:** ${sourceCommitLabel(handoff.gitCommit)}`);
   L.push(`- **Live (manual deploy):** ${handoff.liveUrl ?? '(unknown)'}`);
   L.push(`- **MVP readiness:** ${r.pct ?? '?'}% · ${r.status ?? 'UNKNOWN'} (${r.summary?.ok ?? '?'}/${r.summary?.total ?? '?'} signals)`);
   if (r.reasons && r.reasons.length) L.push(`  - attention: ${r.reasons.join('; ')}`);

@@ -13,6 +13,10 @@
 // helpers, so the assembly/formatting is unit-testable (tests/release-package.test.js).
 // Null/garbled inputs degrade to honest UNKNOWNs; never throws.
 
+// Shared, non-misleading wording for the stamped source commit (this index is generated
+// before its own commit — see tools/commitStamp.mjs).
+import { sourceCommitInline } from './commitStamp.mjs';
+
 // Stable schema id + integer version for the machine-readable (--json) mode. Bump
 // RELEASE_PACKAGE_SCHEMA_VERSION on any breaking shape change.
 export const RELEASE_PACKAGE_SCHEMA = 'torii.release-package';
@@ -180,7 +184,7 @@ export function formatReleasePackage(model) {
   L.push('─'.repeat(60));
   L.push(`${m.badge}`);
   if (m.generatedAt) L.push(`generated: ${m.generatedAt}`);
-  L.push(`version: ${m.version ?? '(unknown)'}${m.gitCommit ? ` @ ${m.gitCommit}` : ''}`);
+  L.push(`version: ${m.version ?? '(unknown)'}${sourceCommitInline(m.gitCommit)}`);
   if (m.liveUrl) L.push(`live: ${m.liveUrl}`);
   if (m.tests) {
     L.push(`tests: ${m.tests.passing ?? '?'} passing / ${m.tests.files ?? '?'} files${m.tests.profile ? ` (${m.tests.profile})` : ''}`);
@@ -221,7 +225,7 @@ export function formatReleasePackageMarkdown(model) {
   L.push(`> ${m.badge}`);
   if (m.generatedAt) L.push(`> generated: ${m.generatedAt}`);
   L.push('');
-  L.push(`- **Version:** ${m.version ?? '(unknown)'}${m.gitCommit ? ` @ ${m.gitCommit}` : ''}`);
+  L.push(`- **Version:** ${m.version ?? '(unknown)'}${sourceCommitInline(m.gitCommit)}`);
   if (m.liveUrl) L.push(`- **Live:** ${m.liveUrl}`);
   if (m.tests) {
     L.push(`- **Tests:** ${m.tests.passing ?? '?'} passing / ${m.tests.files ?? '?'} files${m.tests.profile ? ` (${m.tests.profile})` : ''}`);

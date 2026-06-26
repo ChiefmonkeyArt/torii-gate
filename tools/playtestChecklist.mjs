@@ -14,6 +14,10 @@
 // commit, so the assembly/formatting stays unit-testable (tests/playtest-checklist.test.js).
 // Null/garbled inputs degrade to honest defaults; never throws.
 
+// Shared, non-misleading wording for the stamped source commit (this checklist is generated
+// before its own commit — see tools/commitStamp.mjs).
+import { sourceCommitInline } from './commitStamp.mjs';
+
 // Stable schema id + integer version for the machine-readable (--json) mode. Bump
 // PLAYTEST_CHECKLIST_SCHEMA_VERSION on any breaking shape change.
 export const PLAYTEST_CHECKLIST_SCHEMA = 'torii.playtest-checklist';
@@ -394,7 +398,7 @@ export function formatPlaytestChecklist(model) {
   L.push('─'.repeat(60));
   L.push(`${m.badge}`);
   if (m.generatedAt) L.push(`generated: ${m.generatedAt}`);
-  L.push(`version: ${m.version ?? '(unknown)'}${m.gitCommit ? ` @ ${m.gitCommit}` : ''}`);
+  L.push(`version: ${m.version ?? '(unknown)'}${sourceCommitInline(m.gitCommit)}`);
   if (m.liveUrl) L.push(`live: ${m.liveUrl}`);
   L.push(`items: ${m.itemCount} across ${Array.isArray(m.sections) ? m.sections.length : 0} sections  ·  severities: ${(m.severities || []).join(' / ')}`);
   L.push('');
@@ -431,7 +435,7 @@ export function formatPlaytestChecklistMarkdown(model) {
   L.push(`> ${m.badge}`);
   if (m.generatedAt) L.push(`> generated: ${m.generatedAt}`);
   L.push('');
-  L.push(`- **Version:** ${m.version ?? '(unknown)'}${m.gitCommit ? ` @ ${m.gitCommit}` : ''}`);
+  L.push(`- **Version:** ${m.version ?? '(unknown)'}${sourceCommitInline(m.gitCommit)}`);
   if (m.liveUrl) L.push(`- **Live:** ${m.liveUrl}`);
   L.push(`- **Items:** ${m.itemCount} across ${Array.isArray(m.sections) ? m.sections.length : 0} sections`);
   L.push(`- **Severities:** ${(m.severities || []).join(' / ')}`);

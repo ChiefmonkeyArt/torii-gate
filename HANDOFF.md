@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.208-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.209-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -520,6 +520,25 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.209** GENERATED COMMIT-STAMP CLARITY — a pure tooling/docs fix (no runtime change). The
+  tracked generated artifacts (`HANDOFF.generated.md`, `MVP_RELEASE_PACKAGE.md`,
+  `MVP_PLAYTEST_CHECKLIST.md`, `RELEASE_NOTES_DRAFT.md`, `GITHUB_RELEASE_DRY_RUN.md`) are written
+  BEFORE the commit that will contain them, so the short commit they stamped was repo HEAD AT
+  GENERATION — the PARENT of each file's own commit. Security reviews kept flagging a bare
+  "commit"/"Git commit" label as cosmetic-but-stale/misleading. Added one shared pure node-safe
+  helper `tools/commitStamp.mjs` (`sourceCommitLabel(commit)` → `<hash> (source commit at generation
+  — precedes this file's own commit)` or `(unavailable)`; `sourceCommitInline(commit)` →
+  ` @ <hash> (source)` or `''`; `SOURCE_COMMIT_NOTE`) and wired all five generator libs plus the
+  handoff-summary brief (`tools/agentHandoff.mjs`, `releasePackage.mjs`, `playtestChecklist.mjs`,
+  `releaseNotes.mjs`, `githubReleaseDryRun.mjs`, `handoffSummary.mjs`) to render the stamp with
+  explicit non-misleading wording — inline ` @ <hash> (source)` on the version line, and a dedicated
+  `**Source commit:**` field (was `**Git commit:**`) in the handoff exports. `tools/playtestResults.mjs`
+  deliberately UNTOUCHED (its `Commit` row is a human-filled intake prefill asserted verbatim in its
+  test). `tests/agent-handoff.test.js` (+5; suite now 1339/84) locks the wording. No generator schema
+  or output-SHAPE change; affected artifacts regenerated so committed copies carry the honest wording.
+  No gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; `godMode`
+  stays false; no new `setTimeout`/`Vector3`/`Matrix4`.
+  Latest slice report: `torii-v0.2.209-generated-commit-stamp-clarity-report.md`.
   **v0.2.208** PROGRESS PARSER GAP CLEANUP — a pure build-time parser/doc fix (no runtime change).
   The Continuum build logs flagged `activeNow: no usable items parsed from progress.md` and
   `completed24h: no usable items parsed from progress.md`, forcing the dashboard to keep curated

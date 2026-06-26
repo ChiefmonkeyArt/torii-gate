@@ -9,9 +9,12 @@ import {
   AGENT_HANDOFF_WRITE_FILENAME, SMOKE_HARNESSES,
   buildAgentHandoff, formatAgentHandoff, formatAgentHandoffMarkdown,
 } from '../tools/agentHandoff.mjs';
+import {
+  SOURCE_COMMIT_NOTE, sourceCommitLabel, sourceCommitInline,
+} from '../tools/commitStamp.mjs';
 
-const V = 'v0.2.208-alpha';
-const PKG = '0.2.208-alpha';
+const V = 'v0.2.209-alpha';
+const PKG = '0.2.209-alpha';
 
 // A representative buildHandoffSummary() brief (the shape the CLI passes in).
 const summary = () => ({
@@ -192,5 +195,47 @@ describe('agent-handoff — formatters', () => {
   it('formatters are null-safe', () => {
     expect(formatAgentHandoff(null)).toBe('agent-handoff: (no handoff)');
     expect(formatAgentHandoffMarkdown(null)).toContain('_(no handoff)_');
+  });
+});
+
+// v0.2.209 — generated artifacts are written BEFORE their own commit, so the commit they
+// carry is the source commit (repo HEAD at generation). The shared tools/commitStamp.mjs
+// helpers render that distinction with non-misleading wording across every generator.
+describe('commit-stamp wording (tools/commitStamp.mjs)', () => {
+  it('exposes a one-line source-commit note explaining the pre-commit generation', () => {
+    expect(typeof SOURCE_COMMIT_NOTE).toBe('string');
+    expect(SOURCE_COMMIT_NOTE).toContain('source commit');
+    expect(SOURCE_COMMIT_NOTE).toContain('generated before its own commit');
+  });
+
+  it('sourceCommitLabel renders a commit as an explicit non-misleading source label', () => {
+    const label = sourceCommitLabel('abc1234');
+    expect(label).toContain('abc1234');
+    expect(label).toContain('source commit');
+    expect(label).toContain("precedes this file's own commit");
+  });
+
+  it('sourceCommitLabel degrades to (unavailable) for null/empty/garbled input', () => {
+    expect(sourceCommitLabel(null)).toBe('(unavailable)');
+    expect(sourceCommitLabel('')).toBe('(unavailable)');
+    expect(sourceCommitLabel('   ')).toBe('(unavailable)');
+    expect(sourceCommitLabel([])).toBe('(unavailable)');
+    expect(sourceCommitLabel(42)).toBe('(unavailable)');
+  });
+
+  it('sourceCommitInline renders a compact (source)-tagged suffix, empty when unknown', () => {
+    expect(sourceCommitInline('abc1234')).toBe(' @ abc1234 (source)');
+    expect(sourceCommitInline('  abc1234  ')).toBe(' @ abc1234 (source)');
+    expect(sourceCommitInline(null)).toBe('');
+    expect(sourceCommitInline('')).toBe('');
+    expect(sourceCommitInline([])).toBe('');
+  });
+
+  it('agent-handoff markdown uses the Source commit label, never a bare "Git commit:"', () => {
+    const h = buildAgentHandoff({ handoffSummary: summary(), mvpReadiness: rollup() });
+    const md = formatAgentHandoffMarkdown(h);
+    expect(md).toContain('**Source commit:**');
+    expect(md).toContain("precedes this file's own commit");
+    expect(md).not.toContain('**Git commit:**');
   });
 });

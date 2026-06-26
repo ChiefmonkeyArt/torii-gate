@@ -16,6 +16,10 @@ import { isAbsolute, resolve, relative, sep } from 'node:path';
 // The live instance (a Perplexity Space). Display text for the handoff, NOT a fetched URL.
 export const HANDOFF_SUMMARY_LIVE_URL = 'https://torii-quest.pplx.app';
 
+// Shared, non-misleading wording for the stamped source commit (this brief is generated
+// before its own commit — see tools/commitStamp.mjs).
+import { sourceCommitLabel, sourceCommitInline } from './commitStamp.mjs';
+
 // Badge naming the brief as read-only oversight, never a deploy/publish action.
 export const HANDOFF_SUMMARY_BADGE = 'AI HANDOFF SUMMARY · LOCAL · READ-ONLY';
 
@@ -147,7 +151,7 @@ export function formatHandoffSummary(summary) {
   L.push('─'.repeat(60));
   L.push(`${summary.badge}`);
   if (summary.generatedAt) L.push(`generated: ${summary.generatedAt}`);
-  L.push(`version:   ${summary.version ?? '(unknown)'}  (pkg ${summary.packageVersion ?? '?'})  @ ${summary.gitCommit ?? 'no-git'}`);
+  L.push(`version:   ${summary.version ?? '(unknown)'}  (pkg ${summary.packageVersion ?? '?'})${sourceCommitInline(summary.gitCommit)}`);
   L.push(`live (manual deploy): ${summary.liveUrl}`);
   L.push('');
   L.push(`gate verdict: ${g.statusLabel ?? 'UNKNOWN'}${g.ready ? '  ✓ READY' : ''}`);
@@ -186,7 +190,7 @@ export function formatHandoffSummaryMarkdown(summary) {
   if (summary.generatedAt) L.push(`> generated: ${summary.generatedAt}`);
   L.push('');
   L.push(`- **Version:** ${summary.version ?? '(unknown)'} (pkg ${summary.packageVersion ?? '?'})`);
-  L.push(`- **Git commit:** ${summary.gitCommit ?? '(unavailable)'}`);
+  L.push(`- **Source commit:** ${sourceCommitLabel(summary.gitCommit)}`);
   L.push(`- **Live (manual deploy):** ${summary.liveUrl}`);
   L.push(`- **Gate verdict:** ${g.statusLabel ?? 'UNKNOWN'}${g.ready ? ' (READY)' : ''}`);
   if (g.blockers && g.blockers.length) L.push(`  - blockers: ${g.blockers.join(', ')}`);

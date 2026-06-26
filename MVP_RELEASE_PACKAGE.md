@@ -1,11 +1,11 @@
 # Torii Quest — MVP Release Package — Release Package Index
 
 > MVP RELEASE PACKAGE INDEX · LOCAL · READ-ONLY
-> generated: 2026-06-26T01:13:05.956Z
+> generated: 2026-06-26T02:20:26.159Z
 
-- **Version:** v0.2.206-alpha @ d45f1d2
+- **Version:** v0.2.209-alpha @ 0d43251 (source)
 - **Live:** https://torii-quest.pplx.app
-- **Tests:** 1316 passing / 83 files
+- **Tests:** 1339 passing / 84 files
 
 ## Package files
 
@@ -33,12 +33,12 @@
 
 ## Recent reports
 
-- `torii-v0.2.200-dashboard-metric-freshness-report.md`
-- `torii-v0.2.201-mvp-rc-gate-report.md`
-- `torii-v0.2.202-release-notes-draft-report.md`
-- `torii-v0.2.203-mvp-playtest-checklist-report.md`
 - `torii-v0.2.204-playtest-results-template-report.md`
 - `torii-v0.2.205-playtest-doc-warning-cleanup-report.md`
+- `torii-v0.2.206-mvp-release-package-report.md`
+- `torii-v0.2.207-github-release-dry-run-report.md`
+- `torii-v0.2.208-progress-parser-cleanup-report.md`
+- `torii-v0.2.209-generated-commit-stamp-clarity-report.md`
 
 ## Known non-blocking advisories
 

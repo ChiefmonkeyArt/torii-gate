@@ -1,9 +1,9 @@
 # Torii Quest — MVP Manual Playtest Acceptance Checklist
 
 > MVP MANUAL PLAYTEST CHECKLIST · LOCAL · READ-ONLY
-> generated: 2026-06-26T00:19:36.225Z
+> generated: 2026-06-26T02:20:26.637Z
 
-- **Version:** v0.2.203-alpha @ 6a1bbd8
+- **Version:** v0.2.209-alpha @ 0d43251 (source)
 - **Live:** https://torii-quest.pplx.app
 - **Items:** 17 across 13 sections
 - **Severities:** blocker / major / minor
@@ -23,7 +23,7 @@
 1. Open the live build URL in a desktop browser.
 1. Wait for the title/landing screen to render.
 
-**Expected:** The title screen appears with the game name and a version label matching the build (e.g. v0.2.203-alpha); no console errors block the screen.
+**Expected:** The title screen appears with the game name and a version label matching the build (the current vX.Y.Z-alpha marker); no console errors block the screen.
 
 **If it fails:** Capture the browser console + network tab; check the deployed bundle/version label and re-run the build/deploy. File a blocker.
 

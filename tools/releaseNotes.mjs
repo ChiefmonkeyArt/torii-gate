@@ -13,6 +13,10 @@
 // hands plain verdicts to these helpers, so the assembly/formatting is unit-testable
 // (tests/release-notes.test.js). Null/garbled inputs degrade to honest UNKNOWNs; never throws.
 
+// Shared, non-misleading wording for the stamped source commit (this draft is generated
+// before its own commit — see tools/commitStamp.mjs).
+import { sourceCommitInline } from './commitStamp.mjs';
+
 // Stable schema id + integer version for the machine-readable (--json) mode. Bump
 // RELEASE_NOTES_SCHEMA_VERSION on any breaking shape change.
 export const RELEASE_NOTES_SCHEMA = 'torii.release-notes';
@@ -206,7 +210,7 @@ export function formatReleaseNotes(model) {
   L.push('─'.repeat(60));
   L.push(`${m.badge}`);
   if (m.generatedAt) L.push(`generated: ${m.generatedAt}`);
-  L.push(`version: ${m.version ?? '(unknown)'}${m.gitCommit ? ` @ ${m.gitCommit}` : ''}`);
+  L.push(`version: ${m.version ?? '(unknown)'}${sourceCommitInline(m.gitCommit)}`);
   if (m.liveUrl) L.push(`live: ${m.liveUrl}`);
   L.push(`candidate: ${cand.isCandidate ? 'YES' : 'NO'}  ·  ${cand.status}${cand.pct != null ? ` (${cand.pct}%)` : ''}`);
   L.push(`MVP readiness: ${rd.present ? `${rd.pct ?? '?'}% · ${rd.status}` : '(not supplied)'}`);
@@ -243,7 +247,7 @@ export function formatReleaseNotesMarkdown(model) {
   L.push(`> ${m.badge}`);
   if (m.generatedAt) L.push(`> generated: ${m.generatedAt}`);
   L.push('');
-  L.push(`- **Version:** ${m.version ?? '(unknown)'}${m.gitCommit ? ` @ ${m.gitCommit}` : ''}`);
+  L.push(`- **Version:** ${m.version ?? '(unknown)'}${sourceCommitInline(m.gitCommit)}`);
   if (m.liveUrl) L.push(`- **Live:** ${m.liveUrl}`);
   L.push(`- **Release candidate:** ${cand.isCandidate ? 'YES' : 'NO'} (${cand.status}${cand.pct != null ? `, ${cand.pct}%` : ''})`);
   L.push(`- **MVP readiness:** ${rd.present ? `${rd.pct ?? '?'}% · ${rd.status}` : '(not supplied)'}`);
