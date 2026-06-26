@@ -1,11 +1,11 @@
 # Torii Quest — MVP Release Package — Release Package Index
 
 > MVP RELEASE PACKAGE INDEX · LOCAL · READ-ONLY
-> generated: 2026-06-26T10:39:00.290Z
+> generated: 2026-06-26T10:57:59.704Z
 
-- **Version:** v0.2.225-alpha @ a08da13 (source)
+- **Version:** v0.2.226-alpha @ 26e91b5 (source)
 - **Live:** https://torii-quest.pplx.app
-- **Tests:** 1487 passing / 90 files
+- **Tests:** 1494 passing / 91 files
 
 ## Package files
 

@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.225-alpha';
+export const CONTINUUM_VERSION = 'v0.2.226-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -48,8 +48,8 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1487,
-  files: 90,
+  passing: 1494,
+  files: 91,
   fastProfile: 5,
   foundationProfile: 25,
 });
@@ -1097,12 +1097,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.225-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.226-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.225 PLAYTEST-CAPTURE PATH HARDENING (tooling only, no runtime/gameplay/dashboard-render change) — hardens the playtest:capture --file= path guard against percent-encoded path separators and encoded traversal dots (%2F/%5C/%2e variants). A pure, exported safeRepoRelPath() in tools/playtestNoteCapture.mjs rejects empty/non-string input, absolute paths (POSIX/Windows/drive), `..` traversal, and percent-encoded separators/dots literally AND after a decodeURIComponent re-check (malformed %-escape → reject); the CLI wires to it and still exits non-zero on a rejected path. Addresses the v0.2.224 security-review non-blocking advisory (Node fs never URL-decodes, so not exploitable in current local use — hardening is cheap). Strictly read-only preserved (no --write; never writes MVP_PLAYTEST_RESULTS.md) and approval separation intact (approvalImplied false). Adds 5 tests to the existing capture suite (1482→1487 / files stays 90). Prior — v0.2.224 MVP playtest note capture (explainer + read-only dry-run CLI); v0.2.223 MVP playtest results on the dashboard card; v0.2.222 MVP playtest results intake. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.226 ENTRY-FLOW BUTTON FIX (service-worker stale app-shell; no gameplay change) — fixes the field report that the LOGIN and ENTER ARENA buttons did nothing. Root cause: the service worker PRECACHED the HTML app shell (\'/\'), and the shell pins a content-hashed /assets/index-<hash>.js bundle; after a redeploy minted a new hash, a returning player\'s precached shell pointed at a 404\'d bundle, so the bundle never executed and the title screen rendered (static HTML) while every button\'s click handler (in the dead bundle) was inert. Fix: drop \'/\' from PRECACHE_ASSETS in public/sw.js (precache only immutable binary assets — GLB/textures), leaving HTML/JS network-first inside the VERSION-named cache so shell+bundle always stay a consistent pair; and add a loop-guarded controllerchange→reload to the inline SW registration in index.html so already-stranded clients auto-heal when the fresh version-named SW claims the page (CSP sha256 recomputed for the edited inline script). New tests/sw-app-shell.test.js freezes the contract (no shell precache, cache name tracks VERSION, HTML/JS network-first, guarded reload, CSP hash matches): +7 tests, +1 file (1487→1494 / 90→91). Prior — v0.2.225 playtest-capture --file= path hardening (encoded-separator guard); v0.2.224 MVP playtest note capture; v0.2.223 MVP playtest results on the dashboard card. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the

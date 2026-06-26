@@ -1,6 +1,6 @@
 // sw.js — Torii Quest Service Worker
 // Strategy: cache-first for GLBs/images/fonts, network-first for JS/CSS/HTML.
-// On install: precache all static game assets.
+// On install: precache the big IMMUTABLE binary assets only — NEVER the HTML shell.
 // On activate: purge old cache versions.
 
 // CACHE_VERSION tracks the app VERSION (src/config.js) so every shipped version
@@ -8,13 +8,21 @@
 // assets — no stale assets after an asset-changing deploy. Bump in lockstep with the
 // other version markers; regression-check [5] FAILS if this does not embed the current
 // EXPECTED_VERSION (so it can never silently rot back to a stale literal like 'tq-v1').
-const CACHE_VERSION = 'tq-v0.2.225-alpha';
+const CACHE_VERSION = 'tq-v0.2.226-alpha';
 const CACHE_NAME    = `torii-quest-${CACHE_VERSION}`;
 
-// Static assets to precache on install.
-// GLBs are the biggest win — ~7MB that would otherwise re-download every visit.
+// Static assets to precache on install — ONLY immutable binary assets whose URL never
+// changes between deploys (GLBs/textures, ~7MB that would otherwise re-download every
+// visit). The HTML app shell ('/') is DELIBERATELY NOT precached: index.html pins the
+// content-hashed `/assets/index-<hash>.js` bundle, so a precached shell becomes a
+// time-bomb — after a redeploy mints a new bundle hash, a stale cached shell points at
+// an `/assets/index-<oldhash>.js` that 404s, the app bundle never executes, and every
+// title-screen button (LOGIN / ENTER ARENA) goes inert while the static HTML still
+// renders (v0.2.226 entry-flow regression — see entry-flow report). The shell is always
+// network-first (cached only opportunistically by networkFirst for offline fallback,
+// inside this VERSION-named cache that is purged each deploy, so shell+bundle in cache
+// always stay a consistent pair).
 const PRECACHE_ASSETS = [
-  '/',
   '/wall-texture.webp',
   '/bitcoin-b.png',
   '/banker-rigged.glb',

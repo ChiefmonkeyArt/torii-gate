@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.225-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.226-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -523,6 +523,29 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.226** ENTRY-FLOW BUTTON FIX (service-worker stale app-shell; no gameplay change) — fixes the
+  URGENT MVP-blocker field report that the **LOGIN WITH NOSTR** and **ENTER ARENA** title-screen buttons
+  did nothing on the live site. ROOT CAUSE (diagnosed from source — NO source regression: `main.js`
+  button wiring stable since v0.2.184, the CSP `script-src` sha256 matched the inline script, all tests
+  green, `#screen-title` is topmost at z-index 100): `public/sw.js` PRECACHED the HTML app shell (`'/'`).
+  The production build content-hashes the bundle (`/assets/index-<hash>.js`); a returning player served
+  the precached STALE shell on a network-first FALLBACK got an `/assets/index-<oldhash>.js` that 404s
+  after a redeploy → the app bundle never executes → the static title HTML renders but every button's
+  click handler (which lives in the dead bundle) is inert. FIX (surgical, two files): (1) `public/sw.js`
+  — DROP `'/'` from `PRECACHE_ASSETS` so only immutable binary assets (GLB/textures/fonts) are precached
+  and HTML/JS stay network-first inside the VERSION-named cache, keeping shell+bundle a consistent pair
+  purged each deploy; (2) `index.html` — add a loop-guarded `controllerchange`→`window.location.reload()`
+  to the inline SW-registration script so an already-stranded client AUTO-HEALS the moment the fresh
+  version-named SW claims the page (CSP `script-src` sha256 recomputed →
+  `sha256-kSlcI81hNn07JrxiM4vmvnFrbp8sf1BjrBQFApJ2aFU=`). SW install/activate/fetch routing (cache-first
+  binary / network-first HTML+JS) otherwise UNCHANGED. New `tests/sw-app-shell.test.js` (+7; suite
+  1487/90 → 1494/91) freezes the contract: no HTML-shell precache, precache binary-only, cache name
+  embeds `VERSION`, `isStaticAsset` excludes HTML/JS/CSS, guarded `controllerchange` reload, CSP sha256
+  matches the inline script. BUGFIX — entry-flow only; **status STAYS not-run/pending — no MVP approval
+  granted in this slice** (parent agent handles security review/deploy/publish/push/upload); no
+  gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no
+  network/deploy/publish/tag/release/self-update; `godMode` stays false; no new
+  `setTimeout`/`Vector3`/`Matrix4`. Latest slice report: `torii-v0.2.226-entry-flow-button-fix-report.md`.
   **v0.2.225** PLAYTEST-CAPTURE PATH HARDENING — a tiny tooling slice (no runtime change) hardening
   the `npm run playtest:capture` `--file=` path guard against percent-encoded path separators and
   encoded traversal dots, resolving the v0.2.224 security-review NON-BLOCKING advisory (Node's `fs`

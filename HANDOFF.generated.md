@@ -2,13 +2,14 @@
 
 > AGENT HANDOFF READINESS · LOCAL · READ-ONLY
 > Generated artifact — do NOT hand-edit. The curated `HANDOFF.md` stays the source of truth.
-> generated: 2026-06-26T10:38:54.819Z
+> generated: 2026-06-26T10:57:57.845Z
 
-- **Version:** v0.2.225-alpha (pkg 0.2.225-alpha)
-- **Source commit:** a08da13 (source commit at generation — precedes this file's own commit)
+- **Version:** v0.2.226-alpha (pkg 0.2.226-alpha)
+- **Source commit:** 26e91b5 (source commit at generation — precedes this file's own commit)
 - **Live (manual deploy):** https://torii-quest.pplx.app
 - **MVP readiness:** 100% · READY (9/9 signals)
-- **Gate verdict:** READY (READY)
+- **Gate verdict:** NOT READY
+  - blockers: docs
 - **Regression:** 15 / 15 checks
 - **Test profiles:** fast 5 · foundation 25 file(s)
 
