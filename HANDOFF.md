@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.218-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.219-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -63,6 +63,7 @@ Breaking one should fail CI/the check, not ship.
 | `tools/regression-check.mjs` | header comment (line 1), `EXPECTED_VERSION` (~26), stale-version guard regex (~110 — flag the PREVIOUS version) |
 | `package.json` | `"version"` — VALID SEMVER, so the `EXPECTED_VERSION` with the leading `v` STRIPPED (e.g. `0.2.137-alpha`). Regression-check [5] asserts it matches. |
 | `src/engine/dashboard/continuumData.js` | `CONTINUUM_VERSION` — pinned to `config.js` `VERSION` by `continuum-dashboard.test.js`; also the `metrics` "Source version" + "Tests" rows (test count) |
+| `public/sw.js` | `CACHE_VERSION` literal (`tq-<EXPECTED_VERSION>`) — regression-check [5] FAILS if it does not embed the current version (copied verbatim by Vite, cannot import config; v0.2.219) |
 | `progress.md` / `todo.md` / `strategy.md` | "Current version" lines |
 
 ## 4. Source of truth
@@ -520,6 +521,26 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.219** SERVICE-WORKER CACHE HYGIENE — a `public/sw.js` + tooling slice (no runtime/gameplay
+  change). Changed `public/sw.js` `CACHE_VERSION` from the static `tq-v1` to a version-tracking
+  `tq-v0.2.219-alpha` so every shipped version bump now mints a fresh service-worker cache name
+  (`torii-quest-tq-v0.2.219-alpha`) and the existing `activate` handler purges the prior version's
+  caches — no stale assets after an asset-changing deploy. HARDENED the regression-check `[5]`
+  version-marker block (`tools/regression-check.mjs`) with a guard that reads the `CACHE_VERSION`
+  literal via regex and FAILS if it does not EMBED the current `EXPECTED_VERSION` (so it can never
+  silently rot back to `tq-v1`; emits a `public/sw.js CACHE_VERSION tracks v0.2.219-alpha` pass line).
+  Resolves the v0.2.217/v0.2.218 security-review advisory (non-blocking: `public/sw.js`
+  `CACHE_VERSION` remained `tq-v1`). `public/sw.js` is copied VERBATIM by Vite (it lives in `public/`,
+  no module system), so it cannot `import` config.js — `CACHE_VERSION` stays a hardcoded string
+  literal kept in lockstep with the other version markers via the new guard, the same enforcement
+  pattern as the `package.json` version. All install/activate/fetch/`skipWaiting`/`clients.claim`/
+  old-cache-purge SW safety behavior is UNCHANGED, and the cache-first-for-assets /
+  network-first-for-JS-CSS-HTML strategy is untouched. No test file added — the existing 15-check gate
+  carries the guard, so the Vitest suite stays at 1417/87 (no `CURRENT_TEST_STATUS`/
+  `DEFAULT_TEST_STATUS` numeric change). SERVICE-WORKER/TOOLING-ONLY — no runtime/gameplay/physics/
+  shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/
+  tag/release/self-update; `godMode` stays false; no new `setTimeout`/`Vector3`/`Matrix4`.
+  Latest slice report: `torii-v0.2.219-service-worker-cache-hygiene-report.md`.
   **v0.2.218** PACKAGE-PRIVACY HYGIENE — a package.json/tooling slice (no runtime change). Added
   `"private": true` to `package.json` so this static web-app/game can never be accidentally
   `npm publish`-ed, and HARDENED the regression-check `[5]` version-marker block

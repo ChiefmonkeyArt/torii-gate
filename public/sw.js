@@ -3,7 +3,12 @@
 // On install: precache all static game assets.
 // On activate: purge old cache versions.
 
-const CACHE_VERSION = 'tq-v1';
+// CACHE_VERSION tracks the app VERSION (src/config.js) so every shipped version
+// bump mints a fresh cache name and the activate handler purges the prior version's
+// assets — no stale assets after an asset-changing deploy. Bump in lockstep with the
+// other version markers; regression-check [5] FAILS if this does not embed the current
+// EXPECTED_VERSION (so it can never silently rot back to a stale literal like 'tq-v1').
+const CACHE_VERSION = 'tq-v0.2.219-alpha';
 const CACHE_NAME    = `torii-quest-${CACHE_VERSION}`;
 
 // Static assets to precache on install.

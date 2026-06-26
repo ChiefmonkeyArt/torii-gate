@@ -8,7 +8,9 @@
 //   4. no `new THREE.Vector3` / `new THREE.Matrix4` in foundation/new modules
 //   5. version markers agree on EXPECTED_VERSION (config.js + index.html +
 //      package.json — semver-stripped, no leading 'v'); package.json stays
-//      `"private": true` (v0.2.218 — no accidental npm publish of this static app)
+//      `"private": true` (v0.2.218 — no accidental npm publish of this static app);
+//      public/sw.js CACHE_VERSION embeds EXPECTED_VERSION (v0.2.219 — every version
+//      bump busts the service-worker cache, so no stale assets after a deploy)
 //   6. dist marker check (only if dist/ exists) — key behaviours present
 //   7. state.phase writes confined to state.js (FSM seam, v0.2.115)
 //   8. every EV.<NAME> reference is defined in the events.js registry (v0.2.116)
@@ -42,7 +44,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.218-alpha';
+const EXPECTED_VERSION = 'v0.2.219-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -126,7 +128,7 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   const count = (html.match(new RegExp(EXPECTED_VERSION.replace(/\./g, '\\.'), 'g')) || []).length;
   if (count < 2) fail(`index.html has ${count} ${EXPECTED_VERSION} markers (expected >=2)`);
   else pass(`index.html has ${count} version markers`);
-  if (/v0\.2\.217-alpha/.test(html)) fail('index.html still references v0.2.217-alpha');
+  if (/v0\.2\.218-alpha/.test(html)) fail('index.html still references v0.2.218-alpha');
   // package.json `version` must be valid semver (no leading 'v'), so it carries
   // the EXPECTED_VERSION with the 'v' stripped. Ties package metadata to the
   // runtime VERSION so the two can't drift (security-review finding, v0.2.137).
@@ -139,6 +141,15 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   // accidentally `npm publish`-ed (security-review finding, v0.2.218).
   if (pkg.private !== true) fail('package.json "private" must be true (prevents accidental npm publish)');
   else pass('package.json is private (no accidental publish)');
+  // public/sw.js CACHE_VERSION must EMBED the EXPECTED_VERSION so every shipped version
+  // bump mints a fresh service-worker cache and the activate handler purges the prior
+  // version's assets — no stale cache after an asset-changing deploy. Fails if the
+  // literal rots back to a static value like 'tq-v1' (security-review advisory, v0.2.219).
+  const sw = readFileSync(join(ROOT, 'public/sw.js'), 'utf8');
+  const swMatch = sw.match(/CACHE_VERSION\s*=\s*'([^']+)'/);
+  if (!swMatch) fail('public/sw.js: no CACHE_VERSION literal found');
+  else if (!swMatch[1].includes(EXPECTED_VERSION)) fail(`public/sw.js CACHE_VERSION "${swMatch[1]}" does not embed ${EXPECTED_VERSION} (stale-cache risk)`);
+  else pass(`public/sw.js CACHE_VERSION tracks ${EXPECTED_VERSION} (${swMatch[1]})`);
 }
 
 // 6. dist markers (only if built)
