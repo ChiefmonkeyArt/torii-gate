@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.226-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.227-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -523,6 +523,25 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.227** ENTRY-FLOW SMOKE HARNESS (docs/test only; no gameplay change) — hardens against a
+  recurrence of the v0.2.226 dead-button MVP blocker by making inert title-screen buttons impossible to
+  miss, in CI and on manual deploy. New `tests/entry-flow-smoke.test.js` (+7; suite 1494/91 → 1501/92)
+  is a PURE file-read contract (no DOM/network) asserting BOTH title-screen entry buttons exist in
+  `index.html` (`#btn-enter`, `#btn-nostr-centre`) AND are resolved via `getElementById` into their
+  `main.js` handles (`elEnterBtn`, `elNostrCentreBtn`) AND each is `addEventListener('click', …)`-bound,
+  plus that the ENTER handler is gated to the title screen (`if (!isTitle()) return`) — so a silent id
+  rename/typo on EITHER the HTML or JS side fails the suite instead of shipping a button that renders but
+  does nothing. SOURCE-side companion to v0.2.226's `tests/sw-app-shell.test.js` (the service-worker
+  side). Also adds an **Entry-Flow Live Smoke** checklist (run FIRST after every deploy) to
+  `CODE_INDEX.md` Manual Smoke Checklist + the manual-validation docs: DevTools console shows no
+  `/assets/index-<hash>.js` 404, both buttons respond, the active SW cache name (`torii-quest-tq-v<ver>`)
+  matches the version label, the SW cache holds NO HTML shell, and a second visit self-heals (one
+  controllerchange reload). TOOLING/DOCS/TEST-ONLY — **status STAYS not-run/pending — no results
+  fabricated, no MVP approval granted in this slice** (parent agent handles security
+  review/deploy/publish/push/upload); no gameplay/physics/shooter/Rapier change; no Nostr
+  signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; `godMode`
+  stays false; no new `setTimeout`/`Vector3`/`Matrix4`. Latest slice report:
+  `torii-v0.2.227-entry-flow-smoke-harness-report.md`.
   **v0.2.226** ENTRY-FLOW BUTTON FIX (service-worker stale app-shell; no gameplay change) — fixes the
   URGENT MVP-blocker field report that the **LOGIN WITH NOSTR** and **ENTER ARENA** title-screen buttons
   did nothing on the live site. ROOT CAUSE (diagnosed from source — NO source regression: `main.js`

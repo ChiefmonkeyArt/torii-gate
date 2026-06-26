@@ -3,7 +3,7 @@
 > Lightweight developer/agent index. Keep this practical and update it as systems are touched.
 > Purpose: help future debugging, SDK extraction, FOSS contribution, and AI handoff speed.
 
-Current version: `v0.2.226-alpha`  
+Current version: `v0.2.227-alpha`  
 Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app)  
 **Active focus: 15-hour proof-of-concept route** — shooter is maintenance-only unless demo-breaking; the active MVP is the freedom-tech loop (gateway/NAP-to-NAP preview, Plebeian/Nostr product panel proof, leaderboard preview, torii.quest GitHub update-check). Retrospective polish after PoC validation. See `strategy.md` → "15-Hour Proof-of-Concept Route".
 
@@ -159,6 +159,24 @@ Run on real hardware after publish:
 10. Check mirror player scale and reflected gun handle orientation.
 11. Confirm footsteps do not drumroll.
 12. Confirm NAP Chiefmonkey NPC is not stuck or splitting.
+
+### Entry-Flow Live Smoke (run FIRST after every deploy — guards the v0.2.226 blocker)
+
+The static title HTML can render even when the app bundle never executed (stale service
+worker → 404'd hashed JS), leaving every title button inert. Do these BEFORE the gameplay
+checklist above, on a HARD-RELOADED tab and again on a SECOND normal visit (to exercise the
+returning-client service-worker path):
+
+1. Open DevTools console — confirm NO `/assets/index-<hash>.js` 404 and no uncaught errors.
+2. `LOGIN WITH NOSTR` (`#btn-nostr-centre`) responds — status text updates on click.
+3. `ENTER ARENA` (`#btn-enter`) responds — text flips to `LOADING PHYSICS…` then reaches playing.
+4. Application → Service Workers: active worker is `torii-quest-tq-v<current>` (matches version label).
+5. Application → Cache Storage: the SW cache does NOT contain the HTML app shell (`/` or `index.html`).
+6. Second visit / refresh: page self-heals (one controllerchange reload) — buttons still respond.
+
+Automated companions (catch the source + SW sides in CI without a browser):
+`tests/entry-flow-smoke.test.js` (buttons exist + bound in main.js) and
+`tests/sw-app-shell.test.js` (no shell precache, cache tracks version, self-heal reload).
 
 ---
 
