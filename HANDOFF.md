@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.211-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.212-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -520,6 +520,21 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.212** RELEASE-MANIFEST SHELL-LESS REPORT DISCOVERY — a pure tooling/docs slice (no runtime
+  change). The release-manifest CLI (`tools/release-manifest.mjs`) no longer shells out to
+  `execSync('ls torii-v*-report.md 2>/dev/null')` to find recent slice reports — a v0.2.211 security
+  review SHIPPED but noted the hardcoded shell glob (no injection vector, but cleaner/more portable as
+  plain JS). New PURE `selectRecentReports(names, cap?)` + exported `RELEASE_MANIFEST_REPORT_RE`
+  (`/^torii-v.*-report\.md$/`) / `RELEASE_MANIFEST_REPORT_CAP` (6) in `tools/releaseManifest.mjs` filter
+  the report-shaped names, sort them lexicographically (deterministic, matches the old `ls` order), and
+  cap to the most recent; the CLI now feeds it `fs.readdirSync(ROOT)` — no `child_process`, identical
+  output (`execSync` stays only for the read-only `git rev-parse` commit stamp).
+  `tests/release-manifest.test.js` (+5; suite now 1377/86): report-shape filtering, deterministic sort
+  regardless of input order, cap, custom/garbled cap, and null-safety. DOCS/TOOLING-ONLY — no generator
+  output-shape change; no runtime/gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/
+  live network write; no network/deploy/publish/tag/release/self-update; `godMode` stays false; no new
+  `setTimeout`/`Vector3`/`Matrix4`.
+  Latest slice report: `torii-v0.2.212-release-manifest-shellless-report.md`.
   **v0.2.211** RELEASE ARTIFACT INTEGRITY MANIFEST — a pure tooling/docs slice (no runtime change).
   A new local, read-only manifest (`tools/releaseManifest.mjs` pure assembler + thin CLI
   `tools/release-manifest.mjs`, `npm run release:manifest`) records the RC package artifacts a future

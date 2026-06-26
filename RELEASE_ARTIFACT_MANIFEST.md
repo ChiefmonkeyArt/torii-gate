@@ -1,11 +1,11 @@
 # Torii Quest — Release Artifact Manifest
 
 > RELEASE ARTIFACT MANIFEST · LOCAL · READ-ONLY
-> generated: 2026-06-26T03:10:55.252Z
+> generated: 2026-06-26T03:27:09.364Z
 
 - **Status:** COMPLETE
-- **Version:** v0.2.211-alpha @ 47e5b18 (source)
-- **Package version:** 0.2.211-alpha
+- **Version:** v0.2.212-alpha @ 89238e3 (source)
+- **Package version:** 0.2.212-alpha
 - **Live (manual deploy):** https://torii-quest.pplx.app
 - **Coverage:** 6/6 required present · 6/6 optional present · 12 hashed
 
@@ -13,23 +13,23 @@
 
 | Artifact | Label | Category | Present | sha256 | Bytes |
 | --- | --- | --- | --- | --- | --- |
-| `RELEASE_NOTES_DRAFT.md` | MVP release notes (DRAFT) | doc | present | `1c913a592b4a` | 2852 |
-| `MVP_RELEASE_PACKAGE.md` | MVP release package index | doc | present | `51eb3da10c53` | 2104 |
-| `GITHUB_RELEASE_DRY_RUN.md` | GitHub release dry-run | doc | present | `8d8b6ab69d35` | 2578 |
-| `public/release-metadata.json` | Build / release metadata (served) | build-metadata | present | `0da5f172b6e8` | 1158 |
-| `package.json` | Package manifest (version + scripts) | config | present | `bd13b185d6ca` | 1742 |
-| `index.html` | App entry (version-stamped) | config | present | `a81f57763fad` | 37374 |
+| `RELEASE_NOTES_DRAFT.md` | MVP release notes (DRAFT) | doc | present | `83ec12811a64` | 2855 |
+| `MVP_RELEASE_PACKAGE.md` | MVP release package index | doc | present | `f51056c3dba4` | 2111 |
+| `GITHUB_RELEASE_DRY_RUN.md` | GitHub release dry-run | doc | present | `d2d265715bb9` | 2578 |
+| `public/release-metadata.json` | Build / release metadata (served) | build-metadata | present | `3950c9523e10` | 1158 |
+| `package.json` | Package manifest (version + scripts) | config | present | `524bd2cbdf8f` | 1742 |
+| `index.html` | App entry (version-stamped) | config | present | `0cdbaab111a3` | 37374 |
 
 ## Optional artifacts
 
 | Artifact | Label | Category | Present | sha256 | Bytes |
 | --- | --- | --- | --- | --- | --- |
-| `MVP_RC_SNAPSHOT.md` | MVP RC freeze-candidate snapshot | doc | present | `c6ce1ff3b805` | 4108 |
-| `MVP_PLAYTEST_CHECKLIST.md` | MVP playtest checklist | doc | present | `cf1450524df2` | 11004 |
-| `MVP_PLAYTEST_RESULTS_TEMPLATE.md` | MVP playtest results template | doc | present | `b268dc547b42` | 8581 |
-| `HANDOFF.md` | Handoff narrative (source of truth) | doc | present | `831af7767448` | 84620 |
+| `MVP_RC_SNAPSHOT.md` | MVP RC freeze-candidate snapshot | doc | present | `8b204d2ad944` | 4115 |
+| `MVP_PLAYTEST_CHECKLIST.md` | MVP playtest checklist | doc | present | `9814dd16665d` | 11004 |
+| `MVP_PLAYTEST_RESULTS_TEMPLATE.md` | MVP playtest results template | doc | present | `9a006ecce82d` | 8581 |
+| `HANDOFF.md` | Handoff narrative (source of truth) | doc | present | `2cc4d67be2b8` | 86039 |
 | `VPS_INSTALL.md` | VPS install / manual deploy notes | doc | present | `05127e4b7b25` | 22754 |
-| `public/continuum-data.json` | Continuum dashboard data (served) | build-metadata | present | `7e677a2141e0` | 9915 |
+| `public/continuum-data.json` | Continuum dashboard data (served) | build-metadata | present | `837fb2bdbb94` | 9915 |
 
 ## How this supports release integrity / self-update
 
@@ -40,12 +40,12 @@
 
 ## Recent reports
 
-- `torii-v0.2.206-mvp-release-package-report.md`
 - `torii-v0.2.207-github-release-dry-run-report.md`
 - `torii-v0.2.208-progress-parser-cleanup-report.md`
 - `torii-v0.2.209-generated-commit-stamp-clarity-report.md`
 - `torii-v0.2.210-mvp-rc-snapshot-report.md`
 - `torii-v0.2.211-release-artifact-manifest-report.md`
+- `torii-v0.2.212-release-manifest-shellless-report.md`
 
 ---
 

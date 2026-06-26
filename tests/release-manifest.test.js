@@ -12,10 +12,12 @@ import {
   RELEASE_MANIFEST_SCHEMA, RELEASE_MANIFEST_SCHEMA_VERSION, RELEASE_MANIFEST_BADGE,
   RELEASE_MANIFEST_WRITE_FILENAME, RELEASE_MANIFEST_TITLE, RELEASE_MANIFEST_STATES,
   RELEASE_MANIFEST_REQUIRED, RELEASE_MANIFEST_OPTIONAL, RELEASE_MANIFEST_NOTES,
+  RELEASE_MANIFEST_REPORT_RE, RELEASE_MANIFEST_REPORT_CAP,
   buildReleaseManifestModel, formatReleaseManifest, formatReleaseManifestMarkdown,
+  selectRecentReports,
 } from '../tools/releaseManifest.mjs';
 
-const V = 'v0.2.211-alpha';
+const V = 'v0.2.212-alpha';
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SHA = 'a'.repeat(64);
 
@@ -65,7 +67,7 @@ describe('release-manifest — references real repo artifacts', () => {
 describe('release-manifest — assembly + verdict', () => {
   it('COMPLETE when every required artifact is present', () => {
     const m = buildReleaseManifestModel({
-      version: V, packageVersion: '0.2.211-alpha', gitCommit: 'abc1234',
+      version: V, packageVersion: '0.2.212-alpha', gitCommit: 'abc1234',
       liveUrl: 'https://torii-quest.pplx.app', artifacts: allPresent(),
     });
     expect(m.schema).toBe('torii.release-manifest');
@@ -130,9 +132,9 @@ describe('release-manifest — assembly + verdict', () => {
 
 describe('release-manifest — formatters', () => {
   const model = buildReleaseManifestModel({
-    version: V, packageVersion: '0.2.211-alpha', gitCommit: 'abc1234',
+    version: V, packageVersion: '0.2.212-alpha', gitCommit: 'abc1234',
     liveUrl: 'https://torii-quest.pplx.app', artifacts: allPresent(),
-    reports: ['torii-v0.2.211-release-artifact-manifest-report.md'],
+    reports: ['torii-v0.2.212-release-manifest-shellless-report.md'],
     generatedAt: '2026-06-26T00:00:00Z',
   });
 
@@ -161,6 +163,60 @@ describe('release-manifest — formatters', () => {
   it('both formatters are null-safe', () => {
     expect(formatReleaseManifest(null)).toBe('release-manifest: (no manifest)');
     expect(formatReleaseManifestMarkdown(null)).toContain('_(no manifest)_');
+  });
+});
+
+describe('release-manifest — selectRecentReports (shell-less discovery)', () => {
+  it('keeps only torii-v*-report.md names and drops everything else', () => {
+    const names = [
+      'torii-v0.2.210-mvp-rc-snapshot-report.md',
+      'torii-v0.2.211-release-artifact-manifest-report.md',
+      'README.md', 'progress.md', 'torii-notes.md', 'torii-v0.2.212-report.md.bak',
+      'package.json', 'src',
+    ];
+    expect(selectRecentReports(names)).toEqual([
+      'torii-v0.2.210-mvp-rc-snapshot-report.md',
+      'torii-v0.2.211-release-artifact-manifest-report.md',
+    ]);
+  });
+
+  it('sorts deterministically regardless of input order (matches the old ls glob order)', () => {
+    const shuffled = [
+      'torii-v0.2.211-c-report.md',
+      'torii-v0.2.209-a-report.md',
+      'torii-v0.2.210-b-report.md',
+    ];
+    const expected = shuffled.slice().sort();
+    expect(selectRecentReports(shuffled)).toEqual(expected);
+    // Same multiset, different order in → identical output.
+    expect(selectRecentReports(shuffled.slice().reverse())).toEqual(expected);
+  });
+
+  it('caps to the most recent entries (newest-ish last)', () => {
+    const many = [];
+    for (let i = 0; i < 10; i += 1) many.push(`torii-v0.2.2${i.toString().padStart(2, '0')}-report.md`);
+    const out = selectRecentReports(many);
+    expect(out.length).toBe(RELEASE_MANIFEST_REPORT_CAP);
+    expect(out[out.length - 1]).toBe(many[many.length - 1]);
+    expect(out).toEqual(many.slice(-RELEASE_MANIFEST_REPORT_CAP));
+  });
+
+  it('honours a custom positive cap and ignores a garbled one', () => {
+    const names = ['torii-v0.2.208-report.md', 'torii-v0.2.209-report.md', 'torii-v0.2.210-report.md'];
+    expect(selectRecentReports(names, 2)).toEqual(names.slice(-2));
+    expect(selectRecentReports(names, 0)).toEqual(names);
+    expect(selectRecentReports(names, -3)).toEqual(names);
+    expect(selectRecentReports(names, 'nope')).toEqual(names);
+  });
+
+  it('exposes a report shape regex + cap and is null-safe / never throws', () => {
+    expect(RELEASE_MANIFEST_REPORT_RE.test('torii-v0.2.212-x-report.md')).toBe(true);
+    expect(RELEASE_MANIFEST_REPORT_RE.test('something-else.md')).toBe(false);
+    expect(Number.isInteger(RELEASE_MANIFEST_REPORT_CAP)).toBe(true);
+    expect(() => selectRecentReports(undefined)).not.toThrow();
+    expect(selectRecentReports(undefined)).toEqual([]);
+    expect(selectRecentReports('not-an-array')).toEqual([]);
+    expect(selectRecentReports([42, null, {}, 'torii-v0.2.212-report.md'])).toEqual(['torii-v0.2.212-report.md']);
   });
 });
 

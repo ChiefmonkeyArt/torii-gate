@@ -1,5 +1,5 @@
 // tools/releaseManifest.mjs — PURE, node-safe RELEASE ARTIFACT MANIFEST assembly + formatting
-// (v0.2.211). Produces ONE manifest that records the RC package artifacts a future GitHub release /
+// (v0.2.212). Produces ONE manifest that records the RC package artifacts a future GitHub release /
 // VPS self-update flow would need to verify: the exact version + commit + live URL, the REQUIRED
 // artifacts (release notes, release package index, GitHub release dry-run, build metadata, config),
 // the OPTIONAL artifacts (RC snapshot, playtest docs, handoff, VPS install notes), each with a
@@ -73,6 +73,13 @@ export const RELEASE_MANIFEST_NOTES = Object.freeze([
   'This manifest is a VISIBILITY artifact: it performs no release, no tag, no publish, no network self-update. The parent agent owns security review, deploy, publish, push, and Space upload.',
 ]);
 
+// RELEASE_MANIFEST_REPORT_RE / _CAP — the slice-report filename shape the CLI discovers from disk
+// and how many of the most recent it keeps. This is the JS equivalent of the old `torii-v*-report.md`
+// shell glob: starts `torii-v`, ends `-report.md`. Used by selectRecentReports so discovery needs no
+// child_process / shell.
+export const RELEASE_MANIFEST_REPORT_RE = /^torii-v.*-report\.md$/;
+export const RELEASE_MANIFEST_REPORT_CAP = 6;
+
 // _str(x) → trimmed non-empty string, else null. Pure.
 function _str(x) {
   return (typeof x === 'string' && x.trim()) ? x.trim() : null;
@@ -97,6 +104,19 @@ function _arr(x) {
 function _strList(x, fallback) {
   const list = _arr(x).map(String).map((s) => s.trim()).filter(Boolean);
   return list.length ? list : fallback.slice();
+}
+
+// selectRecentReports(names, cap) → recent slice-report filenames (those matching the report shape),
+// sorted lexicographically for a deterministic order, capped to the most recent `cap` (newest-ish
+// last). Pure; null-safe; never throws. Replaces the old `ls torii-v*-report.md` shell glob: the CLI
+// hands it readdirSync(root) and no child_process / shell is involved.
+export function selectRecentReports(names, cap = RELEASE_MANIFEST_REPORT_CAP) {
+  const n = (Number.isInteger(cap) && cap > 0) ? cap : RELEASE_MANIFEST_REPORT_CAP;
+  return _arr(names)
+    .map(String).map((s) => s.trim()).filter(Boolean)
+    .filter((s) => RELEASE_MANIFEST_REPORT_RE.test(s))
+    .sort()
+    .slice(-n);
 }
 
 // _sha(x) → a 64-hex sha256 string (lowercased), else null. Pure (validates an injected hash).

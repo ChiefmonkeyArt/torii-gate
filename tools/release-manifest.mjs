@@ -1,4 +1,4 @@
-// tools/release-manifest.mjs — local, read-only RELEASE ARTIFACT MANIFEST CLI (v0.2.211).
+// tools/release-manifest.mjs — local, read-only RELEASE ARTIFACT MANIFEST CLI (v0.2.212).
 // Run with: node tools/release-manifest.mjs  (or: npm run release:manifest).
 // Records the RC package artifacts a future GitHub release / VPS self-update flow would need to
 // verify: it reads each REQUIRED + OPTIONAL in-repo text doc / served build-metadata file, computes
@@ -20,7 +20,7 @@
 // best-effort and READ-ONLY (rev-parse; falls back to null). Checksums cover in-repo text docs + small
 // served build-metadata JSON only — never large dist/ bundles or secrets. Always exits 0 — this is a
 // VISIBILITY manifest, not a gate. The authority stays `npm run test:release`.
-import { readFileSync, writeFileSync, existsSync, statSync, realpathSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync, realpathSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { resolveHandoffWritePath, HANDOFF_SUMMARY_LIVE_URL } from './handoffSummary.mjs';
 import {
   buildReleaseManifestModel, formatReleaseManifest, formatReleaseManifestMarkdown,
+  selectRecentReports,
   RELEASE_MANIFEST_REQUIRED, RELEASE_MANIFEST_OPTIONAL, RELEASE_MANIFEST_WRITE_FILENAME,
 } from './releaseManifest.mjs';
 
@@ -78,12 +79,11 @@ function artifactMap() {
 }
 
 // recentReports() → recent torii-v*-report.md filenames (best-effort, newest-ish last), capped.
+// Reads the repo root with fs.readdirSync and filters/sorts in JS (pure selectRecentReports) — no
+// shell glob, no child_process.
 function recentReports() {
   try {
-    const out = execSync('ls torii-v*-report.md 2>/dev/null', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] })
-      .toString().trim();
-    if (!out) return [];
-    return out.split('\n').map((s) => s.trim()).filter(Boolean).slice(-6);
+    return selectRecentReports(readdirSync(ROOT));
   } catch { return []; }
 }
 
