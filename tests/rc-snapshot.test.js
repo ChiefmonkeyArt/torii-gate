@@ -6,7 +6,7 @@
 // cases. Two integration-flavoured cases prove the snapshot references REAL repo docs and that the
 // referenced docs / current version metadata stay in sync (so the doc list cannot silently rot).
 import { describe, it, expect } from 'vitest';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
@@ -19,7 +19,7 @@ import {
 } from '../tools/rcSnapshot.mjs';
 import { VERSION } from '../src/config.js';
 
-const V = 'v0.2.210-alpha';
+const V = 'v0.2.213-alpha';
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // A green RC-gate verdict (mirrors buildMvpRcGate output, candidate/ready).
@@ -241,5 +241,20 @@ describe('rc-snapshot — robustness', () => {
     expect(m.rcGate.present).toBe(false);
     expect(m.tests).toBe(null);
     for (const d of m.docs) expect(d.present).toBe(null);
+  });
+});
+
+describe('rc-snapshot CLI — shell-less report discovery', () => {
+  const cliSrc = readFileSync(join(REPO_ROOT, 'tools/rc-snapshot.mjs'), 'utf8');
+
+  it('does not shell out to `ls` for report discovery', () => {
+    expect(cliSrc).not.toMatch(/execSync\(\s*['"`]ls\b/);
+    expect(cliSrc).not.toContain('ls torii-v');
+  });
+
+  it('discovers reports through the shared pure selectRecentReports helper', () => {
+    expect(cliSrc).toContain("import { selectRecentReports } from './releaseManifest.mjs'");
+    expect(cliSrc).toContain('selectRecentReports(readdirSync(ROOT))');
+    expect(cliSrc).toMatch(/readdirSync/);
   });
 });

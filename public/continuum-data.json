@@ -1,10 +1,10 @@
 {
-  "version": "v0.2.212-alpha",
-  "generatedAt": "2026-06-26T03:28:27.317Z",
+  "version": "v0.2.213-alpha",
+  "generatedAt": "2026-06-26T03:43:03.679Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
-    "activeTasks": 39,
+    "activeTasks": 40,
     "completedLast24h": 27,
     "archivedClusters": 11,
     "trackCount": 6,
@@ -25,14 +25,14 @@
     "isDerived": true,
     "todoCompletedMarkers": 12,
     "next12": 12,
-    "activeNow": 39,
+    "activeNow": 40,
     "completed24h": 27,
     "archiveClusters": 11
   },
   "derived": {
     "parsed": [
       "next12 (12)",
-      "activeNow (39)",
+      "activeNow (40)",
       "completed24h (27)",
       "archive (11)"
     ],
@@ -48,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.212-alpha"
+        "value": "v0.2.213-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -58,7 +58,7 @@
       {
         "label": "Total tests",
         "kind": "last-known",
-        "value": "1377 passing / 86 files"
+        "value": "1381 passing / 86 files"
       },
       {
         "label": "Profile timings",
@@ -78,7 +78,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.212-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.213-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -191,15 +191,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.212-alpha",
-    "gitCommit": "89238e3",
+    "version": "v0.2.213-alpha",
+    "gitCommit": "76664db",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.212-alpha / pkg 0.2.212-alpha"
+        "detail": "config v0.2.213-alpha / pkg 0.2.213-alpha"
       },
       {
         "key": "tests",

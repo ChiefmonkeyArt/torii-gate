@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.212-alpha';
+export const CONTINUUM_VERSION = 'v0.2.213-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -48,7 +48,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1377,
+  passing: 1381,
   files: 86,
   fastProfile: 5,
   foundationProfile: 25,
@@ -522,12 +522,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.212-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.213-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.212 RELEASE MANIFEST SHELL-LESS REPORT DISCOVERY (docs/tooling only, no runtime change) — the release-manifest CLI now discovers recent torii-v*-report.md slice reports with fs.readdirSync + a pure JS filter/sort (new selectRecentReports + RELEASE_MANIFEST_REPORT_RE/_CAP in tools/releaseManifest.mjs) instead of the old execSync("ls torii-v*-report.md") shell glob — no child_process, fully unit-tested, deterministically sorted, and capped, with identical output. The hardcoded shell glob (a v0.2.211 security-review cleanliness/portability note, no injection vector) is gone. +5 unit tests (tests/release-manifest.test.js: filtering, deterministic sort, cap, custom/garbled cap, null-safety). Prior — v0.2.211 release artifact integrity manifest. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.213 SHELL-LESS RELEASE TOOLING REPORT DISCOVERY (docs/tooling only, no runtime change) — the rc-snapshot and release-package CLIs now discover recent torii-v*-report.md slice reports through the shared pure selectRecentReports(readdirSync(ROOT)) helper instead of the old execSync("ls torii-v*-report.md") shell globs — no child_process for discovery, deterministically sorted and capped, identical output. This finishes the v0.2.212 cleanup (release-manifest) across the remaining two tools the v0.2.212 security review flagged; the shared helper in tools/releaseManifest.mjs is reused, not duplicated. +4 unit tests (tests/rc-snapshot.test.js, tests/release-package.test.js: each CLI no longer shells out to `ls` and uses the shared helper). Prior — v0.2.212 release-manifest shell-less discovery. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the

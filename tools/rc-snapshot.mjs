@@ -1,4 +1,4 @@
-// tools/rc-snapshot.mjs — local, read-only MVP RC SNAPSHOT / FREEZE-CANDIDATE CLI (v0.2.210).
+// tools/rc-snapshot.mjs — local, read-only MVP RC SNAPSHOT / FREEZE-CANDIDATE CLI (v0.2.213).
 // Run with: node tools/rc-snapshot.mjs  (or: npm run rc:snapshot).
 // Captures the current release-candidate state in ONE freeze-candidate document by COMPOSING the
 // already-pure local verdicts — runMvpReadiness() (the MVP rollup) + gatherReleaseReadiness() (the
@@ -21,10 +21,11 @@
 // network, NO server, NO secrets, NO install, NO build, and NO writes unless --write is given. git
 // is best-effort and READ-ONLY (rev-parse / status --porcelain; falls back to null/unknown). Always
 // exits 0 — this is a VISIBILITY snapshot, not a gate. The authority stays `npm run test:release`.
-import { readFileSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, realpathSync, readdirSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { selectRecentReports } from './releaseManifest.mjs';
 import { gatherReleaseReadiness } from './release-readiness.mjs';
 import { resolveHandoffWritePath, buildHandoffSummary, HANDOFF_SUMMARY_LIVE_URL } from './handoffSummary.mjs';
 import { buildMvpRcGate } from './mvpRcGate.mjs';
@@ -98,12 +99,11 @@ function presentMap() {
 }
 
 // recentReports() → recent torii-v*-report.md filenames (best-effort, newest-ish last), capped.
+// Reads the repo root with fs.readdirSync and filters/sorts in JS (the shared pure
+// selectRecentReports) — no shell glob, no child_process.
 function recentReports() {
   try {
-    const out = execSync('ls torii-v*-report.md 2>/dev/null', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] })
-      .toString().trim();
-    if (!out) return [];
-    return out.split('\n').map((s) => s.trim()).filter(Boolean).slice(-6);
+    return selectRecentReports(readdirSync(ROOT));
   } catch { return []; }
 }
 

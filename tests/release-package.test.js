@@ -5,6 +5,9 @@
 // No fs/git — every input is plain data, fully deterministic (generatedAt is omitted so the
 // shape is reproducible).
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import {
   RELEASE_PACKAGE_SCHEMA, RELEASE_PACKAGE_SCHEMA_VERSION, RELEASE_PACKAGE_BADGE,
   RELEASE_PACKAGE_WRITE_FILENAME, RELEASE_PACKAGE_TITLE,
@@ -13,6 +16,7 @@ import {
 } from '../tools/releasePackage.mjs';
 
 const V = 'v0.2.206-alpha';
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 describe('release-package — constants', () => {
   it('exposes a stable schema, version, badge, write filename, and title', () => {
@@ -155,5 +159,20 @@ describe('release-package — robustness', () => {
     expect(m.tests).toBe(null);
     expect(m.regression).toBe(null);
     for (const e of m.entries) expect(e.present).toBe(null);
+  });
+});
+
+describe('release-package CLI — shell-less report discovery', () => {
+  const cliSrc = readFileSync(join(REPO_ROOT, 'tools/release-package.mjs'), 'utf8');
+
+  it('does not shell out to `ls` for report discovery', () => {
+    expect(cliSrc).not.toMatch(/execSync\(\s*['"`]ls\b/);
+    expect(cliSrc).not.toContain('ls torii-v');
+  });
+
+  it('discovers reports through the shared pure selectRecentReports helper', () => {
+    expect(cliSrc).toContain("import { selectRecentReports } from './releaseManifest.mjs'");
+    expect(cliSrc).toContain('selectRecentReports(readdirSync(ROOT))');
+    expect(cliSrc).toMatch(/readdirSync/);
   });
 });

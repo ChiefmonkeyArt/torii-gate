@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.212-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.213-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -520,6 +520,23 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.213** SHELL-LESS RELEASE TOOLING REPORT DISCOVERY — a pure tooling/docs slice (no runtime
+  change). Finished the v0.2.212 cleanup across the remaining two tools the v0.2.212 security review
+  flagged: `tools/rc-snapshot.mjs` and `tools/release-package.mjs` no longer shell out to
+  `execSync('ls torii-v*-report.md 2>/dev/null')` to find recent slice reports. Both `recentReports()`
+  now call the SHARED pure `selectRecentReports(readdirSync(ROOT))` from `tools/releaseManifest.mjs`
+  (added v0.2.212) — no `child_process` for discovery, deterministically sorted (matches the old `ls`
+  order) and capped to the most recent 6, identical output; the helper is REUSED, not duplicated, so
+  the three release tools share one report-discovery source of truth. `execSync` stays imported in
+  both only for read-only `git` (rc-snapshot: commit / `status --porcelain` / `rev-parse @{u}`;
+  release-package: commit stamp). After this slice no `tools/` CLI uses a shell `ls` glob (only a
+  comment in `releaseManifest.mjs` references the removed glob). `tests/rc-snapshot.test.js` +
+  `tests/release-package.test.js` (+4; suite now 1381/86): each CLI's source no longer matches the
+  `execSync('ls …')` glob and DOES import/use `selectRecentReports`. DOCS/TOOLING-ONLY — no generator
+  output-shape change; no runtime/gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/
+  live network write; no network/deploy/publish/tag/release/self-update; `godMode` stays false; no new
+  `setTimeout`/`Vector3`/`Matrix4`.
+  Latest slice report: `torii-v0.2.213-shellless-release-tooling-report.md`.
   **v0.2.212** RELEASE-MANIFEST SHELL-LESS REPORT DISCOVERY — a pure tooling/docs slice (no runtime
   change). The release-manifest CLI (`tools/release-manifest.mjs`) no longer shells out to
   `execSync('ls torii-v*-report.md 2>/dev/null')` to find recent slice reports — a v0.2.211 security

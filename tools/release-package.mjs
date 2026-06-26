@@ -20,10 +20,11 @@
 // INDEX ONLY: NO GitHub release, NO git tag, NO public announcement, NO network, NO server,
 // NO deploy, NO publish. NO secrets, NO install, NO build, and NO writes unless --write is given.
 // git is best-effort (falls back to null). Always exits 0 — this is a VISIBILITY index, not a gate.
-import { readFileSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, realpathSync, readdirSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { selectRecentReports } from './releaseManifest.mjs';
 import { resolveHandoffWritePath, HANDOFF_SUMMARY_LIVE_URL } from './handoffSummary.mjs';
 import { CURRENT_TEST_STATUS } from '../src/engine/dashboard/continuumData.js';
 import {
@@ -59,12 +60,11 @@ function presentMap() {
 }
 
 // recentReports() → recent torii-v*-report.md filenames (best-effort, newest-ish last), capped.
+// Reads the repo root with fs.readdirSync and filters/sorts in JS (the shared pure
+// selectRecentReports) — no shell glob, no child_process.
 function recentReports() {
   try {
-    const out = execSync('ls torii-v*-report.md 2>/dev/null', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] })
-      .toString().trim();
-    if (!out) return [];
-    return out.split('\n').map((s) => s.trim()).filter(Boolean).slice(-6);
+    return selectRecentReports(readdirSync(ROOT));
   } catch { return []; }
 }
 
