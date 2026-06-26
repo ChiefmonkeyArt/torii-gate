@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.228-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.229-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -523,6 +523,26 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.229** ENTRY-STATUS VISIBILITY FIX (surgical entry-flow follow-up; no gameplay change) — after
+  v0.2.228 shipped `#entry-status`, a cloud/no-extension smoke STILL saw no visible ENTER/LOGIN feedback
+  AND reported `YOU DIED`/`Respawning...` text in the **accessibility tree** on the TITLE screen (before
+  any arena entry). ROOT CAUSE — three residual paths: (1) the ENTER click **cleared** the status line and
+  relied only on the disabled-button text, so a Rapier WASM bootstrap that **stalls** (never settles) in a
+  headless/cloud browser was an apparent silent no-op — neither the try-success nor the `catch` runs;
+  (2) `#death-msg` is ALWAYS in the DOM (opacity:0/pointer-events:none until `.show`) with **no
+  `aria-hidden`**, so its text leaked into the a11y tree on TITLE; (3) a **throw** from `nostrLogin()` left
+  the interim `Connecting…` stuck. FIX (surgical, three runtime files): `src/main.js` shows an IMMEDIATE
+  visible `Entering arena…` line on click before the `await` (cleared on success / replaced by the failure
+  message in the `catch`); `index.html` sets `#death-msg aria-hidden="true"` by default; `src/hud.js` flips
+  `aria-hidden` in lockstep with the `.show` class; `_doNostrLogin()` wraps the `nostrLogin()` await in
+  try/catch and surfaces a visible fallback (anonymous entry preserved; `textContent` only). Extends
+  `tests/entry-flow-smoke.test.js` (+4; suite 1505/92 → 1509/92, no new file): ENTER shows a non-empty
+  status before awaiting; `#death-msg` is aria-hidden by default; hud toggles aria-hidden with `.show`; the
+  LOGIN await is guarded. BUGFIX — entry-flow only; **status STAYS not-run/pending — no MVP approval
+  granted in this slice** (parent agent handles security review/deploy/publish/push/upload + live smoke);
+  no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write beyond the
+  existing NIP-07 read; no network/deploy/publish/tag/release/self-update; `godMode` stays false; no new
+  `setTimeout`/`Vector3`/`Matrix4`. Latest slice report: `torii-v0.2.229-entry-status-visibility-fix-report.md`.
   **v0.2.228** ENTER-ARENA NO-OP FIX (surgical entry-flow bugfix; no gameplay change) — closes the
   remaining live MVP-blocker after v0.2.226/227: a cloud-browser smoke showed the title screen loaded
   and JS ran, but **ENTER ARENA** gave no visible transition and **LOGIN WITH NOSTR** registered with no

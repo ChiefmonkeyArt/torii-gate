@@ -17,8 +17,12 @@ export function initHUD() {
   on(EV.HUD_UPDATE,    updateHUD);
   on(EV.BOT_KILLED,    d => { addKill('☠ NOSTRICH DOWN +5⚡', '#f7931a'); updateHUD(); });
   on(EV.PLAYER_HIT,    d => flashHit(d?.dmg || 25));
-  on(EV.PLAYER_KILLED, () => { elDeathMsg.classList.add('show'); });
-  on(EV.PLAYER_RESPAWN,() => { elDeathMsg.classList.remove('show'); });
+  // v0.2.229: keep aria-hidden in lockstep with .show so the always-in-DOM death
+  // overlay only reaches the accessibility tree while a death is actually shown
+  // (never on the TITLE screen before first entry — a cloud/AT smoke had been
+  // reading "YOU DIED"/"Respawning..." as the live status pre-entry).
+  on(EV.PLAYER_KILLED, () => { elDeathMsg.classList.add('show');    elDeathMsg.setAttribute('aria-hidden', 'false'); });
+  on(EV.PLAYER_RESPAWN,() => { elDeathMsg.classList.remove('show'); elDeathMsg.setAttribute('aria-hidden', 'true');  });
 }
 
 export function updateHUD() {

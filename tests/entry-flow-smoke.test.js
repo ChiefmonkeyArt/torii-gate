@@ -16,6 +16,7 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HTML = readFileSync(join(ROOT, 'index.html'), 'utf8');
 const MAIN = readFileSync(join(ROOT, 'src/main.js'), 'utf8');
+const HUD  = readFileSync(join(ROOT, 'src/hud.js'), 'utf8');
 
 // The title-screen entry buttons: DOM id ↔ the main.js handle each is assigned to.
 const ENTRY_BUTTONS = [
@@ -82,5 +83,45 @@ describe('entry-flow no-silent-noop — visible feedback on every click (v0.2.22
   it('the LOGIN handler shows its result on the visible status line', () => {
     const block = MAIN.slice(MAIN.indexOf('async function _doNostrLogin'));
     expect(block).toMatch(/showEntryStatus\(\s*result\s*\)/);
+  });
+});
+
+// v0.2.229: the v0.2.228 #entry-status line shipped, but a cloud/no-extension smoke
+// STILL saw no visible ENTER/LOGIN feedback, plus "YOU DIED"/"Respawning..." leaking
+// into the accessibility tree on the TITLE screen. Two residual causes: (a) the ENTER
+// click CLEARED the status line and relied on the disabled-button text, so a stalled
+// (never-settling) Rapier WASM bootstrap looked like a silent no-op with no status;
+// (b) #death-msg is always in the DOM with no aria-hidden, so its text reached AT/smoke
+// before any arena entry; (c) a THROW from nostrLogin() left the interim "Connecting…"
+// stuck. These contracts freeze the fixes.
+describe('entry-flow visibility — immediate feedback + clean a11y tree (v0.2.229 regression)', () => {
+  it('the ENTER click shows an IMMEDIATE visible status (not a clear) before awaiting bootstrap', () => {
+    const block = MAIN.slice(
+      MAIN.indexOf("elEnterBtn?.addEventListener('click'"),
+      MAIN.indexOf('_doNostrLogin'),
+    );
+    // A non-empty message must be set before the `try`/`await initPhysics()` so a
+    // stalled bootstrap is never an apparent silent no-op.
+    const beforeTry = block.slice(0, block.indexOf('try {'));
+    expect(beforeTry).toMatch(/showEntryStatus\(\s*['"][^'"]+['"]\s*\)/);
+  });
+
+  it('#death-msg is aria-hidden by default in index.html (no YOU DIED on the title a11y tree)', () => {
+    expect(HTML).toMatch(/id="death-msg"[^>]*aria-hidden="true"/);
+  });
+
+  it('hud.js toggles aria-hidden in lockstep with the .show class', () => {
+    const block = HUD.slice(HUD.indexOf('PLAYER_KILLED'), HUD.indexOf('}', HUD.indexOf('PLAYER_RESPAWN')));
+    expect(block).toMatch(/classList\.add\(\s*['"]show['"]\s*\)[\s\S]*setAttribute\(\s*['"]aria-hidden['"]\s*,\s*['"]false['"]\s*\)/);
+    expect(block).toMatch(/classList\.remove\(\s*['"]show['"]\s*\)[\s\S]*setAttribute\(\s*['"]aria-hidden['"]\s*,\s*['"]true['"]\s*\)/);
+  });
+
+  it('the LOGIN handler guards the nostrLogin await so a throw still surfaces a message', () => {
+    const block = MAIN.slice(MAIN.indexOf('async function _doNostrLogin'), MAIN.indexOf('elNostrCentreBtn?.addEventListener'));
+    expect(block).toMatch(/try\s*\{/);
+    expect(block).toMatch(/catch\s*\(/);
+    // The catch path must show a visible message, not just console.error.
+    const catchPart = block.slice(block.indexOf('catch'));
+    expect(catchPart).toMatch(/showEntryStatus\(/);
   });
 });

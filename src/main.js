@@ -372,7 +372,14 @@ elEnterBtn?.addEventListener('click', async () => {
   if (!_arenaBootstrapped) {
     elEnterBtn.textContent = 'LOADING PHYSICS…';
     elEnterBtn.disabled = true;
-    showEntryStatus('');
+    // v0.2.229: show an IMMEDIATE visible status line on click (was a clear).
+    // The Rapier WASM bootstrap can stall in a cloud/headless browser — if the
+    // promise never settles, neither the try-success nor the catch runs, so the
+    // only feedback would be the disabled button text. A visible "Entering
+    // arena…" line guarantees the click is never an apparent silent no-op while
+    // loading; it is cleared on a successful entry below (or replaced by the
+    // failure message in the catch).
+    showEntryStatus('Entering arena…');
     try {
       await initPhysics();
       buildArenaColliders();
@@ -423,8 +430,18 @@ async function _doNostrLogin() {
   // NIP-07 signer exists this just shows "NIP-07 extension not found" rather
   // than failing silently. No network/write beyond the existing NIP-07 read.
   showEntryStatus('Connecting…');
-  const result = await nostrLogin();
-  showEntryStatus(result);
+  // v0.2.229: guard the await so a THROW (not just a returned error string) still
+  // surfaces a visible message instead of leaving the interim "Connecting…" stuck
+  // on screen. nostrLogin() already returns 'NIP-07 extension not found' for the
+  // no-signer case; this only catches unexpected throws. textContent (via
+  // showEntryStatus), never innerHTML — no secret/markup injection.
+  try {
+    const result = await nostrLogin();
+    showEntryStatus(result);
+  } catch (e) {
+    console.error('Nostr login failed:', e);
+    showEntryStatus('⚠ Login unavailable — you can still ENTER ARENA anonymously.');
+  }
 }
 elNostrCentreBtn?.addEventListener('click', _doNostrLogin);
 

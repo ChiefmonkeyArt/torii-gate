@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.228-alpha';
+export const CONTINUUM_VERSION = 'v0.2.229-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -48,7 +48,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1505,
+  passing: 1509,
   files: 92,
   fastProfile: 5,
   foundationProfile: 25,
@@ -1097,12 +1097,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.228-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.229-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.228 ENTER-ARENA NO-OP FIX (surgical entry-flow bug fix) — closes the remaining live MVP blocker after v0.2.226/227: in a cloud/no-extension browser the title screen loaded and JS ran, but ENTER ARENA and LOGIN WITH NOSTR clicks gave no visible response. Root cause: two silent no-op paths. (1) LOGIN feedback was written to #nostr-status, an element that never existed in index.html, so the result string ("NIP-07 extension not found") was dropped. (2) The ENTER handler\'s catch only console.error\'d before resetting the button, and the model-load steps (loadPlayerModel/loadFirstPersonBody/buildNapNpc) lived OUTSIDE the try — so a Rapier/WASM init throw left the button stuck on "LOADING PHYSICS…" with no message. Fix adds a visible #entry-status line to index.html and a showEntryStatus() helper in main.js; the full ENTER bootstrap now runs inside the try and any failure shows "Arena failed to load — reload and try again" while re-enabling the button for a retry; LOGIN routes its result to the same visible line. Anonymous entry is preserved (login is never required to ENTER). Extends tests/entry-flow-smoke.test.js (+4 tests → 1501→1505 / 92 files, no new file): #entry-status exists, feedback routes through it (not the dead #nostr-status), the ENTER catch surfaces a message + re-enables the button, and LOGIN shows its result. Prior — v0.2.227 entry-flow smoke harness (static binding tests + live checklist); v0.2.226 entry-flow button fix (service-worker stale app-shell precache). NON-GOALS held: no gameplay/physics/shooter/Rapier logic change; no Nostr signing/publishing/live network write beyond the existing NIP-07 read; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.229 ENTRY-STATUS VISIBILITY FIX (surgical entry-flow follow-up) — after v0.2.228 shipped #entry-status, a cloud/no-extension smoke STILL saw no visible ENTER/LOGIN feedback and reported "YOU DIED"/"Respawning..." text in the accessibility tree on the TITLE screen. Three residual causes addressed. (1) The ENTER click CLEARED the status line and relied only on the disabled-button text, so a Rapier WASM bootstrap that STALLS (never settles) in a headless/cloud browser looked like a silent no-op — neither the try-success nor the catch runs; now the click shows an IMMEDIATE visible "Entering arena…" line before awaiting, cleared on success or replaced by the failure message in the catch. (2) #death-msg is always in the DOM (opacity:0/pointer-events:none until .show) with no aria-hidden, so its "YOU DIED"/"Respawning..." text leaked into the a11y tree before any arena entry; it is now aria-hidden="true" by default and hud.js flips aria-hidden in lockstep with the .show class. (3) A THROW from nostrLogin() left the interim "Connecting…" stuck; _doNostrLogin now wraps the await in try/catch and surfaces a visible fallback message (anonymous entry preserved; textContent only, no innerHTML/secret leak). Extends tests/entry-flow-smoke.test.js (+4 tests → 1505→1509 / 92 files, no new file): ENTER shows an immediate non-empty status before awaiting; #death-msg is aria-hidden by default; hud.js toggles aria-hidden with .show; the LOGIN await is guarded. Prior — v0.2.228 ENTER-ARENA no-op fix (#entry-status + showEntryStatus, bootstrap inside try); v0.2.227 entry-flow smoke harness; v0.2.226 service-worker stale app-shell fix. NON-GOALS held: no gameplay/physics/shooter/Rapier logic change; no Nostr signing/publishing/live network write beyond the existing NIP-07 read; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
