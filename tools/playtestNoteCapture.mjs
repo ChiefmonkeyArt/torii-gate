@@ -42,6 +42,31 @@ export const PLAYTEST_NOTE_CAPTURE_BADGE =
 export const CAPTURE_FOLLOWUP_FIELDS = Object.freeze(['severity', 'repro', 'nextAction']);
 const CAPTURE_REQUIRED_ON_FAIL = Object.freeze(['severity', 'nextAction']);
 
+// Percent-encoded path separators / traversal dots (%2f %5c %2e, any case). Node's fs does NOT
+// URL-decode a path, so an encoded separator can never be part of a legitimate in-repo filename —
+// its only purpose is to slip a separator or `..` past a naïve normalize()-based guard. We reject
+// these literally AND re-check a fully-decoded copy, so the guard can't be fooled by encoding.
+const ENCODED_SEP_RE = /%2[fF]|%5[cC]|%2[eE]/;
+
+// safeRepoRelPath(raw) → { ok:true, rel } for a relative path that stays inside the repo, else
+// { ok:false, reason }. Pure, never throws. Rejects an empty value, an absolute path (POSIX `/`,
+// Windows `\\` or a `X:` drive), a `..` traversal segment, and percent-encoded separators/traversal
+// (the v0.2.225 hardening — Node treats `%2F` as a literal filename char, so it is never a real
+// path separator here and must not be accepted as one). nostrich, not ostrich.
+export function safeRepoRelPath(raw) {
+  if (typeof raw !== 'string' || raw === '') return { ok: false, reason: 'empty path' };
+  if (ENCODED_SEP_RE.test(raw)) {
+    return { ok: false, reason: 'percent-encoded path separators are not allowed' };
+  }
+  let decoded = raw;
+  try { decoded = decodeURIComponent(raw); } catch { return { ok: false, reason: 'malformed percent-encoding' }; }
+  for (const candidate of [raw, decoded]) {
+    if (/^(?:[/\\]|[a-zA-Z]:)/.test(candidate)) return { ok: false, reason: 'absolute path is not allowed' };
+    if (candidate.split(/[\\/]/).includes('..')) return { ok: false, reason: 'path traversal is not allowed' };
+  }
+  return { ok: true, rel: raw };
+}
+
 // _str(x) → trimmed non-empty string, else null. Pure.
 function _str(x) {
   return (typeof x === 'string' && x.trim()) ? x.trim() : null;

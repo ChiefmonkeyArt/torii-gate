@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.224-alpha';
+export const CONTINUUM_VERSION = 'v0.2.225-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -48,7 +48,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1482,
+  passing: 1487,
   files: 90,
   fastProfile: 5,
   foundationProfile: 25,
@@ -1097,12 +1097,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.224-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.225-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.224 MVP PLAYTEST NOTE CAPTURE (docs/tooling only, no runtime/gameplay/dashboard-render change) — adds a pure note-capture EXPLAINER (tools/playtestNoteCapture.mjs) + a strictly read-only dry-run CLI (npm run playtest:capture) + a PLAYTEST_NOTE_CAPTURE.md how-to that turns rough manual-test notes into MVP_PLAYTEST_RESULTS.md without guessing. It reuses the canonical parser/state vocabulary and layers field-completeness on top: which items are still blank, which FAILs lack severity/next-action, and which Build/session header fields are unfilled, plus a notes→PASS/FAIL/N-A + blocker/major/minor mapping. No-clobber preserved (read-only; never writes MVP_PLAYTEST_RESULTS.md) and HARD-pinned to never imply approval (approvalImplied false in every branch) — a recorded playtest is necessary but NOT sufficient. Status stays PENDING/not-run — this slice records and approves nothing. Adds 11 tests (suite 1471→1482 / 89→90 files). Prior — v0.2.223 MVP playtest results on the dashboard card; v0.2.222 MVP playtest results intake (MVP_PLAYTEST_RESULTS.md + playtest:status CLI); v0.2.221 MVP approval on the dashboard. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.225 PLAYTEST-CAPTURE PATH HARDENING (tooling only, no runtime/gameplay/dashboard-render change) — hardens the playtest:capture --file= path guard against percent-encoded path separators and encoded traversal dots (%2F/%5C/%2e variants). A pure, exported safeRepoRelPath() in tools/playtestNoteCapture.mjs rejects empty/non-string input, absolute paths (POSIX/Windows/drive), `..` traversal, and percent-encoded separators/dots literally AND after a decodeURIComponent re-check (malformed %-escape → reject); the CLI wires to it and still exits non-zero on a rejected path. Addresses the v0.2.224 security-review non-blocking advisory (Node fs never URL-decodes, so not exploitable in current local use — hardening is cheap). Strictly read-only preserved (no --write; never writes MVP_PLAYTEST_RESULTS.md) and approval separation intact (approvalImplied false). Adds 5 tests to the existing capture suite (1482→1487 / files stays 90). Prior — v0.2.224 MVP playtest note capture (explainer + read-only dry-run CLI); v0.2.223 MVP playtest results on the dashboard card; v0.2.222 MVP playtest results intake. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the

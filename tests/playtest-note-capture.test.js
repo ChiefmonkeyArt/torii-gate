@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import {
   PLAYTEST_NOTE_CAPTURE_SCHEMA, PLAYTEST_NOTE_CAPTURE_SCHEMA_VERSION,
   PLAYTEST_NOTE_CAPTURE_BADGE, CAPTURE_FOLLOWUP_FIELDS,
-  explainPlaytestCapture, formatPlaytestCaptureExplain,
+  explainPlaytestCapture, formatPlaytestCaptureExplain, safeRepoRelPath,
 } from '../tools/playtestNoteCapture.mjs';
 
 // Build a results-markdown item block the canonical parser recognises. `fields` overrides the
@@ -148,5 +148,42 @@ describe('playtest-note-capture — formatPlaytestCaptureExplain', () => {
 
   it('is null-safe', () => {
     expect(formatPlaytestCaptureExplain(null)).toContain('(no explainer)');
+  });
+});
+
+describe('playtest-note-capture — safeRepoRelPath (--file guard, v0.2.225)', () => {
+  it('accepts plain in-repo filenames and safe sub-paths', () => {
+    expect(safeRepoRelPath('MVP_PLAYTEST_RESULTS.md')).toEqual({ ok: true, rel: 'MVP_PLAYTEST_RESULTS.md' });
+    expect(safeRepoRelPath('docs/results.md')).toEqual({ ok: true, rel: 'docs/results.md' });
+    expect(safeRepoRelPath('a.b-c_d.md').ok).toBe(true);
+  });
+
+  it('rejects literal absolute paths and `..` traversal', () => {
+    expect(safeRepoRelPath('/etc/passwd').ok).toBe(false);
+    expect(safeRepoRelPath('C:\\Windows\\win.ini').ok).toBe(false);
+    expect(safeRepoRelPath('../secret.md').ok).toBe(false);
+    expect(safeRepoRelPath('a/../../b.md').ok).toBe(false);
+  });
+
+  it('rejects percent-encoded path separators (%2F, %5C) in any case', () => {
+    for (const p of ['foo%2Fbar', 'foo%2fbar', 'foo%5Cbar', 'foo%5cbar', '..%2f..%2fetc%2fpasswd']) {
+      const r = safeRepoRelPath(p);
+      expect(r.ok).toBe(false);
+      expect(r.reason).toMatch(/percent-encoded/);
+    }
+  });
+
+  it('rejects percent-encoded traversal dots (%2e variants)', () => {
+    for (const p of ['%2e%2e/secret.md', '%2e%2e%2f%2e%2e', 'foo%2E%2E']) {
+      expect(safeRepoRelPath(p).ok).toBe(false);
+    }
+  });
+
+  it('rejects empty / non-string / malformed-encoding input', () => {
+    expect(safeRepoRelPath('').ok).toBe(false);
+    expect(safeRepoRelPath(null).ok).toBe(false);
+    expect(safeRepoRelPath(undefined).ok).toBe(false);
+    expect(safeRepoRelPath(42).ok).toBe(false);
+    expect(safeRepoRelPath('foo%ZZbar').ok).toBe(false); // not an encoded sep, but malformed %-escape
   });
 });

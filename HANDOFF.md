@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.224-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.225-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -523,6 +523,26 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.225** PLAYTEST-CAPTURE PATH HARDENING — a tiny tooling slice (no runtime change) hardening
+  the `npm run playtest:capture` `--file=` path guard against percent-encoded path separators and
+  encoded traversal dots, resolving the v0.2.224 security-review NON-BLOCKING advisory (Node's `fs`
+  never URL-decodes a path, so `%2F`/`%5C`/`%2e%2e` were not exploitable in current local use — but
+  the guard relied only on `isAbsolute()`+`normalize()`, so hardening is cheap). New PURE, exported
+  `safeRepoRelPath(raw)` in `tools/playtestNoteCapture.mjs` → `{ok:true,rel}` for an in-repo relative
+  path else `{ok:false,reason}`: rejects empty/non-string input, absolute paths (POSIX `/`, Windows
+  `\`, `X:` drive), `..` traversal segments, AND percent-encoded separators/dots
+  (`ENCODED_SEP_RE = /%2[fF]|%5[cC]|%2[eE]/`) literally PLUS a defense-in-depth `decodeURIComponent`
+  re-check (malformed `%`-escape → reject); never throws. `tools/playtest-capture.mjs` imports + wires
+  the guard in `readTarget()` (dropping the inline `isAbsolute`/`normalize` import), stays STRICTLY
+  READ-ONLY (no `--write`) and exits 2 on a rejected `--file`, else 0. `tests/playtest-note-capture.test.js`
+  (+5; suite 1482/90 → 1487/90 — five tests added to an existing file, file count unchanged). NOTE/
+  follow-up: `tools/playtest-results-status.mjs` carries the SAME `readTarget` guard and is OUT OF
+  SCOPE this slice — a possible follow-up to avoid divergence. TOOLING-ONLY — read-only (no `--write`);
+  **status STAYS not-run/pending — no results fabricated, no MVP approval granted in this slice**; no
+  runtime/gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no
+  network/deploy/publish/tag/release/self-update; `godMode` stays false; no new
+  `setTimeout`/`Vector3`/`Matrix4`. Latest slice report:
+  `torii-v0.2.225-playtest-capture-path-hardening-report.md`.
   **v0.2.224** MVP PLAYTEST NOTE CAPTURE — a docs/tooling slice (no runtime change) that makes it
   easy to turn the user's rough manual-test notes into the canonical `MVP_PLAYTEST_RESULTS.md` later
   WITHOUT guessing or implying approval. New PURE, node-safe `tools/playtestNoteCapture.mjs`

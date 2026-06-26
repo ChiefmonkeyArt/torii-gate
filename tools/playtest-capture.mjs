@@ -1,4 +1,4 @@
-// tools/playtest-capture.mjs — local, read-only MVP PLAYTEST NOTE-CAPTURE explainer CLI (v0.2.224).
+// tools/playtest-capture.mjs — local, read-only MVP PLAYTEST NOTE-CAPTURE explainer CLI (v0.2.225).
 // Run with: node tools/playtest-capture.mjs  (or: npm run playtest:capture).
 // Reads the canonical, source-controlled recording file MVP_PLAYTEST_RESULTS.md (the hand-edited
 // file a tester fills in) and EXPLAINS what is still blank and how rough notes map onto
@@ -14,9 +14,11 @@
 // STRICTLY READ-ONLY: NO --write, NO browser automation, NO network, NO server, NO deploy, NO
 // publish, NO git tag/release, NO approval. Always exits 0 (rejected --file path → exit 2).
 import { readFileSync, realpathSync } from 'node:fs';
-import { join, isAbsolute, normalize } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { explainPlaytestCapture, formatPlaytestCaptureExplain } from './playtestNoteCapture.mjs';
+import {
+  explainPlaytestCapture, formatPlaytestCaptureExplain, safeRepoRelPath,
+} from './playtestNoteCapture.mjs';
 import { PLAYTEST_RESULTS_STATE_FILE } from './playtestResultsState.mjs';
 
 const ROOT = process.cwd();
@@ -25,16 +27,15 @@ function readSafe(rel) {
   try { return readFileSync(join(ROOT, rel), 'utf8'); } catch { return null; }
 }
 
-// Resolve --file=path → an in-repo relative path (default MVP_PLAYTEST_RESULTS.md). Reject an
-// absolute path or a `..` escape so the read stays bounded inside the repo.
+// Resolve --file=path → an in-repo relative path (default MVP_PLAYTEST_RESULTS.md). The bounds
+// check (absolute path / `..` escape / percent-encoded separators) lives in the pure, unit-tested
+// safeRepoRelPath() so the read stays inside the repo and can't be fooled by `%2F`/`%5C`/`%2e`.
 function readTarget(argv) {
   const arg = argv.find((a) => a.startsWith('--file='));
   if (!arg) return { rel: PLAYTEST_RESULTS_STATE_FILE };
   const raw = arg.slice('--file='.length);
-  if (isAbsolute(raw) || normalize(raw).split(/[\\/]/).includes('..')) {
-    return { rel: null, error: 'path must be inside the repo' };
-  }
-  return { rel: raw };
+  const guard = safeRepoRelPath(raw);
+  return guard.ok ? { rel: guard.rel } : { rel: null, error: guard.reason };
 }
 
 const invokedDirectly = (() => {
