@@ -46,6 +46,7 @@ import { buildApprovalState, MVP_APPROVAL_FILE, MVP_APPROVAL_STATUSES } from './
 import { parsePlaytestResults, summarizePlaytestResults } from './playtestResults.mjs';
 import { PLAYTEST_RESULTS_STATE_FILE } from './playtestResultsState.mjs';
 import { buildLiveSmokeState, LIVE_SMOKE_FILE, LIVE_SMOKE_RESULTS } from './liveSmokeState.mjs';
+import { buildDashboardSmokeState, DASHBOARD_SMOKE_FILE, DASHBOARD_SMOKE_RESULTS } from './dashboardSmokeState.mjs';
 
 const ROOT = process.cwd();
 
@@ -133,6 +134,23 @@ function gatherLiveSmoke() {
   return buildLiveSmokeState({ result: LIVE_SMOKE_RESULTS.UNKNOWN, version: configVersion() });
 }
 
+// Load the committed dashboard-smoke state (re-shaped through buildDashboardSmokeState so a hand-
+// edited file is normalised), or the default UNKNOWN record if the artifact is missing/garbled.
+// Read-only here — this tool never records a smoke; it only FOLDS the record into the export.
+function gatherDashboardSmoke() {
+  const raw = readSafe(DASHBOARD_SMOKE_FILE);
+  if (raw) {
+    try {
+      const p = JSON.parse(raw);
+      return buildDashboardSmokeState({
+        result: p.result, version: p.version, commit: p.commit, dashboardUrl: p.dashboardUrl,
+        surface: p.surface, smokedAt: p.smokedAt, smokedBy: p.smokedBy, checks: p.checks, notes: p.notes,
+      });
+    } catch { /* fall through */ }
+  }
+  return buildDashboardSmokeState({ result: DASHBOARD_SMOKE_RESULTS.UNKNOWN, version: configVersion() });
+}
+
 // docs pointers: the curated core docs that exist on disk + the generated handoff artifact.
 function gatherDocs() {
   const out = [];
@@ -184,6 +202,7 @@ if (invokedDirectly) {
     mvpApproval: gatherMvpApproval(),
     playtestResults: gatherPlaytestResults(),
     liveSmoke: gatherLiveSmoke(),
+    dashboardSmoke: gatherDashboardSmoke(),
     generatedAt: new Date().toISOString(),
   });
 

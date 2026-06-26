@@ -1,0 +1,55 @@
+{
+  "kind": "torii.dashboard-smoke-state",
+  "schemaVersion": 1,
+  "badge": "DASHBOARD SMOKE STATE · LOCAL · READ-ONLY · OBSERVED ON THE DEPLOYED DASHBOARD",
+  "generatedAt": null,
+  "result": "pass",
+  "version": "v0.2.231-alpha",
+  "commit": "aba849c",
+  "dashboardUrl": "https://torii-quest.pplx.app/continuum.html",
+  "surface": "continuum.html",
+  "smokedAt": "2026-06-26",
+  "smokedBy": "parent-agent cloud-browser smoke",
+  "checks": [
+    {
+      "id": "page-loads",
+      "label": "continuum.html loads successfully in a cloud browser",
+      "expected": "page renders, no fatal error",
+      "observed": "page loaded successfully",
+      "outcome": "pass"
+    },
+    {
+      "id": "continuum-version-visible",
+      "label": "Dashboard displays the current Continuum version",
+      "expected": "Torii Continuum v0.2.231-alpha visible",
+      "observed": "Torii Continuum v0.2.231-alpha",
+      "outcome": "pass"
+    },
+    {
+      "id": "live-smoke-evidence-visible",
+      "label": "Dashboard visibly shows the folded live-smoke evidence",
+      "expected": "LIVE SMOKE v0.2.230-alpha PASS (3/3 checks) with ENTER ARENA + LOGIN WITH NOSTR evidence",
+      "observed": "LIVE SMOKE: v0.2.230-alpha PASS (3/3 checks), incl. ENTER ARENA + LOGIN WITH NOSTR entry-flow evidence",
+      "outcome": "pass"
+    },
+    {
+      "id": "active-slice-visible",
+      "label": "Dashboard ACTIVE SLICE reflects the current slice",
+      "expected": "v0.2.231 LIVE-SMOKE STATUS SLICE visible",
+      "observed": "ACTIVE SLICE: v0.2.231 LIVE-SMOKE STATUS SLICE",
+      "outcome": "pass"
+    }
+  ],
+  "notes": "Deployed oversight dashboard (continuum.html) cloud-smoke confirmed: the page loads, renders Torii Continuum v0.2.231-alpha, and visibly surfaces the folded live-smoke evidence (v0.2.230-alpha PASS, 3/3, with ENTER ARENA + LOGIN WITH NOSTR entry-flow evidence) and the v0.2.231 active slice. No login/account actions performed. Read-only oversight; a green dashboard smoke is NOT MVP approval (see MVP_APPROVAL_STATE.json) and does NOT imply the human playtest is complete (see MVP_PLAYTEST_RESULTS.md).",
+  "safety": {
+    "deploy": false,
+    "publish": false,
+    "push": false,
+    "tag": false,
+    "networkWrite": false,
+    "nostrWrite": false,
+    "godMode": false,
+    "impliesApproval": false,
+    "impliesPlaytestComplete": false
+  }
+}

@@ -1,17 +1,19 @@
 {
   "schema": "torii.next-action-state",
   "schemaVersion": 1,
-  "generatedAt": "2026-06-26T18:05:01.448Z",
+  "generatedAt": "2026-06-26T18:29:08.221Z",
   "badge": "NEXT-ACTION STATE · LOCAL · READ-ONLY",
-  "version": "v0.2.231-alpha",
-  "packageVersion": "0.2.231-alpha",
-  "gitCommit": "a86d7d7",
+  "version": "v0.2.232-alpha",
+  "packageVersion": "0.2.232-alpha",
+  "gitCommit": "aba849c",
   "liveUrl": "https://torii-quest.pplx.app",
   "release": {
-    "ready": true,
-    "gateStatus": "READY",
+    "ready": false,
+    "gateStatus": "NOT READY",
     "gateCommand": "npm run test:release",
-    "blockers": [],
+    "blockers": [
+      "zoneFallback"
+    ],
     "regression": {
       "count": 15,
       "expected": 15
@@ -22,12 +24,12 @@
     "status": "READY"
   },
   "tests": {
-    "passing": 1531,
-    "files": 93
+    "passing": 1548,
+    "files": 94
   },
   "manualBlocker": {
     "pending": true,
-    "statusLabel": "LOCAL GATES GREEN · MANUAL PLAYTEST + APPROVAL PENDING",
+    "statusLabel": "MANUAL VALIDATION OUTSTANDING",
     "pill": "manual"
   },
   "mvpApproval": {
@@ -35,7 +37,7 @@
     "approved": false,
     "approvedBy": null,
     "approvedAt": null,
-    "version": "v0.2.231-alpha"
+    "version": "v0.2.232-alpha"
   },
   "playtestResults": {
     "schema": "torii.playtest-results-state",
@@ -67,6 +69,18 @@
     "failed": 0,
     "impliesApproval": false
   },
+  "dashboardSmoke": {
+    "result": "pass",
+    "pass": true,
+    "version": "v0.2.231-alpha",
+    "surface": "continuum.html",
+    "smokedAt": "2026-06-26",
+    "checks": 4,
+    "passed": 4,
+    "failed": 0,
+    "impliesApproval": false,
+    "impliesPlaytestComplete": false
+  },
   "nextSafeTask": {
     "title": "Continue the read-only oversight loop — next safe infra/dashboard/tooling slice",
     "why": "Keep shipping no-runtime-risk tooling/docs that make the MVP proof easier to read and the gate harder to get wrong. SEC-gated live-relay / world-hop / shooting work stays parked behind SEC-1/2/3 and a manual deploy — not a safe pick yet.",
@@ -93,10 +107,10 @@
     "HANDOFF.generated.md"
   ],
   "reports": [
+    "torii-v0.2.231-live-smoke-status-report.md",
     "torii-v0.2.230-entry-flow-runtime-fix-report.md",
     "torii-v0.2.229-entry-status-visibility-fix-report.md",
-    "torii-v0.2.228-enter-arena-noop-fix-report.md",
-    "torii-v0.2.227-entry-flow-smoke-harness-report.md"
+    "torii-v0.2.228-enter-arena-noop-fix-report.md"
   ],
   "safety": {
     "deploy": false,

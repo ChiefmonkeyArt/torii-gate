@@ -1,11 +1,11 @@
 # Torii Quest — MVP Release Package — Release Package Index
 
 > MVP RELEASE PACKAGE INDEX · LOCAL · READ-ONLY
-> generated: 2026-06-26T18:05:02.069Z
+> generated: 2026-06-26T18:29:09.142Z
 
-- **Version:** v0.2.231-alpha @ a86d7d7 (source)
+- **Version:** v0.2.232-alpha @ aba849c (source)
 - **Live:** https://torii-quest.pplx.app
-- **Tests:** 1531 passing / 93 files
+- **Tests:** 1548 passing / 94 files
 
 ## Package files
 
@@ -33,12 +33,12 @@
 
 ## Recent reports
 
-- `torii-v0.2.225-playtest-capture-path-hardening-report.md`
 - `torii-v0.2.226-entry-flow-button-fix-report.md`
 - `torii-v0.2.227-entry-flow-smoke-harness-report.md`
 - `torii-v0.2.228-enter-arena-noop-fix-report.md`
 - `torii-v0.2.229-entry-status-visibility-fix-report.md`
 - `torii-v0.2.230-entry-flow-runtime-fix-report.md`
+- `torii-v0.2.231-live-smoke-status-report.md`
 
 ## Known non-blocking advisories
 

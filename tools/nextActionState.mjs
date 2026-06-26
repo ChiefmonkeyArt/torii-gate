@@ -22,6 +22,7 @@ import { sourceCommitLabel } from './commitStamp.mjs';
 import { summarizeApprovalForState } from './mvpApproval.mjs';
 import { summarizePlaytestForState } from './playtestResultsState.mjs';
 import { summarizeLiveSmokeForState } from './liveSmokeState.mjs';
+import { summarizeDashboardSmokeForState } from './dashboardSmokeState.mjs';
 
 // Badge naming the export as read-only oversight, never a deploy/publish/upload action.
 export const NEXT_ACTION_STATE_BADGE = 'NEXT-ACTION STATE · LOCAL · READ-ONLY';
@@ -57,7 +58,8 @@ function _bool(x) { return x === true; }
 //                     reproducible tests; the CLI passes a real stamp at print time.
 export function buildNextActionState({
   agentHandoff = null, manualValidation = null, testStatus = null,
-  docs = null, mvpApproval = null, playtestResults = null, liveSmoke = null, generatedAt = null,
+  docs = null, mvpApproval = null, playtestResults = null, liveSmoke = null,
+  dashboardSmoke = null, generatedAt = null,
 } = {}) {
   const stamp = _str(generatedAt);
   const ah = agentHandoff && typeof agentHandoff === 'object' && !Array.isArray(agentHandoff)
@@ -122,6 +124,12 @@ export function buildNextActionState({
     // never prove). Folded from LIVE_SMOKE_STATE.json so the next agent sees whether production was
     // actually observed green. `impliesApproval` is pinned false: a green smoke is not MVP approval.
     liveSmoke: summarizeLiveSmokeForState(liveSmoke),
+    // Dashboard smoke — the latest cloud-browser smoke of the DEPLOYED oversight dashboard
+    // (continuum.html): the page loaded and visibly rendered the version, the folded live-smoke
+    // evidence, and the active slice. Folded from DASHBOARD_SMOKE_STATE.json so the next agent sees
+    // whether the oversight surface itself was observed live. `impliesApproval` and
+    // `impliesPlaytestComplete` are pinned false: a green dashboard smoke is neither.
+    dashboardSmoke: summarizeDashboardSmokeForState(dashboardSmoke),
     nextSafeTask: {
       title: _str(task.title),
       why: _str(task.why),
@@ -145,7 +153,7 @@ export function buildNextActionState({
 export const NEXT_ACTION_STATE_REQUIRED_KEYS = Object.freeze([
   'schema', 'schemaVersion', 'badge', 'version', 'gitCommit', 'liveUrl',
   'release', 'readiness', 'tests', 'manualBlocker', 'mvpApproval', 'playtestResults',
-  'liveSmoke', 'nextSafeTask', 'docs', 'reports', 'safety',
+  'liveSmoke', 'dashboardSmoke', 'nextSafeTask', 'docs', 'reports', 'safety',
 ]);
 
 // formatNextActionState(state) → a concise multi-line text block for the terminal. Pure.
@@ -178,6 +186,8 @@ export function formatNextActionState(state) {
   L.push(`MVP playtest: ${pr.status || 'unknown'} (pending ${pr.pending ? 'yes' : 'no'}; implies approval: no)`);
   const ls = state.liveSmoke || {};
   L.push(`live smoke: ${ls.result || 'unknown'}${ls.pass ? ' ✓' : ''}${ls.version ? ` @ ${ls.version}` : ''} (${ls.passed ?? '?'}/${ls.checks ?? '?'} checks; implies approval: no)`);
+  const ds = state.dashboardSmoke || {};
+  L.push(`dashboard smoke: ${ds.result || 'unknown'}${ds.pass ? ' ✓' : ''}${ds.version ? ` @ ${ds.version}` : ''}${ds.surface ? ` (${ds.surface})` : ''} (${ds.passed ?? '?'}/${ds.checks ?? '?'} checks; implies approval: no)`);
   L.push('');
   L.push(`next safe task: ${t.title ?? '(none)'}`);
   if (t.why) L.push(`  why: ${t.why}`);
@@ -221,6 +231,8 @@ export function formatNextActionStateMarkdown(state) {
   L.push(`- **MVP playtest:** ${pr.status || 'unknown'} (pending ${pr.pending ? 'yes' : 'no'}; implies approval: no)`);
   const ls = state.liveSmoke || {};
   L.push(`- **Live smoke (deployed):** ${ls.result || 'unknown'}${ls.pass ? ' (PASS)' : ''}${ls.version ? ` @ ${ls.version}` : ''} — ${ls.passed ?? '?'}/${ls.checks ?? '?'} checks (implies approval: no)`);
+  const ds = state.dashboardSmoke || {};
+  L.push(`- **Dashboard smoke (deployed):** ${ds.result || 'unknown'}${ds.pass ? ' (PASS)' : ''}${ds.version ? ` @ ${ds.version}` : ''}${ds.surface ? ` — ${ds.surface}` : ''} — ${ds.passed ?? '?'}/${ds.checks ?? '?'} checks (implies approval: no)`);
   L.push('');
   L.push('## Next safe task');
   L.push('');

@@ -1,10 +1,10 @@
 # Torii Quest — MVP RC Snapshot — RC Freeze-Candidate Snapshot
 
 > MVP RC SNAPSHOT · FREEZE CANDIDATE · LOCAL · READ-ONLY
-> generated: 2026-06-26T18:05:05.988Z
+> generated: 2026-06-26T18:29:15.610Z
 
 - **Status:** FREEZE-CANDIDATE
-- **Version:** v0.2.231-alpha @ a86d7d7 (source)
+- **Version:** v0.2.232-alpha @ aba849c (source)
 - **Live (manual deploy):** https://torii-quest.pplx.app
 - **Version consistency:** ok
 
@@ -16,7 +16,7 @@
 ## MVP readiness
 
 - **Readiness:** 100% · READY (9/9 signals)
-- **Tests:** 1531 passing / 93 files (full)
+- **Tests:** 1548 passing / 94 files (full)
 - **Regression:** 15 / 15 checks
 
 ## GitHub release dry-run
@@ -68,12 +68,12 @@ _All git/release/deploy steps below are gated on explicit user approval and NONE
 
 ## Recent reports
 
-- `torii-v0.2.225-playtest-capture-path-hardening-report.md`
 - `torii-v0.2.226-entry-flow-button-fix-report.md`
 - `torii-v0.2.227-entry-flow-smoke-harness-report.md`
 - `torii-v0.2.228-enter-arena-noop-fix-report.md`
 - `torii-v0.2.229-entry-status-visibility-fix-report.md`
 - `torii-v0.2.230-entry-flow-runtime-fix-report.md`
+- `torii-v0.2.231-live-smoke-status-report.md`
 
 ---
 
