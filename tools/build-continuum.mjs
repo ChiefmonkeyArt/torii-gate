@@ -17,6 +17,8 @@ import {
   buildShipModel,
   buildRcStatusModel,
   buildManualValidationModel,
+  buildNoBlockerQueueModel,
+  SHIP_NEXT_SAFE_TASK,
   CURRENT_TEST_STATUS,
   testCountLabel,
   HEALTH_LASTKNOWN,
@@ -183,10 +185,33 @@ try {
   console.log(`[continuum] manual validation: live gather unavailable (${e.message}) — using last-known`);
 }
 
+// No-blocker queue (v0.2.216): the safe next move an AI agent can pick up with NO user input vs the
+// one item parked on the human. DERIVED from the SAME parsed todo.md/progress.md taskTotals the rest
+// of the dashboard already uses (no second source of truth) plus the curated next SAFE task and a
+// manual-pending flag read off the manual-validation card. Pure data — no fs/crypto/git/network here
+// beyond what taskTotals already gathered. On any failure we degrade to the curated card.
+let noBlockerQueue;
+try {
+  noBlockerQueue = buildNoBlockerQueueModel({
+    nextSafeTitle: SHIP_NEXT_SAFE_TASK.title,
+    nextSafeWhy: SHIP_NEXT_SAFE_TASK.why,
+    nextSafeKind: SHIP_NEXT_SAFE_TASK.kind,
+    activeNow: taskTotals.activeNow,
+    nextUp: taskTotals.next12,
+    archiveClusters: taskTotals.archiveClusters,
+    completed24h: taskTotals.completed24h,
+    todoCompletedMarkers: taskTotals.todoCompletedMarkers,
+    manualPending: manualValidation.pill !== 'no-blocker',
+  });
+} catch (e) {
+  noBlockerQueue = buildNoBlockerQueueModel(); // honest LAST-KNOWN fallback
+  console.log(`[continuum] no-blocker queue: live gather unavailable (${e.message}) — using last-known`);
+}
+
 // Stamp the packaged build time so the page can show when the data was packaged.
 const generatedAt = new Date().toISOString();
 const model = {
-  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
+  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
   generatedAt,
 };
 
@@ -205,3 +230,4 @@ console.log(`[continuum] readiness: ${readiness.statusLabel} (zone-fallback ${zo
 console.log(`[continuum] ship readiness: ${ship.statusLabel} (${ship.kind})${ship.blockers && ship.blockers.length ? ` blockers: ${ship.blockers.join(', ')}` : ''}`);
 console.log(`[continuum] rc status: ${rcStatus.statusLabel} (${rcStatus.kind}) · manifest ${rcStatus.manifestStatus} ${rcStatus.manifestRequiredPresent}/${rcStatus.manifestRequired} req · rc-docs ${rcStatus.rcDocsPresent}/${rcStatus.rcDocsTotal}`);
 console.log(`[continuum] manual validation: ${manualValidation.statusLabel} (${manualValidation.kind}) · checklist ${manualValidation.sections} sections/${manualValidation.items} items · ${manualValidation.blocker}/${manualValidation.major}/${manualValidation.minor} b/M/m · areas ${manualValidation.validationAreas}`);
+console.log(`[continuum] no-blocker queue: ${noBlockerQueue.statusLabel} (${noBlockerQueue.kind}) · active ${noBlockerQueue.activeNow} · next ${noBlockerQueue.nextUp} · archive ${noBlockerQueue.archiveClusters} · done24h ${noBlockerQueue.completed24h} · manualPending ${noBlockerQueue.manualPending}`);

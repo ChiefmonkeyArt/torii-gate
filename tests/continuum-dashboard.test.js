@@ -19,6 +19,7 @@ import {
   SHIP_BADGE, SHIP_LASTKNOWN, SHIP_NEXT_SAFE_TASK, buildShipModel,
   RCSTATUS_BADGE, RCSTATUS_LASTKNOWN, buildRcStatusModel,
   MANUALVALIDATION_BADGE, MANUALVALIDATION_LASTKNOWN, buildManualValidationModel,
+  NOBLOCKERQUEUE_BADGE, NOBLOCKERQUEUE_LASTKNOWN, buildNoBlockerQueueModel,
   READHEALTH_BADGE, buildReadHealthModel,
   escapeHtml, clampPct, barCells, ringDash,
   computeTotals, buildContinuumModel, continuumDataJSON, renderContinuumPage,
@@ -29,7 +30,7 @@ import { DEFAULT_TEST_STATUS } from '../src/engine/status/mvpReadiness.js';
 
 describe('module shape', () => {
   it('pins the version (tracks the build) and the read-only oversight badge', () => {
-    expect(CONTINUUM_VERSION).toBe('v0.2.215-alpha');
+    expect(CONTINUUM_VERSION).toBe('v0.2.216-alpha');
     expect(CONTINUUM_VERSION).toBe(VERSION);
     expect(CONTINUUM_BADGE).toBe('PROJECT OVERSIGHT · STATIC · READ-ONLY');
   });
@@ -134,7 +135,7 @@ describe('continuumDataJSON', () => {
   it('is JSON-serialisable and carries totals + the seed contributors', () => {
     const j = continuumDataJSON();
     const round = JSON.parse(JSON.stringify(j));
-    expect(round.version).toBe('v0.2.215-alpha');
+    expect(round.version).toBe('v0.2.216-alpha');
     expect(round.totals.pocProgressPct).toBe(47);
     expect(round.contributors.isSeed).toBe(true);
   });
@@ -146,7 +147,7 @@ describe('renderContinuumPage', () => {
   it('returns a self-contained HTML document with the version', () => {
     expect(typeof html).toBe('string');
     expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('v0.2.215-alpha');
+    expect(html).toContain('v0.2.216-alpha');
     expect(html).toContain('Torii Continuum');
   });
 
@@ -792,6 +793,106 @@ describe('manual validation / MVP-playtest readiness (v0.2.215)', () => {
   });
 });
 
+describe('no-blocker queue (v0.2.216)', () => {
+  it('degrades to an honest LAST-KNOWN model with no input (never throws)', () => {
+    const nb = buildNoBlockerQueueModel();
+    expect(nb.kind).toBe('last-known');
+    expect(nb.badge).toBe(NOBLOCKERQUEUE_BADGE);
+    expect(nb.activeNow).toBe(NOBLOCKERQUEUE_LASTKNOWN.activeNow);
+    expect(nb.nextUp).toBe(NOBLOCKERQUEUE_LASTKNOWN.nextUp);
+    expect(Array.isArray(nb.metrics)).toBe(true);
+    expect(nb.metrics.length).toBe(6);
+    // A queued safe task + manual playtest still pending → no-blocker work available, user-gated noted.
+    expect(nb.band).toBe('safe-available');
+    expect(nb.pill).toBe('no-blocker');
+    expect(nb.statusLabel).toMatch(/NO-BLOCKER WORK AVAILABLE/);
+    expect(nb.statusLabel).toMatch(/MANUAL PLAYTEST AWAITS USER/);
+  });
+
+  it('folds LIVE parsed todo/progress counts into a generated band that SEPARATES safe vs user-gated', () => {
+    const nb = buildNoBlockerQueueModel({
+      nextSafeTitle: 'Next safe infra/dashboard slice',
+      nextSafeKind: 'infra',
+      activeNow: 42, nextUp: 12, archiveClusters: 11, completed24h: 27, todoCompletedMarkers: 12,
+      manualPending: true,
+    });
+    expect(nb.kind).toBe('generated');
+    expect(nb.band).toBe('safe-available');
+    const byLabel = Object.fromEntries(nb.metrics.map((m) => [m.label, m.value]));
+    // The safe next task an agent can pick up with no user input is explicit...
+    expect(byLabel['Next safe task']).toBe('Next safe infra/dashboard slice');
+    expect(byLabel['Why safe']).toMatch(/no runtime risk/);
+    expect(byLabel['Why safe']).toMatch(/no deploy/);
+    // ...while the ONLY user-gated item is the manual playtest + approval.
+    expect(byLabel['Awaiting user']).toMatch(/playtest \+ explicit approval/i);
+    expect(byLabel['Awaiting user']).toMatch(/ONLY user-gated/);
+    expect(byLabel['Active now']).toBe('42 in progress');
+    expect(byLabel['Next up']).toBe('12 queued · next-12');
+    expect(byLabel['Archive / done']).toMatch(/11 landed clusters · 27 done \(24h\) · 12 struck markers/);
+  });
+
+  it('drops the user-gated clause when no manual validation is pending', () => {
+    const nb = buildNoBlockerQueueModel({ nextSafeTitle: 'safe slice', manualPending: false });
+    expect(nb.band).toBe('safe-available-clear');
+    expect(nb.pill).toBe('no-blocker');
+    expect(nb.statusLabel).toBe('NO-BLOCKER WORK AVAILABLE');
+    const byLabel = Object.fromEntries(nb.metrics.map((m) => [m.label, m.value]));
+    expect(byLabel['Awaiting user']).toMatch(/nothing/i);
+  });
+
+  it('invalid / omitted counts fall back to the honest last-known values (never NaN)', () => {
+    const nb = buildNoBlockerQueueModel({
+      nextSafeTitle: 'safe slice', activeNow: -3, nextUp: 'oops', archiveClusters: null,
+    });
+    expect(nb.activeNow).toBe(NOBLOCKERQUEUE_LASTKNOWN.activeNow);
+    expect(nb.nextUp).toBe(NOBLOCKERQUEUE_LASTKNOWN.nextUp);
+    expect(nb.archiveClusters).toBe(NOBLOCKERQUEUE_LASTKNOWN.archiveClusters);
+    expect(Number.isInteger(nb.activeNow)).toBe(true);
+  });
+
+  it('the band pill uses only the existing pill vocabulary (no new CSS)', () => {
+    const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+    for (const input of [undefined,
+      { nextSafeTitle: 'x', manualPending: true },
+      { nextSafeTitle: 'x', manualPending: false },
+      { nextSafeTitle: 'x', activeNow: 0, nextUp: 0 }]) {
+      expect(allowed.has(buildNoBlockerQueueModel(input).pill)).toBe(true);
+    }
+  });
+
+  it('continuumDataJSON carries the noBlockerQueue model', () => {
+    const j = continuumDataJSON();
+    expect(j.noBlockerQueue).toBeTruthy();
+    expect(typeof j.noBlockerQueue.statusLabel).toBe('string');
+    expect(Array.isArray(j.noBlockerQueue.metrics)).toBe(true);
+  });
+
+  it('renderContinuumPage shows the no-blocker-queue section + badge + band pill', () => {
+    const html = renderContinuumPage();
+    expect(html).toContain('No-blocker queue');
+    expect(html).toContain(NOBLOCKERQUEUE_BADGE);
+    expect(html).toContain('Next safe task');
+    expect(html).toContain('Awaiting user');
+    expect(html).toContain('Active now');
+  });
+
+  it('SAFETY: a tag-injecting noBlockerQueue is escaped + no new script + hash intact', () => {
+    const hostile = buildNoBlockerQueueModel({
+      nextSafeTitle: 'safe<script>alert(1)</script>',
+      nextSafeKind: '</section><script>evil()</script>',
+      activeNow: 1, manualPending: true,
+    });
+    const html = renderContinuumPage(buildContinuumModel({ noBlockerQueue: hostile }));
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).not.toContain('<script>evil()</script>');
+    expect((html.match(/<script/g) || []).length).toBe(1);
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    expect(m[1]).toBe(CONTINUUM_REFRESH_SCRIPT);
+    const pageHash = 'sha256-' + createHash('sha256').update(m[1], 'utf8').digest('base64');
+    expect(pageHash).toBe(CONTINUUM_SCRIPT_SHA256);
+  });
+});
+
 describe('layout / readability pass (v0.2.177)', () => {
   const html = renderContinuumPage();
 
@@ -952,7 +1053,7 @@ describe('test-count freshness (v0.2.200 — single source of truth)', () => {
 
 describe('SDK exposure', () => {
   it('re-exports the continuum module at the experimental tier', () => {
-    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.215-alpha');
+    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.216-alpha');
     expect(typeof SDK.continuum.renderContinuumPage).toBe('function');
     expect(SDK.SDK_SURFACE.continuum.tier).toBe(SDK.STABILITY.EXPERIMENTAL);
   });

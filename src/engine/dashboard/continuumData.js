@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.215-alpha';
+export const CONTINUUM_VERSION = 'v0.2.216-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -48,7 +48,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1396,
+  passing: 1404,
   files: 86,
   fastProfile: 5,
   foundationProfile: 25,
@@ -704,6 +704,110 @@ export function buildManualValidationModel(input = {}) {
 // build-continuum.mjs re-runs buildManualValidationModel with the freshly gathered checklist counts.
 const CURATED_MANUALVALIDATION = buildManualValidationModel();
 
+export const NOBLOCKERQUEUE_BADGE = 'NO-BLOCKER QUEUE · SAFE NEXT WORK · READ-ONLY';
+
+// NOBLOCKERQUEUE_LASTKNOWN (v0.2.216) — curated fallback no-blocker-queue posture, captured by hand
+// and clearly LABELLED last-known on the page so a stale snapshot is obvious rather than silently
+// wrong. The build-time generator (build-continuum.mjs) overrides this with the LIVE counts derived
+// from the SAME parsed todo.md/progress.md taskTotals the dashboard already uses (NO second source of
+// truth) plus the recommended next SAFE task and whether manual playtest/approval is still pending —
+// so the card tracks the real "what can an agent do next without user input" queue each deploy.
+export const NOBLOCKERQUEUE_LASTKNOWN = Object.freeze({
+  nextSafeTitle: SHIP_NEXT_SAFE_TASK.title,
+  nextSafeWhy: SHIP_NEXT_SAFE_TASK.why,
+  nextSafeKind: SHIP_NEXT_SAFE_TASK.kind,
+  activeNow: 42,
+  nextUp: 12,
+  archiveClusters: 11,
+  completed24h: 27,
+  todoCompletedMarkers: 12,
+  manualPending: true,
+});
+
+// buildNoBlockerQueueModel(input) — PURE, browser-safe builder (v0.2.216). Folds the LOCAL
+// no-blocker-queue posture into a render-ready card so project oversight sees, at a glance, what an
+// AI agent can pick up NEXT without any user input vs what is parked waiting on the human. It
+// clearly SEPARATES the no-blocker infra/docs/tooling queue (the safe next task + the active/next/
+// archive counts an agent can keep working through) from the one user-gated item (the MVP playtest +
+// explicit approval). Inputs are plain data the generator gathers cheaply from the SAME parsed
+// todo.md/progress.md taskTotals the dashboard already derives (NO second source of truth) plus the
+// recommended next SAFE task and a manual-pending flag — NO fs/network/THREE/DOM/child_process here,
+// and it imports NO tools/ module so the browser bundle stays clean. With no input it degrades to the
+// honest LAST-KNOWN snapshot and NEVER throws. It reuses the existing pill vocabulary + .metric
+// markup (no new CSS/script) → the continuum CSP/refresh-script hash stay intact. INFORMATIONAL
+// only: it queues/runs/deploys NOTHING — it just makes the safe next move unambiguous.
+export function buildNoBlockerQueueModel(input = {}) {
+  const i = (input && typeof input === 'object' && !Array.isArray(input)) ? input : {};
+  const lk = NOBLOCKERQUEUE_LASTKNOWN;
+  const live = !!(Number.isInteger(i.activeNow) || Number.isInteger(i.nextUp)
+    || Number.isInteger(i.archiveClusters) || Number.isInteger(i.completed24h)
+    || (typeof i.nextSafeTitle === 'string' && i.nextSafeTitle.trim()));
+
+  const _int = (x, d) => (Number.isInteger(x) && x >= 0 ? x : d);
+  const _bool = (x, d) => (typeof x === 'boolean' ? x : d);
+  const _str = (x, d) => (typeof x === 'string' && x.trim() ? x.trim() : d);
+
+  const nextSafeTitle = _str(i.nextSafeTitle, lk.nextSafeTitle);
+  const nextSafeWhy = _str(i.nextSafeWhy, lk.nextSafeWhy);
+  const nextSafeKind = _str(i.nextSafeKind, lk.nextSafeKind);
+  const activeNow = _int(i.activeNow, lk.activeNow);
+  const nextUp = _int(i.nextUp, lk.nextUp);
+  const archiveClusters = _int(i.archiveClusters, lk.archiveClusters);
+  const completed24h = _int(i.completed24h, lk.completed24h);
+  const todoCompletedMarkers = _int(i.todoCompletedMarkers, lk.todoCompletedMarkers);
+  const manualPending = _bool(i.manualPending, lk.manualPending);
+
+  // Coarse, honest band. A queued safe task means an agent can keep moving with NO user input — the
+  // headline posture. When the only outstanding human gate is the MVP playtest + approval, say so
+  // explicitly so the "agent can proceed" and "human must act" postures never blur.
+  let band; let bandLabel; const bandPill = 'no-blocker';
+  if (manualPending) {
+    band = 'safe-available'; bandLabel = 'NO-BLOCKER WORK AVAILABLE · MANUAL PLAYTEST AWAITS USER';
+  } else {
+    band = 'safe-available-clear'; bandLabel = 'NO-BLOCKER WORK AVAILABLE';
+  }
+
+  const metrics = [
+    { label: 'Next safe task', value: nextSafeTitle },
+    { label: 'Why safe', value: `${nextSafeKind} · no runtime risk · no deploy · no gate to unlock` },
+    { label: 'Awaiting user', value: manualPending
+      ? 'MVP playtest + explicit approval (manual, live-browser) — the ONLY user-gated item'
+      : 'nothing — no manual gate outstanding' },
+    { label: 'Active now', value: `${activeNow} in progress` },
+    { label: 'Next up', value: `${nextUp} queued · next-12` },
+    { label: 'Archive / done', value: `${archiveClusters} landed clusters · ${completed24h} done (24h) · ${todoCompletedMarkers} struck markers` },
+  ];
+
+  return {
+    badge: NOBLOCKERQUEUE_BADGE,
+    kind: live ? 'generated' : 'last-known',
+    band,
+    statusLabel: bandLabel,
+    pill: bandPill,
+    nextSafeTitle,
+    nextSafeWhy,
+    nextSafeKind,
+    activeNow,
+    nextUp,
+    archiveClusters,
+    completed24h,
+    todoCompletedMarkers,
+    manualPending,
+    metrics,
+    note: 'No-blocker queue — what an AI agent can pick up NEXT without any user input. The next safe '
+      + 'task is a no-runtime-risk infra/docs/tooling slice (no deploy, no gate to unlock); the '
+      + 'active/next/archive counts are DERIVED from the same parsed todo.md/progress.md the rest of '
+      + 'the dashboard uses (no second source of truth). The ONLY thing waiting on a human is the MVP '
+      + 'playtest + explicit approval (see the Manual validation card). GENERATED at packaging time; '
+      + 'LAST-KNOWN when not regenerated this build. It queues/runs/deploys NOTHING.',
+  };
+}
+
+// The curated fallback no-blocker-queue model — built at module load so renderContinuumPage() with NO
+// overrides (tests + the no-JS fallback) shows an honest LAST-KNOWN no-blocker-queue section.
+// build-continuum.mjs re-runs buildNoBlockerQueueModel with the freshly parsed todo/progress counts.
+const CURATED_NOBLOCKERQUEUE = buildNoBlockerQueueModel();
+
 // CONTINUUM_REFRESH_SCRIPT (v0.2.172) — the EXACT inline-script body the page ships,
 // kept as the single source of that text so its CSP hash can never silently drift.
 // It is STATIC (no model interpolation), so its sha256 is stable across deploys: a
@@ -765,12 +869,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.215-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.216-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.215 CONTINUUM MANUAL-VALIDATION / MVP-PLAYTEST READINESS CARD (dashboard/docs/tooling only, no runtime change) — the Continuum oversight dashboard now surfaces a read-only MANUAL VALIDATION section just below the RC / release-manifest card that CLEARLY SEPARATES what is no-blocker (the local automated gates, green) from what still needs manual input (the live-browser MVP playtest + explicit user approval). It folds the playtest-checklist section/item counts + blocker/major/minor severity tallies, the on-disk presence of the checklist + results-template docs, and the highest-level manual validation areas into one band (LOCAL GATES GREEN · MANUAL PLAYTEST + APPROVAL PENDING / PLAYTEST DOCS INCOMPLETE / MANUAL VALIDATION OUTSTANDING). The new pure buildManualValidationModel() DERIVES this from existing helpers/constants (PLAYTEST_CHECKLIST_SECTIONS/playtestItemCount/PLAYTEST_SEVERITIES + the two playtest docs stat-ed on disk by build-continuum.mjs) rather than duplicating gate logic; it reuses the existing .metric/.pill markup so the continuum CSP/refresh-script hash are untouched. +8 unit tests (tests/continuum-dashboard.test.js). Prior — v0.2.214 RC / release-manifest status card. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.216 CONTINUUM NO-BLOCKER QUEUE CARD (dashboard/docs/tooling only, no runtime change) — the Continuum oversight dashboard now surfaces a read-only NO-BLOCKER QUEUE section just below the manual-validation card that makes the safe next move unambiguous: what an AI agent can pick up NEXT without any user input (the next safe no-runtime-risk infra/docs/tooling slice + the active/next/archive queue) CLEARLY SEPARATED from the one item parked on the human (the MVP playtest + explicit approval). The new pure buildNoBlockerQueueModel() DERIVES the active/next/archive/done counts from the SAME parsed todo.md/progress.md taskTotals the dashboard already uses (no second source of truth) plus the recommended next SAFE task and a manual-pending flag, folding them into one band (NO-BLOCKER WORK AVAILABLE · MANUAL PLAYTEST AWAITS USER / NO-BLOCKER WORK AVAILABLE / NO SAFE TASK QUEUED · NEEDS DIRECTION). It reuses the existing .metric/.pill markup so the continuum CSP/refresh-script hash are untouched. +8 unit tests (tests/continuum-dashboard.test.js). Prior — v0.2.215 manual-validation / MVP-playtest readiness card; v0.2.214 RC / release-manifest status card. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
@@ -949,6 +1053,7 @@ export function buildContinuumModel(overrides = {}) {
     ship: base.ship || CURATED_SHIP,
     rcStatus: base.rcStatus || CURATED_RCSTATUS,
     manualValidation: base.manualValidation || CURATED_MANUALVALIDATION,
+    noBlockerQueue: base.noBlockerQueue || CURATED_NOBLOCKERQUEUE,
     readHealth: base.readHealth || CURATED_READHEALTH,
     taskTotals,
     derived,
@@ -972,6 +1077,7 @@ export function continuumDataJSON(model = buildContinuumModel()) {
     ship: model.ship || null,
     rcStatus: model.rcStatus || null,
     manualValidation: model.manualValidation || null,
+    noBlockerQueue: model.noBlockerQueue || null,
     readHealth: model.readHealth || null,
   };
 }
@@ -1301,6 +1407,28 @@ ${note}
     </section>`;
 }
 
+// _noBlockerQueueSection(nb) — the no-blocker-queue section (v0.2.216): an overall band pill +
+// provenance chip + badge, a small grid of metric cards that SEPARATE the safe next work an agent can
+// pick up with no user input (the next safe task + active/next/archive counts) from the one user-
+// gated item (the MVP playtest + approval), and a read-only note. Empty string when absent so an
+// override-free legacy model omits it. Server-rendered + escaped; reuses the .metric/.pill markup →
+// no new script, no new data-k key, the CSP/refresh-script hash stay intact. Pure.
+function _noBlockerQueueSection(nb) {
+  if (!nb || !Array.isArray(nb.metrics) || !nb.metrics.length) return '';
+  const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+  const pillState = allowed.has(nb.pill) ? nb.pill : 'no-blocker';
+  const note = nb.note ? `      <div class="focus">${escapeHtml(nb.note)}</div>` : '';
+  return `
+    <section>
+      <div class="h2row"><h2>No-blocker queue</h2> <span class="pill pill-${pillState}">${escapeHtml(nb.statusLabel)}</span> ${_healthChip(nb.kind)} <span class="badge">${escapeHtml(nb.badge)}</span></div>
+      <div class="lead">What an AI agent can pick up next WITHOUT user input — the next safe no-runtime-risk slice plus the active/next/archive queue, separated from the one item parked on the human (the MVP playtest + approval). Read-only.</div>
+      <div class="grid">
+${_metricRows(nb.metrics)}
+      </div>
+${note}
+    </section>`;
+}
+
 // renderContinuumPage(model) — full self-contained static HTML document string.
 // Dark Torii/nostrich/cyberpunk feel via inline CSS only; CSS bars + SVG rings.
 // The page renders fully WITHOUT JavaScript. A tiny, optional, same-origin-only
@@ -1457,6 +1585,7 @@ export function renderContinuumPage(model = buildContinuumModel()) {
 ${_shipSection(m.ship)}
 ${_rcStatusSection(m.rcStatus)}
 ${_manualValidationSection(m.manualValidation)}
+${_noBlockerQueueSection(m.noBlockerQueue)}
 ${_milestonesSection(m.milestones)}
 
     <section>

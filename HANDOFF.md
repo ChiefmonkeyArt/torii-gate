@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.215-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.216-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -520,6 +520,30 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.216** CONTINUUM NO-BLOCKER QUEUE CARD — a dashboard/docs/tooling slice (no runtime change).
+  The Torii Continuum oversight dashboard now surfaces a read-only **No-blocker queue** section just
+  below the manual-validation card that answers, at a glance, WHAT AN AI AGENT CAN PICK UP NEXT
+  WITHOUT USER INPUT — the next safe no-runtime-risk slice (`SHIP_NEXT_SAFE_TASK`: title/why/kind)
+  plus the active/next/archive queue COUNTS — kept SEPARATE from the one item parked on the human
+  (the live-browser MVP playtest + explicit approval). A new PURE, browser-safe
+  `buildNoBlockerQueueModel(input?)` in `src/engine/dashboard/continuumData.js` DERIVES the counts
+  from the SAME `taskTotals` already parsed off todo.md/progress.md by `tools/continuumParse.mjs`
+  (`activeNow`/`next12`/`archiveClusters`/`completed24h`/`todoCompletedMarkers`) — no second source of
+  truth — folded in via `buildContinuumModel({noBlockerQueue})` with a `manualPending` flag read off
+  `manualValidation.pill !== 'no-blocker'`; with no input it degrades to an honest
+  `NOBLOCKERQUEUE_LASTKNOWN` fallback (`kind:'last-known'`) and never throws. Band: `manualPending` →
+  NO-BLOCKER WORK AVAILABLE · MANUAL PLAYTEST AWAITS USER (`safe-available`); else NO-BLOCKER WORK
+  AVAILABLE (`safe-available-clear`); pill `no-blocker`. Six metrics: next safe task, why safe,
+  awaiting user, active now, next up, archive/done. Reuses the existing `.metric`/`.pill` markup so the
+  continuum CSP + inline refresh-script hash are untouched; every value HTML-escaped.
+  `tests/continuum-dashboard.test.js` (+8; suite now 1404/86): last-known model shape, live generated
+  band separating safe vs user-gated, manual-clear variant, invalid/omitted counts fall back, pill
+  vocabulary, `continuumDataJSON` carries `noBlockerQueue`, render shows the section, hostile-input
+  escape + script-hash intact. DASHBOARD/DOCS/TOOLING-ONLY — no generator output-shape break; no
+  runtime/gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no
+  network/deploy/publish/tag/release/self-update; `godMode` stays false; no new
+  `setTimeout`/`Vector3`/`Matrix4`.
+  Latest slice report: `torii-v0.2.216-no-blocker-queue-dashboard-report.md`.
   **v0.2.215** CONTINUUM MANUAL-VALIDATION / MVP-PLAYTEST READINESS CARD — a dashboard/docs/tooling
   slice (no runtime change). The Torii Continuum oversight dashboard now surfaces a read-only
   **Manual validation** section just below the RC / release-manifest card that CLEARLY SEPARATES what

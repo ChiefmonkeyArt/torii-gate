@@ -1,10 +1,10 @@
 {
-  "version": "v0.2.215-alpha",
-  "generatedAt": "2026-06-26T04:28:49.647Z",
+  "version": "v0.2.216-alpha",
+  "generatedAt": "2026-06-26T04:48:08.361Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
-    "activeTasks": 42,
+    "activeTasks": 43,
     "completedLast24h": 27,
     "archivedClusters": 11,
     "trackCount": 6,
@@ -25,14 +25,14 @@
     "isDerived": true,
     "todoCompletedMarkers": 12,
     "next12": 12,
-    "activeNow": 42,
+    "activeNow": 43,
     "completed24h": 27,
     "archiveClusters": 11
   },
   "derived": {
     "parsed": [
       "next12 (12)",
-      "activeNow (42)",
+      "activeNow (43)",
       "completed24h (27)",
       "archive (11)"
     ],
@@ -48,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.215-alpha"
+        "value": "v0.2.216-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -58,7 +58,7 @@
       {
         "label": "Total tests",
         "kind": "last-known",
-        "value": "1396 passing / 86 files"
+        "value": "1404 passing / 86 files"
       },
       {
         "label": "Profile timings",
@@ -78,7 +78,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.215-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.216-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -191,15 +191,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.215-alpha",
-    "gitCommit": "1cb964c",
+    "version": "v0.2.216-alpha",
+    "gitCommit": "693f935",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.215-alpha / pkg 0.2.215-alpha"
+        "detail": "config v0.2.216-alpha / pkg 0.2.216-alpha"
       },
       {
         "key": "tests",
@@ -252,7 +252,7 @@
     "band": "gates-green",
     "statusLabel": "LOCAL GATES GREEN · MANUAL VALIDATION + APPROVAL PENDING",
     "pill": "manual",
-    "version": "v0.2.215-alpha",
+    "version": "v0.2.216-alpha",
     "manifestStatus": "COMPLETE",
     "manifestRequiredPresent": 6,
     "manifestRequired": 6,
@@ -260,14 +260,14 @@
     "manifestOptional": 6,
     "rcDocsPresent": 7,
     "rcDocsTotal": 7,
-    "testLabel": "1396 passing / 86 files",
+    "testLabel": "1404 passing / 86 files",
     "profileSummary": "fast ~5 · foundation ~25 · full",
     "manualValidationRemaining": 7,
     "gateStatusLabel": "READY",
     "metrics": [
       {
         "label": "Source version",
-        "value": "v0.2.215-alpha"
+        "value": "v0.2.216-alpha"
       },
       {
         "label": "Release manifest",
@@ -279,7 +279,7 @@
       },
       {
         "label": "Tests",
-        "value": "1396 passing / 86 files"
+        "value": "1404 passing / 86 files"
       },
       {
         "label": "Test profiles",
@@ -347,6 +347,49 @@
       }
     ],
     "note": "Manual-validation / MVP-playtest readiness — the one thing the local automated gates can NOT prove. Local checks are green, but a human must still run the live-browser playtest (see the highest-level areas above) and explicitly approve before any release. GENERATED at packaging time from the playtest-checklist section/item/severity counts + on-disk doc presence; LAST-KNOWN when not regenerated this build. It releases/tags/publishes/deploys NOTHING (run: npm run playtest:checklist / npm run playtest:results to refresh the docs)."
+  },
+  "noBlockerQueue": {
+    "badge": "NO-BLOCKER QUEUE · SAFE NEXT WORK · READ-ONLY",
+    "kind": "generated",
+    "band": "safe-available",
+    "statusLabel": "NO-BLOCKER WORK AVAILABLE · MANUAL PLAYTEST AWAITS USER",
+    "pill": "no-blocker",
+    "nextSafeTitle": "Continue the read-only oversight loop — next safe infra/dashboard slice",
+    "nextSafeWhy": "Keep shipping no-runtime-risk tooling/docs that make AI handoff faster and the gate harder to get wrong (e.g. package the release:status verdict as a build artifact, or add a docs-freshness signal). SEC-gated live-relay / world-hop work stays parked behind SEC-1/2/3 and a manual deploy — not a safe pick yet.",
+    "nextSafeKind": "infra",
+    "activeNow": 43,
+    "nextUp": 12,
+    "archiveClusters": 11,
+    "completed24h": 27,
+    "todoCompletedMarkers": 12,
+    "manualPending": true,
+    "metrics": [
+      {
+        "label": "Next safe task",
+        "value": "Continue the read-only oversight loop — next safe infra/dashboard slice"
+      },
+      {
+        "label": "Why safe",
+        "value": "infra · no runtime risk · no deploy · no gate to unlock"
+      },
+      {
+        "label": "Awaiting user",
+        "value": "MVP playtest + explicit approval (manual, live-browser) — the ONLY user-gated item"
+      },
+      {
+        "label": "Active now",
+        "value": "43 in progress"
+      },
+      {
+        "label": "Next up",
+        "value": "12 queued · next-12"
+      },
+      {
+        "label": "Archive / done",
+        "value": "11 landed clusters · 27 done (24h) · 12 struck markers"
+      }
+    ],
+    "note": "No-blocker queue — what an AI agent can pick up NEXT without any user input. The next safe task is a no-runtime-risk infra/docs/tooling slice (no deploy, no gate to unlock); the active/next/archive counts are DERIVED from the same parsed todo.md/progress.md the rest of the dashboard uses (no second source of truth). The ONLY thing waiting on a human is the MVP playtest + explicit approval (see the Manual validation card). GENERATED at packaging time; LAST-KNOWN when not regenerated this build. It queues/runs/deploys NOTHING."
   },
   "readHealth": {
     "badge": "NOSTR READ-PATH · READ-ONLY",
