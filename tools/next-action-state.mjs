@@ -42,6 +42,7 @@ import {
 import { RC_SNAPSHOT_MANUAL_VALIDATION } from './rcSnapshot.mjs';
 import { buildManualValidationModel, CURRENT_TEST_STATUS } from '../src/engine/dashboard/continuumData.js';
 import { runMvpReadiness } from '../src/engine/status/mvpReadiness.js';
+import { buildApprovalState, MVP_APPROVAL_FILE, MVP_APPROVAL_STATUSES } from './mvpApproval.mjs';
 
 const ROOT = process.cwd();
 
@@ -84,6 +85,23 @@ function gatherManualValidation(shipStatusLabel) {
       gateStatusLabel: shipStatusLabel,
     });
   } catch { return buildManualValidationModel(); }
+}
+
+// Load the committed MVP approval state (re-shaped through buildApprovalState so a hand-edited
+// file is normalised), or the default PENDING record if the artifact is missing/garbled. The
+// state is read-only here — this tool never approves; it only FOLDS the record into the export.
+function gatherMvpApproval() {
+  const raw = readSafe(MVP_APPROVAL_FILE);
+  if (raw) {
+    try {
+      const p = JSON.parse(raw);
+      return buildApprovalState({
+        status: p.status, version: p.version, commit: p.commit,
+        approved_by: p.approved_by, approved_at: p.approved_at, notes: p.notes,
+      });
+    } catch { /* fall through */ }
+  }
+  return buildApprovalState({ status: MVP_APPROVAL_STATUSES.PENDING, version: configVersion() });
 }
 
 // docs pointers: the curated core docs that exist on disk + the generated handoff artifact.
@@ -134,6 +152,7 @@ if (invokedDirectly) {
     manualValidation,
     testStatus: { passing: CURRENT_TEST_STATUS.passing, files: CURRENT_TEST_STATUS.files },
     docs: gatherDocs(),
+    mvpApproval: gatherMvpApproval(),
     generatedAt: new Date().toISOString(),
   });
 

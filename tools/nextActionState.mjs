@@ -19,6 +19,7 @@
 // boundary).
 
 import { sourceCommitLabel } from './commitStamp.mjs';
+import { summarizeApprovalForState } from './mvpApproval.mjs';
 
 // Badge naming the export as read-only oversight, never a deploy/publish/upload action.
 export const NEXT_ACTION_STATE_BADGE = 'NEXT-ACTION STATE · LOCAL · READ-ONLY';
@@ -44,11 +45,13 @@ function _bool(x) { return x === true; }
 //   manualValidation  a buildManualValidationModel() card, or null → manual blocker 'unknown'
 //   testStatus        { passing, files } last-known test count (CURRENT_TEST_STATUS)
 //   docs              string[] of docs pointers a next agent should read (defaults to [])
+//   mvpApproval       a MVP_APPROVAL_STATE.json record (buildApprovalState shape), or null →
+//                     status 'unknown'. Folded so a future approval flips ONE state source.
 //   generatedAt       OPTIONAL ISO stamp — the ONLY non-deterministic field; omit (null) for
 //                     reproducible tests; the CLI passes a real stamp at print time.
 export function buildNextActionState({
   agentHandoff = null, manualValidation = null, testStatus = null,
-  docs = null, generatedAt = null,
+  docs = null, mvpApproval = null, generatedAt = null,
 } = {}) {
   const stamp = _str(generatedAt);
   const ah = agentHandoff && typeof agentHandoff === 'object' && !Array.isArray(agentHandoff)
@@ -101,6 +104,10 @@ export function buildNextActionState({
       files: ts ? _int(ts.files) : null,
     },
     manualBlocker,
+    // MVP approval — the single auditable record of whether a human has EXPLICITLY approved the
+    // live-browser MVP. Folded from MVP_APPROVAL_STATE.json so a future approval flips one state
+    // source, not scattered docs. `approved` is strict (invalid/partial "approved" → false).
+    mvpApproval: summarizeApprovalForState(mvpApproval),
     nextSafeTask: {
       title: _str(task.title),
       why: _str(task.why),
@@ -123,7 +130,7 @@ export function buildNextActionState({
 // present, regardless of how degraded the inputs are. buildNextActionState never omits these.
 export const NEXT_ACTION_STATE_REQUIRED_KEYS = Object.freeze([
   'schema', 'schemaVersion', 'badge', 'version', 'gitCommit', 'liveUrl',
-  'release', 'readiness', 'tests', 'manualBlocker', 'nextSafeTask', 'docs', 'reports', 'safety',
+  'release', 'readiness', 'tests', 'manualBlocker', 'mvpApproval', 'nextSafeTask', 'docs', 'reports', 'safety',
 ]);
 
 // formatNextActionState(state) → a concise multi-line text block for the terminal. Pure.
@@ -150,6 +157,8 @@ export function formatNextActionState(state) {
   L.push(`tests (last known): ${state.tests?.passing ?? '?'} passing / ${state.tests?.files ?? '?'} files`);
   const pendingStr = mb.pending === true ? 'PENDING' : (mb.pending === false ? 'clear' : 'unknown');
   L.push(`manual blocker: ${pendingStr}${mb.statusLabel ? ` (${mb.statusLabel})` : ''}`);
+  const ap = state.mvpApproval || {};
+  L.push(`MVP approval: ${ap.approved ? 'APPROVED' : (ap.status || 'unknown')}${ap.approvedBy ? ` by ${ap.approvedBy}` : ''}${ap.approvedAt ? ` @ ${ap.approvedAt}` : ''}`);
   L.push('');
   L.push(`next safe task: ${t.title ?? '(none)'}`);
   if (t.why) L.push(`  why: ${t.why}`);
@@ -187,6 +196,8 @@ export function formatNextActionStateMarkdown(state) {
   L.push(`- **MVP readiness:** ${rd.pct ?? '?'}% · ${rd.status ?? 'UNKNOWN'}`);
   L.push(`- **Tests (last known):** ${state.tests?.passing ?? '?'} passing / ${state.tests?.files ?? '?'} files`);
   L.push(`- **Manual blocker:** ${pendingStr}${mb.statusLabel ? ` — ${mb.statusLabel}` : ''}`);
+  const ap = state.mvpApproval || {};
+  L.push(`- **MVP approval:** ${ap.approved ? 'APPROVED' : (ap.status || 'unknown')}${ap.approvedBy ? ` by ${ap.approvedBy}` : ''}${ap.approvedAt ? ` @ ${ap.approvedAt}` : ''}`);
   L.push('');
   L.push('## Next safe task');
   L.push('');

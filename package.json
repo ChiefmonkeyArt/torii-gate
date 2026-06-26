@@ -1,6 +1,6 @@
 {
   "name": "torii-quest",
-  "version": "0.2.219-alpha",
+  "version": "0.2.220-alpha",
   "private": true,
   "type": "module",
   "scripts": {
@@ -26,6 +26,7 @@
     "vps:dry-run": "node tools/vps-dry-run.mjs",
     "docs:stale": "node tools/stale-docs.mjs",
     "release:meta": "node tools/release-meta.mjs",
+    "approval:state": "node tools/mvp-approval-state.mjs",
     "release:status": "node tools/release-readiness.mjs",
     "release:status:json": "node tools/release-readiness.mjs --json",
     "test": "vitest run",

@@ -1,17 +1,17 @@
 # Torii Quest — GitHub MVP Release Dry-Run
 
 > GITHUB RELEASE DRY-RUN · LOCAL · READ-ONLY · NO TAG / NO RELEASE
-> generated: 2026-06-26T08:05:01.917Z
+> generated: 2026-06-26T08:30:47.090Z
 
 - **Verdict:** NEAR
-- **Version:** v0.2.219-alpha @ 6bd0166 (source)
-- **package.json:** 0.2.219-alpha
+- **Version:** v0.2.220-alpha @ b30ff70 (source)
+- **package.json:** 0.2.220-alpha
 - **Live:** https://torii-quest.pplx.app
 
 ## Prerequisites
 
-- ✓ Current version stamped (config.js VERSION) — _ok_: v0.2.219-alpha
-- ✓ config VERSION matches package.json — _ok_: v0.2.219-alpha == v0.2.219-alpha
+- ✓ Current version stamped (config.js VERSION) — _ok_: v0.2.220-alpha
+- ✓ config VERSION matches package.json — _ok_: v0.2.220-alpha == v0.2.220-alpha
 - • Working tree clean (all changes committed) _(soft)_ — _pending_: uncommitted changes present
 - ? HEAD commit pushed to remote _(soft)_ — _unknown_: push status not checked (no network)
 - ✓ Release notes draft present (RELEASE_NOTES_DRAFT.md) — _ok_: RELEASE_NOTES_DRAFT.md present
@@ -38,11 +38,11 @@
 
 ```sh
 # annotate the release commit — DO NOT run without user approval
-git tag -a v0.2.219-alpha -m "Torii Quest v0.2.219-alpha (MVP proof)"
+git tag -a v0.2.220-alpha -m "Torii Quest v0.2.220-alpha (MVP proof)"
 # publish the tag — DO NOT run without user approval
-git push origin v0.2.219-alpha
+git push origin v0.2.220-alpha
 # create the GitHub release — DO NOT run without user approval
-gh release create v0.2.219-alpha --notes-file RELEASE_NOTES_DRAFT.md --title "Torii Quest v0.2.219-alpha"
+gh release create v0.2.220-alpha --notes-file RELEASE_NOTES_DRAFT.md --title "Torii Quest v0.2.220-alpha"
 ```
 
 ## Approval gate

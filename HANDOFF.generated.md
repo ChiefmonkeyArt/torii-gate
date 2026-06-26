@@ -2,10 +2,10 @@
 
 > AGENT HANDOFF READINESS · LOCAL · READ-ONLY
 > Generated artifact — do NOT hand-edit. The curated `HANDOFF.md` stays the source of truth.
-> generated: 2026-06-26T08:04:57.800Z
+> generated: 2026-06-26T08:30:42.900Z
 
-- **Version:** v0.2.219-alpha (pkg 0.2.219-alpha)
-- **Source commit:** 6bd0166 (source commit at generation — precedes this file's own commit)
+- **Version:** v0.2.220-alpha (pkg 0.2.220-alpha)
+- **Source commit:** b30ff70 (source commit at generation — precedes this file's own commit)
 - **Live (manual deploy):** https://torii-quest.pplx.app
 - **MVP readiness:** 100% · READY (9/9 signals)
 - **Gate verdict:** READY (READY)
@@ -48,7 +48,7 @@ _Why:_ Keep shipping no-runtime-risk tooling/docs that make the MVP proof easier
 
 ## Latest reports
 
+- torii-v0.2.220-mvp-approval-state-report.md
 - torii-v0.2.219-service-worker-cache-hygiene-report.md
 - torii-v0.2.218-package-private-report.md
 - torii-v0.2.217-next-action-state-report.md
-- torii-v0.2.216-no-blocker-queue-dashboard-report.md

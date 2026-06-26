@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.219-alpha';
+export const CONTINUUM_VERSION = 'v0.2.220-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -48,8 +48,8 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1417,
-  files: 87,
+  passing: 1443,
+  files: 88,
   fastProfile: 5,
   foundationProfile: 25,
 });
@@ -869,12 +869,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.219-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.220-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.219 SERVICE-WORKER CACHE HYGIENE (public/sw.js + tooling only, no runtime/gameplay change) — the service-worker CACHE_VERSION now TRACKS the app version (tq-v0.2.219-alpha instead of the static tq-v1), so every shipped version bump mints a fresh cache name and the existing activate handler purges the prior version assets — no stale assets after an asset-changing deploy. HARDENS the regression-check [5] version-marker block with a guard that FAILS if public/sw.js CACHE_VERSION does not embed EXPECTED_VERSION (so it can never rot back to a static literal). Existing skipWaiting/clients.claim/old-cache-purge safety behavior preserved; no caching-strategy change. Resolves the v0.2.217/v0.2.218 security-review advisory (CACHE_VERSION remained tq-v1). No test added — the existing 15-check gate carries the guard, so the suite stays at the prior count. Prior — v0.2.218 package.json privacy hygiene + guard; v0.2.217 machine-readable NEXT_ACTION_STATE.json + handoff:next CLI; v0.2.216 Continuum no-blocker-queue card. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.220 MVP APPROVAL STATE PLACEHOLDER (docs/tooling only, no runtime/gameplay change) — adds MVP_APPROVAL_STATE.json, a single auditable record of whether a human has EXPLICITLY approved the live-browser MVP, defaulting to status "pending". A pure module (tools/mvpApproval.mjs) + read-only CLI (npm run approval:state) build/validate/render it; the builder COERCES any non-"approved" value to pending so it can never silently flip, and validation ERRORS if an "approved" record lacks approved_by/approved_at + a concrete version. The next-action-state export now FOLDS the approval record (summarizeApprovalForState) so a future approval flips ONE state source instead of scattered docs. This slice does NOT approve anything — status stays pending until the user says so; there is no --approve path. Adds tests/mvp-approval-state.test.js (suite 1417→1443 / 87→88). Prior — v0.2.219 service-worker cache-version hygiene + guard; v0.2.218 package.json privacy hygiene + guard; v0.2.217 machine-readable NEXT_ACTION_STATE.json + handoff:next CLI. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the

@@ -103,6 +103,40 @@ describe('buildNextActionState — assembly', () => {
     expect(s.manualBlocker.pill).toBe(null);
   });
 
+  it('folds a pending MVP approval record into the state (approved:false)', () => {
+    const s = buildNextActionState({
+      agentHandoff: handoff(),
+      mvpApproval: {
+        kind: 'torii.mvp-approval-state', schemaVersion: 1, status: 'pending',
+        version: V, approved_by: null, approved_at: null,
+      },
+    });
+    expect(s.mvpApproval).toEqual({ status: 'pending', approved: false, approvedBy: null, approvedAt: null, version: V });
+  });
+
+  it('reports approved MVP approval only when the record is valid (who/when present)', () => {
+    const valid = buildNextActionState({
+      agentHandoff: handoff(),
+      mvpApproval: {
+        kind: 'torii.mvp-approval-state', schemaVersion: 1, status: 'approved',
+        version: V, commit: null, approved_by: 'chiefmonkey', approved_at: '2026-06-26T12:00:00Z',
+      },
+    });
+    expect(valid.mvpApproval.approved).toBe(true);
+    expect(valid.mvpApproval.approvedBy).toBe('chiefmonkey');
+
+    const partial = buildNextActionState({
+      agentHandoff: handoff(),
+      mvpApproval: { kind: 'torii.mvp-approval-state', schemaVersion: 1, status: 'approved', version: V },
+    });
+    expect(partial.mvpApproval.approved).toBe(false);
+  });
+
+  it('MVP approval degrades to unknown when no record is supplied', () => {
+    const s = buildNextActionState({ agentHandoff: handoff() });
+    expect(s.mvpApproval).toEqual({ status: 'unknown', approved: false, approvedBy: null, approvedAt: null, version: null });
+  });
+
   it('pins the standing safety posture all-false (read-only oversight, godMode false)', () => {
     const s = buildNextActionState({ agentHandoff: handoff() });
     expect(s.safety).toEqual({
