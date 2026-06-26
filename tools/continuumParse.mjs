@@ -132,9 +132,14 @@ export function deriveContinuumData(docs = {}) {
   };
 
   const next12 = tryList('next12', parseNumberedList(progressMd, 'Next 12 tasks'), { max: 24 });
-  const activeNow = tryList('activeNow', parseBullets(progressMd, 'Active now'), { max: 16 });
-  const completed24h = tryList('completed24h', parseStruckBullets(progressMd, 'Completed last 24h'), { max: 24 });
-  const archive = tryList('archive', parseBullets(progressMd, 'Archive'), { max: 24 });
+  // activeNow/completed24h are running logs in progress.md — each shipped slice prepends an
+  // entry, so the realistic list lengths far exceed the original v0.2.174 guard ceilings.
+  // The bounds still exist to reject an absurd/garbled section; they are raised to fit the
+  // intended running-log format so the dashboard derives from progress.md instead of falling
+  // back to the curated default (the gap the v0.2.208 cleanup closed).
+  const activeNow = tryList('activeNow', parseBullets(progressMd, 'Active now'), { max: 60 });
+  const completed24h = tryList('completed24h', parseStruckBullets(progressMd, 'Completed last 24h'), { max: 60 });
+  const archive = tryList('archive', parseBullets(progressMd, 'Archive'), { max: 40 });
 
   const todoCompletedMarkers = countStruck(todoMd);
   if (!todoMd) gaps.push('todo.md: empty/unreadable — completed-task count unavailable');

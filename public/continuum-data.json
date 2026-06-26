@@ -1,11 +1,11 @@
 {
-  "version": "v0.2.207-alpha",
-  "generatedAt": "2026-06-26T01:37:41.710Z",
+  "version": "v0.2.208-alpha",
+  "generatedAt": "2026-06-26T01:58:02.653Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
-    "activeTasks": 3,
-    "completedLast24h": 4,
+    "activeTasks": 35,
+    "completedLast24h": 27,
     "archivedClusters": 11,
     "trackCount": 6,
     "milestoneCount": 5,
@@ -25,19 +25,18 @@
     "isDerived": true,
     "todoCompletedMarkers": 12,
     "next12": 12,
-    "activeNow": null,
-    "completed24h": null,
+    "activeNow": 35,
+    "completed24h": 27,
     "archiveClusters": 11
   },
   "derived": {
     "parsed": [
       "next12 (12)",
+      "activeNow (35)",
+      "completed24h (27)",
       "archive (11)"
     ],
-    "gaps": [
-      "activeNow: no usable items parsed from progress.md — kept curated default",
-      "completed24h: no usable items parsed from progress.md — kept curated default"
-    ],
+    "gaps": [],
     "sources": [
       "progress.md",
       "todo.md"
@@ -49,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.207-alpha"
+        "value": "v0.2.208-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -59,7 +58,7 @@
       {
         "label": "Total tests",
         "kind": "last-known",
-        "value": "1332 passing / 84 files"
+        "value": "1334 passing / 84 files"
       },
       {
         "label": "Profile timings",
@@ -74,12 +73,12 @@
       {
         "label": "Parser gaps",
         "kind": "generated",
-        "value": "2 · curated fallback used"
+        "value": "0 · dashboard lists fully derived"
       },
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.207-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.208-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -192,15 +191,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.207-alpha",
-    "gitCommit": "98a63c0",
+    "version": "v0.2.208-alpha",
+    "gitCommit": "4c61d02",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.207-alpha / pkg 0.2.207-alpha"
+        "detail": "config v0.2.208-alpha / pkg 0.2.208-alpha"
       },
       {
         "key": "tests",

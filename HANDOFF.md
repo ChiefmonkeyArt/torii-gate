@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.207-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.208-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -520,7 +520,23 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
-  Latest slice report: `torii-v0.2.207-github-release-dry-run-report.md`.
+  **v0.2.208** PROGRESS PARSER GAP CLEANUP — a pure build-time parser/doc fix (no runtime change).
+  The Continuum build logs flagged `activeNow: no usable items parsed from progress.md` and
+  `completed24h: no usable items parsed from progress.md`, forcing the dashboard to keep curated
+  defaults. Root cause was the per-section bounds in `tools/continuumParse.mjs` `deriveContinuumData()`,
+  not the parsing logic: progress.md's `## Active now` / `## Completed last 24h` are running logs (each
+  shipped slice prepends an entry) that had grown past the original v0.2.174 `tryList` ceilings —
+  activeNow 34 top-level bullets vs `max:16`, completed24h 26 struck bullets vs `max:24` — so both were
+  dropped as `gaps`. The running-log format is intended, so the bounds were RAISED to fit it
+  (activeNow/completed24h `max:60`, archive `max:40`, next12 `max:24`) while KEEPING the protective
+  guard (a `>60`-item garbled section still degrades to the curated default). After the fix
+  `npm run build:continuum` derives all four lists from progress.md (`next12 (12), activeNow (34),
+  completed24h (26), archive (11)`; gaps: none). `tests/continuum-parse.test.js` (+2; 15→17; suite now
+  1334/84): a long-but-bounded 34/26 parse with NO gap, and an absurd 61-item list that still falls back
+  to the curated default. Pure build-time parser change only — no parser CALL site, schema, or dashboard
+  render path changed; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live
+  network write; `godMode` stays false; no new `setTimeout`/`Vector3`/`Matrix4`.
+  Latest slice report: `torii-v0.2.208-progress-parser-cleanup-report.md`.
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc

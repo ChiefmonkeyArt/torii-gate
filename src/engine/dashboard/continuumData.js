@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.207-alpha';
+export const CONTINUUM_VERSION = 'v0.2.208-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -48,7 +48,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1332,
+  passing: 1334,
   files: 84,
   fastProfile: 5,
   foundationProfile: 25,
@@ -522,12 +522,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.207-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.208-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.207 GITHUB MVP RELEASE DRY-RUN (docs/tooling only, no runtime change) — a local, read-only dry-run (tools/githubReleaseDryRun.mjs + CLI tools/github-release-dry-run.mjs, npm run release:dry-run, default GITHUB_RELEASE_DRY_RUN.md) that validates the prerequisites for a FUTURE GitHub MVP-proof release without creating one: version stamped + synced, clean working tree, HEAD pushed, release-notes draft present, release-package index present, tests/RC gate green, public live URL, and non-actionable (no autoUpdate) release metadata. Folds them into one READY/NEAR/BLOCKED verdict with the missing list and the suggested FUTURE manual commands as INERT TEXT carrying an explicit do-not-run-without-approval note. Reads local files + read-only git (rev-parse/status) only; emits text / --json / --markdown plus an opt-in bounded in-repo --write (confined via the shared resolveHandoffWritePath boundary). DRY-RUN ONLY: no git tag, no GitHub release, no push, no announce, no network, no deploy, no publish. +16 unit tests. NON-GOALS held: read-only except the explicit --write output; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; godMode stays false.' },
+    { label: 'Active slice', value: 'v0.2.208 PROGRESS PARSER GAP CLEANUP (docs/tooling only, no runtime change) — the Continuum build parser (tools/continuumParse.mjs) was logging gaps "activeNow / completed24h: no usable items parsed from progress.md" and keeping curated defaults, because progress.md grew its running-log sections past the original v0.2.174 guard ceilings (activeNow had 34 bullets vs a max of 16; completed24h had 26 vs 24). Raised the deriveContinuumData bounds to fit the intended running-log format (activeNow/completed24h max 60, archive max 40) so the dashboard once again DERIVES all four list sections from the source-of-truth progress.md while the bound still rejects an absurd/garbled section. +2 unit tests (tests/continuum-parse.test.js) lock a long-but-bounded list parsing without a gap and an over-bound list still falling back. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the

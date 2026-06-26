@@ -130,6 +130,34 @@ describe('deriveContinuumData', () => {
   });
 });
 
+describe('running-log bounds tolerance (v0.2.208)', () => {
+  // progress.md "Active now" / "Completed last 24h" are running logs: every shipped slice
+  // prepends an entry, so the realistic lengths (30+) far exceed the original v0.2.174
+  // ceilings. These cases lock the raised bounds: a long-but-bounded list now parses
+  // (no gap, dashboard derives from the doc) while a truly absurd list still falls back.
+  const docWith = (activeCount, completedCount) => {
+    const active = Array.from({ length: activeCount }, (_, i) => `- ✅ **v0.2.${200 - i} — slice ${i}** did the thing.`).join('\n');
+    const completed = Array.from({ length: completedCount }, (_, i) => `- ~~**v0.2.${190 - i}** — done ${i}. +tests.~~`).join('\n');
+    return `# Title\n\n## Active now\n\n${active}\n\n## Completed last 24h\n\n${completed}\n\n## Update Rules\n\n1. x\n`;
+  };
+
+  it('parses a long-but-bounded Active now (34 items) without a gap', () => {
+    const d = deriveContinuumData({ progressMd: docWith(34, 26), todoMd: '' });
+    expect(d.overrides.activeNow.length).toBe(34);
+    expect(d.overrides.completed24h.length).toBe(26);
+    expect(d.gaps.some((g) => g.startsWith('activeNow'))).toBe(false);
+    expect(d.gaps.some((g) => g.startsWith('completed24h'))).toBe(false);
+  });
+
+  it('still falls back to the curated default when a list is absurdly long', () => {
+    const d = deriveContinuumData({ progressMd: docWith(61, 61), todoMd: '' });
+    expect(d.overrides.activeNow).toBeUndefined();
+    expect(d.overrides.completed24h).toBeUndefined();
+    expect(d.gaps.some((g) => g.startsWith('activeNow'))).toBe(true);
+    expect(d.gaps.some((g) => g.startsWith('completed24h'))).toBe(true);
+  });
+});
+
 describe('buildContinuumModel(overrides) merge seam', () => {
   it('no overrides → curated model unchanged', () => {
     const m = buildContinuumModel();
