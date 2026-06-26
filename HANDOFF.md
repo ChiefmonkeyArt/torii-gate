@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.222-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.223-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -523,6 +523,29 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.223** MVP PLAYTEST RESULTS ON THE CONTINUUM DASHBOARD — a docs/dashboard/tooling slice (no
+  runtime change) surfacing the v0.2.222 playtest-results state VISIBLY on the Continuum dashboard so
+  the page shows whether the actual MVP playtest has been RECORDED, not only that approval is pending.
+  New PURE, browser-safe `buildPlaytestResultsCardModel(input={})` in `continuumData.js` (badge
+  `PLAYTESTRESULTS_BADGE` + frozen `PLAYTESTRESULTS_LASTKNOWN` not-run fallback) renders a compact
+  **Playtest results** card placed BETWEEN the MVP-approval card and the Manual-validation card: it
+  shows status (`not-run`/`incomplete`/`attention`/`complete`/`unknown`), recorded yes/no, item
+  counts, any failing item ids, and a clear next step. `tools/build-continuum.mjs` reads
+  `MVP_PLAYTEST_RESULTS.md` (read-only `stat`+read), re-shapes it through the pure
+  `summarizePlaytestForState` model, and folds it via `buildContinuumModel({playtestResults})`; any
+  failure degrades to the curated not-run card (no continuumData→tools import). `approvalImplied` is
+  HARD-pinned **false** in EVERY branch and the card carries an explicit "Implies approval: no —
+  approval is a separate explicit user gate" metric. Reuses the existing `.metric`/`.pill` markup
+  (pills `manual`/`open-edge`/`no-blocker`) so the continuum CSP + inline refresh-script hash are
+  untouched; every value HTML-escaped. `tests/continuum-dashboard.test.js` (+8; suite 1463/89 →
+  1471/89): last-known not-run, live not-run with next step, attention with failing ids, complete
+  NOT-AN-APPROVAL with `approvalImplied:false`, pill vocabulary, `continuumDataJSON` carries
+  `playtestResults`, render shows the section/badge, hostile-input escape + script-hash intact.
+  DASHBOARD/DOCS/TOOLING-ONLY — **status STAYS not-run/pending — no results fabricated, no MVP
+  approval granted in this slice**; no runtime/gameplay/physics/shooter/Rapier change; no Nostr
+  signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; `godMode`
+  stays false; no new `setTimeout`/`Vector3`/`Matrix4`. Latest slice report:
+  `torii-v0.2.223-playtest-results-dashboard-report.md`.
   **v0.2.222** MVP PLAYTEST RESULTS INTAKE — a docs/tooling slice (no runtime change) giving MANUAL
   MVP playtest outcomes ONE clean, source-controlled home instead of scattered notes. New committed
   `MVP_PLAYTEST_RESULTS.md` recording file (17 items / 13 sections, all Result cells blank → reads

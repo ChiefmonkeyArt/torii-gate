@@ -19,6 +19,7 @@ import {
   buildManualValidationModel,
   buildNoBlockerQueueModel,
   buildMvpApprovalModel,
+  buildPlaytestResultsCardModel,
   SHIP_NEXT_SAFE_TASK,
   CURRENT_TEST_STATUS,
   testCountLabel,
@@ -32,6 +33,7 @@ import { gatherReleaseReadiness } from './release-readiness.mjs';
 import { RELEASE_MANIFEST_REQUIRED, RELEASE_MANIFEST_OPTIONAL } from './releaseManifest.mjs';
 import { RC_SNAPSHOT_DOC_REFS, RC_SNAPSHOT_MANUAL_VALIDATION } from './rcSnapshot.mjs';
 import { buildApprovalState, summarizeApprovalForState, MVP_APPROVAL_FILE } from './mvpApproval.mjs';
+import { summarizePlaytestForState, PLAYTEST_RESULTS_STATE_FILE } from './playtestResultsState.mjs';
 import {
   PLAYTEST_CHECKLIST_SECTIONS,
   PLAYTEST_SEVERITIES,
@@ -231,10 +233,36 @@ try {
   console.log(`[continuum] mvp approval: live gather unavailable (${e.message}) — using last-known`);
 }
 
+// MVP playtest results state (v0.2.223): whether the actual manual playtest results have been
+// recorded (MVP_PLAYTEST_RESULTS.md) and what they said. Read the source-controlled recording file,
+// summarise it through the pure summarizePlaytestForState (which defaults to not-run on a blank/
+// garbled file and pins approvalImplied false), and fold it into the dashboard card. Cheap file read
+// only — no crypto, no git, no network. On any failure (missing/unreadable file) we degrade to the
+// curated NOT-RUN card. This card can never imply approval — that stays the separate MVP-approval gate.
+let playtestResults;
+try {
+  const text = readFileSync(join(ROOT, PLAYTEST_RESULTS_STATE_FILE), 'utf8');
+  const summary = summarizePlaytestForState(text);
+  playtestResults = buildPlaytestResultsCardModel({
+    status: summary.status,
+    ran: summary.ran,
+    total: summary.total,
+    pass: summary.counts.pass,
+    fail: summary.counts.fail,
+    na: summary.counts.na,
+    blank: summary.counts.blank,
+    other: summary.counts.other,
+    fails: summary.fails,
+  });
+} catch (e) {
+  playtestResults = buildPlaytestResultsCardModel(); // honest LAST-KNOWN not-run fallback
+  console.log(`[continuum] playtest results: live gather unavailable (${e.message}) — using last-known`);
+}
+
 // Stamp the packaged build time so the page can show when the data was packaged.
 const generatedAt = new Date().toISOString();
 const model = {
-  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, mvpApproval, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
+  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, mvpApproval, playtestResults, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
   generatedAt,
 };
 
@@ -255,3 +283,4 @@ console.log(`[continuum] rc status: ${rcStatus.statusLabel} (${rcStatus.kind}) �
 console.log(`[continuum] manual validation: ${manualValidation.statusLabel} (${manualValidation.kind}) · checklist ${manualValidation.sections} sections/${manualValidation.items} items · ${manualValidation.blocker}/${manualValidation.major}/${manualValidation.minor} b/M/m · areas ${manualValidation.validationAreas}`);
 console.log(`[continuum] no-blocker queue: ${noBlockerQueue.statusLabel} (${noBlockerQueue.kind}) · active ${noBlockerQueue.activeNow} · next ${noBlockerQueue.nextUp} · archive ${noBlockerQueue.archiveClusters} · done24h ${noBlockerQueue.completed24h} · manualPending ${noBlockerQueue.manualPending}`);
 console.log(`[continuum] mvp approval: ${mvpApproval.statusLabel} (${mvpApproval.kind}) · status ${mvpApproval.status} · approved ${mvpApproval.approved} · version ${mvpApproval.version}`);
+console.log(`[continuum] playtest results: ${playtestResults.statusLabel} (${playtestResults.kind}) · status ${playtestResults.status} · recorded ${playtestResults.ran} · ${playtestResults.counts.pass}/${playtestResults.counts.fail}/${playtestResults.counts.blank} p/f/b of ${playtestResults.total} · implies approval ${playtestResults.approvalImplied}`);

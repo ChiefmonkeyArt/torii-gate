@@ -21,6 +21,7 @@ import {
   MANUALVALIDATION_BADGE, MANUALVALIDATION_LASTKNOWN, buildManualValidationModel,
   NOBLOCKERQUEUE_BADGE, NOBLOCKERQUEUE_LASTKNOWN, buildNoBlockerQueueModel,
   MVPAPPROVAL_BADGE, MVPAPPROVAL_LASTKNOWN, buildMvpApprovalModel,
+  PLAYTESTRESULTS_BADGE, PLAYTESTRESULTS_LASTKNOWN, buildPlaytestResultsCardModel,
   READHEALTH_BADGE, buildReadHealthModel,
   escapeHtml, clampPct, barCells, ringDash,
   computeTotals, buildContinuumModel, continuumDataJSON, renderContinuumPage,
@@ -31,7 +32,7 @@ import { DEFAULT_TEST_STATUS } from '../src/engine/status/mvpReadiness.js';
 
 describe('module shape', () => {
   it('pins the version (tracks the build) and the read-only oversight badge', () => {
-    expect(CONTINUUM_VERSION).toBe('v0.2.222-alpha');
+    expect(CONTINUUM_VERSION).toBe('v0.2.223-alpha');
     expect(CONTINUUM_VERSION).toBe(VERSION);
     expect(CONTINUUM_BADGE).toBe('PROJECT OVERSIGHT · STATIC · READ-ONLY');
   });
@@ -136,7 +137,7 @@ describe('continuumDataJSON', () => {
   it('is JSON-serialisable and carries totals + the seed contributors', () => {
     const j = continuumDataJSON();
     const round = JSON.parse(JSON.stringify(j));
-    expect(round.version).toBe('v0.2.222-alpha');
+    expect(round.version).toBe('v0.2.223-alpha');
     expect(round.totals.pocProgressPct).toBe(47);
     expect(round.contributors.isSeed).toBe(true);
   });
@@ -148,7 +149,7 @@ describe('renderContinuumPage', () => {
   it('returns a self-contained HTML document with the version', () => {
     expect(typeof html).toBe('string');
     expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('v0.2.222-alpha');
+    expect(html).toContain('v0.2.223-alpha');
     expect(html).toContain('Torii Continuum');
   });
 
@@ -988,6 +989,106 @@ describe('mvp approval card (v0.2.221)', () => {
   });
 });
 
+describe('playtest results card (v0.2.223)', () => {
+  it('degrades to an honest LAST-KNOWN not-run model with no input (never throws)', () => {
+    const pr = buildPlaytestResultsCardModel();
+    expect(pr.kind).toBe('last-known');
+    expect(pr.badge).toBe(PLAYTESTRESULTS_BADGE);
+    expect(pr.status).toBe('not-run');
+    expect(pr.ran).toBe(false);
+    expect(pr.complete).toBe(false);
+    expect(pr.approvalImplied).toBe(false);
+    expect(pr.total).toBe(PLAYTESTRESULTS_LASTKNOWN.total);
+    expect(Array.isArray(pr.metrics)).toBe(true);
+    expect(pr.metrics.length).toBe(5);
+    expect(pr.band).toBe('not-run');
+    expect(pr.pill).toBe('manual');
+    expect(pr.statusLabel).toMatch(/PLAYTEST NOT RUN/);
+  });
+
+  it('folds a LIVE not-run state into a generated card with the clear next step', () => {
+    const pr = buildPlaytestResultsCardModel({
+      status: 'not-run', ran: false, total: 17,
+      pass: 0, fail: 0, na: 0, blank: 17, other: 0, fails: [],
+    });
+    expect(pr.kind).toBe('generated');
+    expect(pr.band).toBe('not-run');
+    expect(pr.approvalImplied).toBe(false);
+    const byLabel = Object.fromEntries(pr.metrics.map((m) => [m.label, m.value]));
+    expect(byLabel['Results status']).toBe('NOT-RUN');
+    expect(byLabel['Recorded']).toMatch(/no/);
+    expect(byLabel['Items']).toMatch(/17 blank \/ 17/);
+    expect(byLabel['Implies approval']).toMatch(/no/i);
+    expect(byLabel['Next step']).toMatch(/MVP_PLAYTEST_RESULTS\.md/);
+  });
+
+  it('attention band on any FAIL surfaces the failing item ids; never implies approval', () => {
+    const pr = buildPlaytestResultsCardModel({
+      status: 'attention', total: 3, pass: 1, fail: 1, na: 0, blank: 1, other: 0,
+      fails: ['shooter-1', 'aim-2'],
+    });
+    expect(pr.band).toBe('attention');
+    expect(pr.pill).toBe('open-edge');
+    expect(pr.approvalImplied).toBe(false);
+    const byLabel = Object.fromEntries(pr.metrics.map((m) => [m.label, m.value]));
+    expect(byLabel['Failing items']).toBe('shooter-1 · aim-2');
+  });
+
+  it('a fully COMPLETE playtest still renders NOT-AN-APPROVAL and approvalImplied stays false', () => {
+    const pr = buildPlaytestResultsCardModel({
+      status: 'complete', total: 3, pass: 2, fail: 0, na: 1, blank: 0, other: 0, fails: [],
+    });
+    expect(pr.band).toBe('complete');
+    expect(pr.pill).toBe('no-blocker');
+    expect(pr.complete).toBe(true);
+    expect(pr.approvalImplied).toBe(false);
+    expect(pr.statusLabel).toMatch(/NOT AN APPROVAL/);
+    const byLabel = Object.fromEntries(pr.metrics.map((m) => [m.label, m.value]));
+    expect(byLabel['Implies approval']).toMatch(/no/i);
+    expect(byLabel['Next step']).toMatch(/MVP approved/);
+  });
+
+  it('the band pill uses only the existing pill vocabulary (no new CSS)', () => {
+    const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+    for (const input of [undefined,
+      { status: 'not-run' }, { status: 'incomplete' }, { status: 'attention' },
+      { status: 'complete' }, { status: 'unknown' }, { status: 'weird' }]) {
+      expect(allowed.has(buildPlaytestResultsCardModel(input).pill)).toBe(true);
+    }
+  });
+
+  it('continuumDataJSON carries the playtestResults model', () => {
+    const j = continuumDataJSON();
+    expect(j.playtestResults).toBeTruthy();
+    expect(typeof j.playtestResults.statusLabel).toBe('string');
+    expect(j.playtestResults.status).toBe('not-run');
+    expect(j.playtestResults.approvalImplied).toBe(false);
+    expect(Array.isArray(j.playtestResults.metrics)).toBe(true);
+  });
+
+  it('renderContinuumPage shows the Playtest-results section + badge + not-run band pill', () => {
+    const html = renderContinuumPage();
+    expect(html).toContain('>Playtest results<');
+    expect(html).toContain(PLAYTESTRESULTS_BADGE);
+    expect(html).toContain('Results status');
+    expect(html).toContain('PLAYTEST NOT RUN');
+  });
+
+  it('SAFETY: a tag-injecting playtestResults is escaped + no new script + hash intact', () => {
+    const hostile = buildPlaytestResultsCardModel({
+      status: 'attention', total: 1, fail: 1,
+      fails: ['</section><script>evil()</script>'],
+    });
+    const html = renderContinuumPage(buildContinuumModel({ playtestResults: hostile }));
+    expect(html).not.toContain('<script>evil()</script>');
+    expect((html.match(/<script/g) || []).length).toBe(1);
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    expect(m[1]).toBe(CONTINUUM_REFRESH_SCRIPT);
+    const pageHash = 'sha256-' + createHash('sha256').update(m[1], 'utf8').digest('base64');
+    expect(pageHash).toBe(CONTINUUM_SCRIPT_SHA256);
+  });
+});
+
 describe('layout / readability pass (v0.2.177)', () => {
   const html = renderContinuumPage();
 
@@ -1148,7 +1249,7 @@ describe('test-count freshness (v0.2.200 — single source of truth)', () => {
 
 describe('SDK exposure', () => {
   it('re-exports the continuum module at the experimental tier', () => {
-    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.222-alpha');
+    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.223-alpha');
     expect(typeof SDK.continuum.renderContinuumPage).toBe('function');
     expect(SDK.SDK_SURFACE.continuum.tier).toBe(SDK.STABILITY.EXPERIMENTAL);
   });

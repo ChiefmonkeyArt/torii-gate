@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.222-alpha';
+export const CONTINUUM_VERSION = 'v0.2.223-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -48,7 +48,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1463,
+  passing: 1471,
   files: 89,
   fastProfile: 5,
   foundationProfile: 25,
@@ -896,6 +896,146 @@ export function buildMvpApprovalModel(input = {}) {
 // build-continuum.mjs re-runs buildMvpApprovalModel with the freshly read MVP_APPROVAL_STATE.json.
 const CURATED_MVPAPPROVAL = buildMvpApprovalModel();
 
+// PLAYTESTRESULTS_BADGE (v0.2.223) — names the MVP-playtest-results-state oversight card. The
+// dashboard already shows MVP approval pending and manual-validation pending; this third compact
+// card answers the remaining question: have the ACTUAL manual playtest results been recorded yet
+// (in MVP_PLAYTEST_RESULTS.md), and what did they say? READ-ONLY · NOT RUN until a tester records ·
+// NEVER an approval.
+export const PLAYTESTRESULTS_BADGE =
+  'MVP PLAYTEST RESULTS · LOCAL · READ-ONLY · NOT RUN UNTIL TESTER RECORDS · NOT AN APPROVAL';
+
+// PLAYTESTRESULTS_LASTKNOWN (v0.2.223) — curated fallback results posture, clearly LABELLED
+// last-known on the page. The build-time generator (build-continuum.mjs) overrides this with the
+// LIVE state read from MVP_PLAYTEST_RESULTS.md (re-shaped via tools/playtestResultsState.mjs
+// summarizePlaytestForState), so the card tracks the real recording state each deploy. Defaults to
+// NOT-RUN with no recorded results — the safe floor this card can never silently flip past, and it
+// can NEVER imply approval (approvalImplied is pinned false here and in every model branch).
+export const PLAYTESTRESULTS_LASTKNOWN = Object.freeze({
+  status: 'not-run',
+  ran: false,
+  total: 0,
+  pass: 0,
+  fail: 0,
+  na: 0,
+  blank: 0,
+  other: 0,
+  fails: Object.freeze([]),
+});
+
+// buildPlaytestResultsCardModel(input) — PURE, browser-safe builder (v0.2.223). Folds the
+// playtest-results STATE into a render-ready card so oversight sees, at a glance, whether the human
+// MVP playtest has actually been RECORDED and what it said — distinct from the MVP-approval card
+// (was the build approved?) and the manual-validation card (what must still be checked?). Inputs are
+// plain data the generator gathers from MVP_PLAYTEST_RESULTS.md via summarizePlaytestForState
+// (status + recorded flag + pass/fail/blank counts + failing item ids) — NO fs/network/THREE/DOM/
+// child_process here, and it imports NO tools/ module so the browser bundle stays clean. With no
+// input it degrades to the honest LAST-KNOWN not-run snapshot and NEVER throws. CRITICAL: this card
+// can NEVER imply approval — `approvalImplied` is pinned false in every branch, and a fully-complete
+// (all PASS/N-A) result still renders "NOT AN APPROVAL · explicit user OK required". Reuses the
+// existing pill vocabulary + .metric markup (no new CSS/script) → the continuum CSP/refresh-script
+// hash stay intact. INFORMATIONAL only: it approves/releases NOTHING.
+export function buildPlaytestResultsCardModel(input = {}) {
+  const i = (input && typeof input === 'object' && !Array.isArray(input)) ? input : {};
+  const lk = PLAYTESTRESULTS_LASTKNOWN;
+  const live = !!(typeof i.status === 'string' && i.status.trim());
+
+  const _int = (x, d) => (Number.isInteger(x) && x >= 0 ? x : d);
+  const known = new Set(['unknown', 'not-run', 'incomplete', 'attention', 'complete']);
+  const rawStatus = (typeof i.status === 'string' && i.status.trim()) ? i.status.trim().toLowerCase() : lk.status;
+  const status = known.has(rawStatus) ? rawStatus : 'unknown';
+
+  const total = _int(i.total, lk.total);
+  const pass = _int(i.pass, lk.pass);
+  const fail = _int(i.fail, lk.fail);
+  const na = _int(i.na, lk.na);
+  const blank = _int(i.blank, lk.blank);
+  const other = _int(i.other, lk.other);
+  const fails = Array.isArray(i.fails)
+    ? i.fails.filter((f) => typeof f === 'string' && f.trim()).map((f) => f.trim())
+    : [];
+  // `ran` is true once anything is recorded (status past unknown/not-run); never inferred otherwise.
+  const ran = (typeof i.ran === 'boolean') ? i.ran : (status !== 'unknown' && status !== 'not-run');
+  const complete = status === 'complete';
+
+  let band; let bandLabel; let bandPill; let nextStep;
+  switch (status) {
+    case 'attention':
+      band = 'attention';
+      bandLabel = 'PLAYTEST ATTENTION · FAILURE(S) RECORDED';
+      bandPill = 'open-edge';
+      nextStep = 'Feed the failing items back into todo/progress, fix, then re-test';
+      break;
+    case 'incomplete':
+      band = 'incomplete';
+      bandLabel = 'PLAYTEST INCOMPLETE · SOME ITEMS STILL BLANK';
+      bandPill = 'manual';
+      nextStep = 'Finish recording the remaining blank items in MVP_PLAYTEST_RESULTS.md';
+      break;
+    case 'complete':
+      band = 'complete';
+      bandLabel = 'PLAYTEST COMPLETE · ALL PASS / N-A (NOT AN APPROVAL)';
+      bandPill = 'no-blocker';
+      nextStep = 'Results clean — still requires the explicit user "MVP approved" (separate gate)';
+      break;
+    case 'not-run':
+      band = 'not-run';
+      bandLabel = 'PLAYTEST NOT RUN · NO RESULTS RECORDED YET';
+      bandPill = 'manual';
+      nextStep = 'User: run the live-browser playtest, then record results in MVP_PLAYTEST_RESULTS.md';
+      break;
+    default:
+      band = 'unknown';
+      bandLabel = 'PLAYTEST STATE UNKNOWN · NOTHING TO SUMMARISE';
+      bandPill = 'manual';
+      nextStep = 'User: run the live-browser playtest, then record results in MVP_PLAYTEST_RESULTS.md';
+  }
+
+  const itemsValue = total > 0
+    ? `${pass} pass · ${fail} fail · ${na} n/a · ${blank} blank / ${total}${other ? ` · ${other} other` : ''}`
+    : 'none recorded';
+
+  const metrics = [
+    { label: 'Results status', value: status.toUpperCase() },
+    { label: 'Recorded', value: ran ? 'yes' : 'no — results file still blank' },
+    { label: 'Items', value: itemsValue },
+    { label: 'Implies approval', value: 'no — approval is a separate explicit user gate' },
+    { label: 'Next step', value: nextStep },
+  ];
+  if (fails.length) {
+    metrics.push({ label: 'Failing items', value: fails.join(' · ') });
+  }
+
+  return {
+    badge: PLAYTESTRESULTS_BADGE,
+    kind: live ? 'generated' : 'last-known',
+    band,
+    statusLabel: bandLabel,
+    pill: bandPill,
+    status,
+    ran,
+    complete,
+    // HARD INVARIANT: the recorded playtest result, whatever it says, NEVER implies MVP approval.
+    // Approval is a separate explicit user gate (MVP_APPROVAL_STATE.json). Pinned false always.
+    approvalImplied: false,
+    total,
+    counts: { total, pass, fail, na, blank, other },
+    fails,
+    metrics,
+    note: 'MVP playtest results state — read from the source-controlled MVP_PLAYTEST_RESULTS.md, the '
+      + 'one place a tester records the actual manual live-browser playtest outcomes. It ships BLANK, '
+      + 'so a fresh build reads NOT RUN. A recorded result is NECESSARY but NOT SUFFICIENT for MVP '
+      + 'approval: even an all-PASS playtest still needs the explicit user "MVP approved" (the separate '
+      + 'MVP-approval gate above). This card can never imply approval — approvalImplied is pinned false. '
+      + 'GENERATED at packaging time from the on-disk file; LAST-KNOWN when not regenerated this build. '
+      + 'It approves/releases/tags/publishes/deploys NOTHING.',
+  };
+}
+
+// The curated fallback playtest-results model — built at module load so renderContinuumPage() with
+// NO overrides (tests + the no-JS fallback) shows an honest LAST-KNOWN not-run section.
+// build-continuum.mjs re-runs buildPlaytestResultsCardModel with the freshly read recording file.
+const CURATED_PLAYTESTRESULTS = buildPlaytestResultsCardModel();
+
 // CONTINUUM_REFRESH_SCRIPT (v0.2.172) — the EXACT inline-script body the page ships,
 // kept as the single source of that text so its CSP hash can never silently drift.
 // It is STATIC (no model interpolation), so its sha256 is stable across deploys: a
@@ -957,12 +1097,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.222-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.223-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.222 MVP PLAYTEST RESULTS INTAKE (docs/tooling/dashboard only, no runtime/gameplay change) — adds a source-controlled, hand-edited MVP_PLAYTEST_RESULTS.md recording file (17 items / 13 sections, all blank → reads not-run) so manual playtest outcomes have ONE clean home instead of scattered notes, plus a pure summary model (summarizePlaytestForState → not-run / incomplete / attention / complete / unknown) folded into NEXT_ACTION_STATE so a next agent can see whether the playtest was RECORDED. A new playtest:status CLI summarises the file read-only (no-clobber --write seeds a blank record). The state is HARD-pinned to never imply approval (approvalImplied false in every branch) — a recorded playtest is necessary but NOT sufficient. Status stays PENDING/not-run — this slice records and approves nothing. Adds 13 tests (suite 1450→1463 / 89 files). Prior — v0.2.221 MVP approval on the dashboard; v0.2.220 MVP_APPROVAL_STATE.json placeholder + approval:state CLI; v0.2.219 service-worker cache-version hygiene. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.223 MVP PLAYTEST RESULTS ON THE DASHBOARD (docs/tooling/dashboard only, no runtime/gameplay change) — surfaces the v0.2.222 playtest-results state as a compact Continuum card sitting beside MVP approval and manual validation, so the page shows whether the actual playtest has been RECORDED (not-run / incomplete / attention / complete / unknown) rather than only that approval is pending. The card derives from MVP_PLAYTEST_RESULTS.md via the pure summarizePlaytestForState model, defaults to not-run, lists any failing item ids, and is HARD-pinned to never imply approval (approvalImplied false in every branch) — a recorded playtest is necessary but NOT sufficient. Status stays PENDING/not-run — this slice records and approves nothing. Adds 8 tests (suite 1463→1471 / 89 files). Prior — v0.2.222 MVP playtest results intake (MVP_PLAYTEST_RESULTS.md + playtest:status CLI); v0.2.221 MVP approval on the dashboard; v0.2.220 MVP_APPROVAL_STATE.json placeholder + approval:state CLI. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
@@ -1143,6 +1283,7 @@ export function buildContinuumModel(overrides = {}) {
     manualValidation: base.manualValidation || CURATED_MANUALVALIDATION,
     noBlockerQueue: base.noBlockerQueue || CURATED_NOBLOCKERQUEUE,
     mvpApproval: base.mvpApproval || CURATED_MVPAPPROVAL,
+    playtestResults: base.playtestResults || CURATED_PLAYTESTRESULTS,
     readHealth: base.readHealth || CURATED_READHEALTH,
     taskTotals,
     derived,
@@ -1168,6 +1309,7 @@ export function continuumDataJSON(model = buildContinuumModel()) {
     manualValidation: model.manualValidation || null,
     noBlockerQueue: model.noBlockerQueue || null,
     mvpApproval: model.mvpApproval || null,
+    playtestResults: model.playtestResults || null,
     readHealth: model.readHealth || null,
   };
 }
@@ -1541,6 +1683,29 @@ ${note}
     </section>`;
 }
 
+// _playtestResultsSection(pr) — the MVP-playtest-results-state section (v0.2.223): an overall band
+// pill + provenance chip + badge, a compact grid of metric cards (results status / recorded? /
+// pass-fail-blank counts / the pinned "implies approval: no" / the clear next step / any failing item
+// ids), and a read-only note. Placed right after the MVP-approval card so oversight reads
+// approval-state then results-state together. Empty string when absent so an override-free legacy
+// model omits it. Server-rendered + escaped; reuses the .metric/.pill markup → no new script, no new
+// data-k key, the CSP/refresh-script hash stay intact. Pure.
+function _playtestResultsSection(pr) {
+  if (!pr || !Array.isArray(pr.metrics) || !pr.metrics.length) return '';
+  const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+  const pillState = allowed.has(pr.pill) ? pr.pill : 'manual';
+  const note = pr.note ? `      <div class="focus">${escapeHtml(pr.note)}</div>` : '';
+  return `
+    <section>
+      <div class="h2row"><h2>Playtest results</h2> <span class="pill pill-${pillState}">${escapeHtml(pr.statusLabel)}</span> ${_healthChip(pr.kind)} <span class="badge">${escapeHtml(pr.badge)}</span></div>
+      <div class="lead">Whether the actual manual playtest results have been recorded (MVP_PLAYTEST_RESULTS.md), and what they said. Ships blank → NOT RUN. A recorded result never implies approval — that stays a separate explicit user gate. Read-only.</div>
+      <div class="grid">
+${_metricRows(pr.metrics)}
+      </div>
+${note}
+    </section>`;
+}
+
 // renderContinuumPage(model) — full self-contained static HTML document string.
 // Dark Torii/nostrich/cyberpunk feel via inline CSS only; CSS bars + SVG rings.
 // The page renders fully WITHOUT JavaScript. A tiny, optional, same-origin-only
@@ -1697,6 +1862,7 @@ export function renderContinuumPage(model = buildContinuumModel()) {
 ${_shipSection(m.ship)}
 ${_rcStatusSection(m.rcStatus)}
 ${_mvpApprovalSection(m.mvpApproval)}
+${_playtestResultsSection(m.playtestResults)}
 ${_manualValidationSection(m.manualValidation)}
 ${_noBlockerQueueSection(m.noBlockerQueue)}
 ${_milestonesSection(m.milestones)}
