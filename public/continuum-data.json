@@ -1,6 +1,6 @@
 {
-  "version": "v0.2.203-alpha",
-  "generatedAt": "2026-06-26T00:20:45.424Z",
+  "version": "v0.2.204-alpha",
+  "generatedAt": "2026-06-26T00:41:07.904Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
@@ -49,17 +49,17 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.203-alpha"
+        "value": "v0.2.204-alpha"
       },
       {
         "label": "Test files / profiles",
         "kind": "generated",
-        "value": "fast 5 · foundation 25 · full 81"
+        "value": "fast 5 · foundation 25 · full 82"
       },
       {
         "label": "Total tests",
         "kind": "last-known",
-        "value": "1288 passing / 81 files"
+        "value": "1304 passing / 82 files"
       },
       {
         "label": "Profile timings",
@@ -79,7 +79,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.203-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.204-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -99,9 +99,9 @@
         "sub": "15 / 15"
       },
       {
-        "pct": 31,
+        "pct": 30,
         "label": "Foundation coverage",
-        "sub": "25/81 files"
+        "sub": "25/82 files"
       }
     ]
   },
@@ -192,15 +192,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.203-alpha",
-    "gitCommit": "6a1bbd8",
+    "version": "v0.2.204-alpha",
+    "gitCommit": "af4e256",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.203-alpha / pkg 0.2.203-alpha"
+        "detail": "config v0.2.204-alpha / pkg 0.2.204-alpha"
       },
       {
         "key": "tests",

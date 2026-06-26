@@ -1,6 +1,6 @@
 {
   "name": "torii-quest",
-  "version": "0.2.203-alpha",
+  "version": "0.2.204-alpha",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,7 @@
     "rc:gate": "node tools/mvp-rc-gate.mjs",
     "release:notes": "node tools/release-notes.mjs",
     "playtest:checklist": "node tools/playtest-checklist.mjs",
+    "playtest:results": "node tools/playtest-results.mjs",
     "zones:check": "node tools/zone-fallback-check.mjs",
     "vps:dry-run": "node tools/vps-dry-run.mjs",
     "docs:stale": "node tools/stale-docs.mjs",

@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.203-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.204-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -438,7 +438,33 @@ Breaking one should fail CI/the check, not ship.
   nothing, navigates/serves/deploys/publishes/writes (beyond the explicit `--write`) NOTHING; NOT a
   gameplay change and not a live browser test; no gameplay/physics/shooter/Rapier change; no Nostr
   signing/publishing/live network write; `godMode` stays false.
-  Latest slice report: `torii-v0.2.203-mvp-playtest-checklist-report.md`.
+  **v0.2.204** added an MVP MANUAL PLAYTEST RESULTS INTAKE TEMPLATE — a pure, node-safe results-intake
+  generator (`tools/playtestResults.mjs` + thin CLI `tools/playtest-results.mjs`, `npm run playtest:results`)
+  that gives a structured way to RECORD manual playtest results from the v0.2.203 `MVP_PLAYTEST_CHECKLIST.md`
+  and feed failures back into todo/progress/handoff without ambiguity. The blank results template DERIVES
+  its 17 items across 13 sections from `PLAYTEST_CHECKLIST_SECTIONS` (imported from
+  `tools/playtestChecklist.mjs`), so it stays in lock-step with the checklist as the single source of
+  truth — carrying build/version, commit, live URL, tester, date, environment + overall meta fields and
+  per-item result (PASS/FAIL/N/A), severity, repro notes, screenshot/video refs and a recommended next
+  action. `buildPlaytestResultsTemplate({version,gitCommit,liveUrl,generatedAt})` →
+  `{schema:'torii.playtest-results'/v1, badge, title, manual:true, version, gitCommit, liveUrl,
+  resultValues:['PASS','FAIL','N/A'], severities[], howTo[], metaFields[], itemFields[], sections[]
+  (each item id/title/severity/expected), itemCount, safety, rendered:false, actionable:false}`. A
+  tolerant pure parser/summary reads a COMPLETED results markdown back: `parsePlaytestResults(text)` →
+  `{items:[{id,result,raw}], total}` (heading-anchored, reads the Result row's value cell, strips
+  emphasis + parenthetical hints, never throws); `summarizePlaytestResults()` →
+  `{counts:{total,pass,fail,na,blank,other}, fails:[ids], verdict}` with verdict
+  EMPTY / INCOMPLETE / ATTENTION / COMPLETE (tolerates blanks). The thin CLI stamps version
+  (`configVersion()`) + best-effort short commit + the SHARED live URL; modes text / `--json`
+  (schema `torii.playtest-results` v1) / `--markdown`; READ-ONLY except an opt-in bounded in-repo
+  `--write[=path]` (default `MVP_PLAYTEST_RESULTS_TEMPLATE.md`, confined via the SHARED
+  `resolveHandoffWritePath` — absolute / `..` rejected) plus a read-only `--summarize[=path]` (in-repo
+  read only); always exits 0 (rejected `--write`/`--summarize` path → exit 2).
+  `tests/playtest-results.test.js` (+16). RESULTS INTAKE ONLY — runs no browser, automates nothing,
+  navigates/serves/deploys/publishes/writes (beyond the explicit `--write`) NOTHING; NOT a gameplay
+  change and not a live browser test; no gameplay/physics/shooter/Rapier change; no Nostr
+  signing/publishing/live network write; `godMode` stays false.
+  Latest slice report: `torii-v0.2.204-playtest-results-template-report.md`.
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
