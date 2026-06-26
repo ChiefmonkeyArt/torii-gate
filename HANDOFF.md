@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.210-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.211-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -520,6 +520,29 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.211** RELEASE ARTIFACT INTEGRITY MANIFEST — a pure tooling/docs slice (no runtime change).
+  A new local, read-only manifest (`tools/releaseManifest.mjs` pure assembler + thin CLI
+  `tools/release-manifest.mjs`, `npm run release:manifest`) records the RC package artifacts a future
+  GitHub release / VPS self-update flow must verify, with present/missing status + stable sha256
+  checksums. The frozen `RELEASE_MANIFEST_REQUIRED` (RELEASE_NOTES_DRAFT.md, MVP_RELEASE_PACKAGE.md,
+  GITHUB_RELEASE_DRY_RUN.md, public/release-metadata.json, package.json, index.html) +
+  `RELEASE_MANIFEST_OPTIONAL` (RC snapshot, playtest checklist/results, handoff, VPS install,
+  continuum-data) each carry `{key,file,label,category}`; the CLI reads each in-repo text doc / served
+  build-metadata file, computes a sha256 + byte size via `node:crypto`, and injects a
+  `{present,sha256,bytes}` map into `buildReleaseManifestModel(inputs)`, which bands COMPLETE (every
+  REQUIRED artifact present; an unknown present flag is never treated as missing) / INCOMPLETE, rejects
+  a non-64-hex sha256, and pins every safety flag false. Checksums cover in-repo text docs + small
+  served build-metadata JSON only — no secrets, no large binaries. `formatReleaseManifest()`/
+  `formatReleaseManifestMarkdown()` render text/markdown (null-safe). The thin CLI does the fs/git I/O
+  (read-only `git rev-parse`), modes text / `--json` / `--markdown`; READ-ONLY except an opt-in bounded
+  in-repo `--write[=path]` (default `RELEASE_ARTIFACT_MANIFEST.md`, confined via the SHARED
+  `resolveHandoffWritePath` — absolute / `..` rejected); always exits 0 (rejected `--write` → exit 2) —
+  VISIBILITY, not a gate (the authority stays `npm run test:release`). `tests/release-manifest.test.js`
+  (+14; suite now 1372/86; asserts every REQUIRED artifact exists on disk so a missing RC artifact is
+  caught locally). MANIFEST ONLY — no GitHub release, no git tag, no push, no deploy/publish/self-update,
+  no network/server; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
+  write; `godMode` stays false; no new `setTimeout`/`Vector3`/`Matrix4`.
+  Latest slice report: `torii-v0.2.211-release-artifact-manifest-report.md`.
   **v0.2.210** MVP RC SNAPSHOT / FREEZE-CANDIDATE SUMMARY — a pure tooling/docs slice (no runtime
   change). A new local, read-only RC snapshot (`tools/rcSnapshot.mjs` pure assembler + thin CLI
   `tools/rc-snapshot.mjs`, `npm run rc:snapshot`) COMPOSES the already-pure local verdicts —

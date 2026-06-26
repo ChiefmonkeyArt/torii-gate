@@ -1,9 +1,9 @@
 # Torii Quest — MVP Proof-of-Concept — Release Notes (DRAFT)
 
 > MVP PROOF RELEASE NOTES · DRAFT · LOCAL · READ-ONLY
-> generated: 2026-06-26T02:41:53.467Z
+> generated: 2026-06-26T03:10:51.503Z
 
-- **Version:** v0.2.210-alpha @ be5eea5 (source)
+- **Version:** v0.2.211-alpha @ 47e5b18 (source)
 - **Live:** https://torii-quest.pplx.app
 - **Release candidate:** YES (READY, 100%)
 - **MVP readiness:** 100% · READY
@@ -56,10 +56,10 @@
 
 ## Recent reports
 
+- torii-v0.2.211-release-artifact-manifest-report.md
 - torii-v0.2.210-mvp-rc-snapshot-report.md
 - torii-v0.2.209-generated-commit-stamp-clarity-report.md
 - torii-v0.2.208-progress-parser-cleanup-report.md
-- torii-v0.2.207-github-release-dry-run-report.md
 
 ---
 
