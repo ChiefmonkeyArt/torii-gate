@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.216-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.217-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -520,6 +520,34 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.217** MACHINE-READABLE NEXT-ACTION STATE — a dashboard/docs/tooling slice (no runtime
+  change). A compact machine-readable next-action/handoff state so an agent (GPT/Claude/DeepSeek/
+  other) can pick up the safe MVP pipeline WITHOUT reading the whole repo. A new PURE, node-safe
+  `buildNextActionState({agentHandoff,manualValidation,testStatus,docs,generatedAt})` in
+  `tools/nextActionState.mjs` FLATTENS the EXISTING `buildAgentHandoff()` export (itself a compose of
+  `buildHandoffSummary()` + `runMvpReadiness()`) into one stable object —
+  version/packageVersion/gitCommit/liveUrl, `release{ready,gateStatus,gateCommand,blockers,
+  regression{count,expected}}`, `readiness{pct,status}`, `tests{passing,files}`,
+  `manualBlocker{pending,statusLabel,pill}`, `nextSafeTask{title,why,kind}`, `constraints[]`,
+  `docs[]`, `reports[]`, and an all-false `safety{deploy,publish,push,tag,networkWrite,nostrWrite,
+  godMode}` posture — NOT a second task list. The manual-blocker flag is DERIVED from the same
+  `buildManualValidationModel(...)` pill (`pill !== 'no-blocker'`) `build-continuum.mjs` already uses,
+  so it can't drift (no manual card → `pending:null`). Null/garbled inputs degrade to honest nulls /
+  `gateStatus:'UNKNOWN'` and never throw. Frozen `NEXT_ACTION_STATE_SCHEMA` (`torii.next-action-state`
+  v1) / `_BADGE` / `_WRITE_FILENAME` (`NEXT_ACTION_STATE.json`) / `_REQUIRED_KEYS`;
+  `formatNextActionState()` / `formatNextActionStateMarkdown()` render text/markdown (null-safe). The
+  thin CLI `tools/next-action-state.mjs` (`npm run handoff:next`) does the fs/git I/O behind a
+  `realpathSync` run-guard, modes text / `--json` / `--markdown`, and writes `NEXT_ACTION_STATE.json`
+  ONLY under an explicit `--write[=path]` (confined in-repo via the SHARED `resolveHandoffWritePath` —
+  absolute / `..` rejected → exit 2); always exits 0 otherwise. `tests/next-action-state.test.js`
+  (+13; suite now 1417/87): constants frozen, assembly folds handoff+manual+test count, required keys
+  ALWAYS present, no stale version vs config `VERSION` + `CURRENT_TEST_STATUS`, manual-blocker
+  derivation pending/clear/unknown, all-false safety posture, degraded/garbled inputs,
+  text/markdown/null-safe formatters. DASHBOARD/DOCS/TOOLING-ONLY — read-only except the explicit
+  `--write` output; no runtime/gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/
+  live network write; no network/deploy/publish/tag/release/self-update; `godMode` stays false; no new
+  `setTimeout`/`Vector3`/`Matrix4`.
+  Latest slice report: `torii-v0.2.217-next-action-state-report.md`.
   **v0.2.216** CONTINUUM NO-BLOCKER QUEUE CARD — a dashboard/docs/tooling slice (no runtime change).
   The Torii Continuum oversight dashboard now surfaces a read-only **No-blocker queue** section just
   below the manual-validation card that answers, at a glance, WHAT AN AI AGENT CAN PICK UP NEXT

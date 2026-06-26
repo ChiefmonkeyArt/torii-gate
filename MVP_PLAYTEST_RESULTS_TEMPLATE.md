@@ -1,7 +1,7 @@
 # Torii Quest — MVP Manual Playtest Results
 
 > MVP PLAYTEST RESULTS INTAKE · LOCAL · READ-ONLY
-> generated: 2026-06-26T04:46:44.321Z
+> generated: 2026-06-26T05:11:36.746Z
 
 - **Items:** 17 across 13 sections
 - **Result values:** PASS / FAIL / N/A
@@ -18,8 +18,8 @@
 
 | Field | Value |
 | --- | --- |
-| Build / version | v0.2.216-alpha |
-| Commit | 693f935 |
+| Build / version | v0.2.217-alpha |
+| Commit | 9a55860 |
 | Live URL | https://torii-quest.pplx.app |
 | Tester |  |
 | Date |  |
