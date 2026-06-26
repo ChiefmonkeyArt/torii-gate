@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.217-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.218-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -520,6 +520,19 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.218** PACKAGE-PRIVACY HYGIENE — a package.json/tooling slice (no runtime change). Added
+  `"private": true` to `package.json` so this static web-app/game can never be accidentally
+  `npm publish`-ed, and HARDENED the regression-check `[5]` version-marker block
+  (`tools/regression-check.mjs`) with a guard that FAILS if package privacy is ever dropped
+  (`pkg.private !== true` → fail; else a `package.json is private` pass line). The [5] block was
+  refactored to read the whole `pkg` object once so both the version match and the privacy flag are
+  checked from a single parse. Resolves the v0.2.217 security-review advisory (low risk:
+  `package.json` lacked `"private": true`). No test file added — the existing 15-check gate carries
+  the guard, so the Vitest suite stays at 1417/87 (no `CURRENT_TEST_STATUS`/`DEFAULT_TEST_STATUS`
+  numeric change). PACKAGE-HYGIENE/TOOLING-ONLY — no runtime/gameplay/physics/shooter/Rapier change;
+  no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update;
+  `godMode` stays false; no new `setTimeout`/`Vector3`/`Matrix4`.
+  Latest slice report: `torii-v0.2.218-package-private-report.md`.
   **v0.2.217** MACHINE-READABLE NEXT-ACTION STATE — a dashboard/docs/tooling slice (no runtime
   change). A compact machine-readable next-action/handoff state so an agent (GPT/Claude/DeepSeek/
   other) can pick up the safe MVP pipeline WITHOUT reading the whole repo. A new PURE, node-safe

@@ -1,10 +1,10 @@
 {
-  "version": "v0.2.217-alpha",
-  "generatedAt": "2026-06-26T05:12:58.325Z",
+  "version": "v0.2.218-alpha",
+  "generatedAt": "2026-06-26T05:28:41.045Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
-    "activeTasks": 44,
+    "activeTasks": 45,
     "completedLast24h": 27,
     "archivedClusters": 11,
     "trackCount": 6,
@@ -25,14 +25,14 @@
     "isDerived": true,
     "todoCompletedMarkers": 12,
     "next12": 12,
-    "activeNow": 44,
+    "activeNow": 45,
     "completed24h": 27,
     "archiveClusters": 11
   },
   "derived": {
     "parsed": [
       "next12 (12)",
-      "activeNow (44)",
+      "activeNow (45)",
       "completed24h (27)",
       "archive (11)"
     ],
@@ -48,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.217-alpha"
+        "value": "v0.2.218-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -78,7 +78,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.217-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.218-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -191,15 +191,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.217-alpha",
-    "gitCommit": "9a55860",
+    "version": "v0.2.218-alpha",
+    "gitCommit": "ca37b86",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.217-alpha / pkg 0.2.217-alpha"
+        "detail": "config v0.2.218-alpha / pkg 0.2.218-alpha"
       },
       {
         "key": "tests",
@@ -252,7 +252,7 @@
     "band": "gates-green",
     "statusLabel": "LOCAL GATES GREEN · MANUAL VALIDATION + APPROVAL PENDING",
     "pill": "manual",
-    "version": "v0.2.217-alpha",
+    "version": "v0.2.218-alpha",
     "manifestStatus": "COMPLETE",
     "manifestRequiredPresent": 6,
     "manifestRequired": 6,
@@ -267,7 +267,7 @@
     "metrics": [
       {
         "label": "Source version",
-        "value": "v0.2.217-alpha"
+        "value": "v0.2.218-alpha"
       },
       {
         "label": "Release manifest",
@@ -357,7 +357,7 @@
     "nextSafeTitle": "Continue the read-only oversight loop — next safe infra/dashboard slice",
     "nextSafeWhy": "Keep shipping no-runtime-risk tooling/docs that make AI handoff faster and the gate harder to get wrong (e.g. package the release:status verdict as a build artifact, or add a docs-freshness signal). SEC-gated live-relay / world-hop work stays parked behind SEC-1/2/3 and a manual deploy — not a safe pick yet.",
     "nextSafeKind": "infra",
-    "activeNow": 44,
+    "activeNow": 45,
     "nextUp": 12,
     "archiveClusters": 11,
     "completed24h": 27,
@@ -378,7 +378,7 @@
       },
       {
         "label": "Active now",
-        "value": "44 in progress"
+        "value": "45 in progress"
       },
       {
         "label": "Next up",

@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.217-alpha';
+export const CONTINUUM_VERSION = 'v0.2.218-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -869,12 +869,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.217-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.218-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.217 MACHINE-READABLE NEXT-ACTION STATE (dashboard/docs/tooling only, no runtime change) — a new read-only NEXT_ACTION_STATE.json artifact + tools/next-action-state.mjs CLI (npm run handoff:next) give a fresh agent (GPT / Claude / DeepSeek / other) ONE compact machine-readable next-action state to pick up the safe pipeline without reading the whole repo: current version, source commit, live URL, the next SAFE no-blocker task, the manual-blocker flag, the last-known test count, release readiness, and docs pointers. The new pure buildNextActionState() FLATTENS the EXISTING agent-handoff export (buildAgentHandoff, which already composes the handoff-summary brief + the MVP-readiness rollup) + the manual-validation card + the curated CURRENT_TEST_STATUS — it adds NO second task list. +13 unit tests (tests/next-action-state.test.js: required keys present, no stale version, manual-blocker derivation, degraded/garbled inputs, safety posture, formatters). Prior — v0.2.216 Continuum no-blocker-queue card; v0.2.215 manual-validation / MVP-playtest readiness card. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.218 PACKAGE-PRIVACY HYGIENE (package.json/tooling only, no runtime change) — adds "private": true to package.json so this static web-app/game can never be accidentally npm-published, and HARDENS the regression-check [5] version-marker block with a guard that FAILS if package.json privacy is ever dropped (pkg.private !== true). Resolves the v0.2.217 security-review advisory (low risk: package.json lacked "private": true). No test added — the existing 15-check gate carries the guard, so the suite stays at the prior count. Prior — v0.2.217 machine-readable NEXT_ACTION_STATE.json + handoff:next CLI; v0.2.216 Continuum no-blocker-queue card; v0.2.215 manual-validation / MVP-playtest readiness card. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the

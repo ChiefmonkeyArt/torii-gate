@@ -1,11 +1,11 @@
 {
   "schema": "torii.next-action-state",
   "schemaVersion": 1,
-  "generatedAt": "2026-06-26T05:11:28.185Z",
+  "generatedAt": "2026-06-26T05:27:08.908Z",
   "badge": "NEXT-ACTION STATE · LOCAL · READ-ONLY",
-  "version": "v0.2.217-alpha",
-  "packageVersion": "0.2.217-alpha",
-  "gitCommit": "9a55860",
+  "version": "v0.2.218-alpha",
+  "packageVersion": "0.2.218-alpha",
+  "gitCommit": "ca37b86",
   "liveUrl": "https://torii-quest.pplx.app",
   "release": {
     "ready": true,
@@ -56,10 +56,10 @@
     "HANDOFF.generated.md"
   ],
   "reports": [
+    "torii-v0.2.218-package-private-report.md",
     "torii-v0.2.217-next-action-state-report.md",
     "torii-v0.2.216-no-blocker-queue-dashboard-report.md",
-    "torii-v0.2.215-manual-validation-dashboard-report.md",
-    "torii-v0.2.214-continuum-rc-status-report.md"
+    "torii-v0.2.215-manual-validation-dashboard-report.md"
   ],
   "safety": {
     "deploy": false,

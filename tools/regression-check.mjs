@@ -7,7 +7,8 @@
 //   3. setTimeout only in the two approved files (nostr.js WS close, hud.js feed)
 //   4. no `new THREE.Vector3` / `new THREE.Matrix4` in foundation/new modules
 //   5. version markers agree on EXPECTED_VERSION (config.js + index.html +
-//      package.json — semver-stripped, no leading 'v')
+//      package.json — semver-stripped, no leading 'v'); package.json stays
+//      `"private": true` (v0.2.218 — no accidental npm publish of this static app)
 //   6. dist marker check (only if dist/ exists) — key behaviours present
 //   7. state.phase writes confined to state.js (FSM seam, v0.2.115)
 //   8. every EV.<NAME> reference is defined in the events.js registry (v0.2.116)
@@ -41,7 +42,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.217-alpha';
+const EXPECTED_VERSION = 'v0.2.218-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -125,14 +126,19 @@ console.log(`[5] version markers == ${EXPECTED_VERSION}`);
   const count = (html.match(new RegExp(EXPECTED_VERSION.replace(/\./g, '\\.'), 'g')) || []).length;
   if (count < 2) fail(`index.html has ${count} ${EXPECTED_VERSION} markers (expected >=2)`);
   else pass(`index.html has ${count} version markers`);
-  if (/v0\.2\.216-alpha/.test(html)) fail('index.html still references v0.2.216-alpha');
+  if (/v0\.2\.217-alpha/.test(html)) fail('index.html still references v0.2.217-alpha');
   // package.json `version` must be valid semver (no leading 'v'), so it carries
   // the EXPECTED_VERSION with the 'v' stripped. Ties package metadata to the
   // runtime VERSION so the two can't drift (security-review finding, v0.2.137).
-  const pkgVer = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
+  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  const pkgVer = pkg.version;
   const expectedPkgVer = EXPECTED_VERSION.replace(/^v/, '');
   if (pkgVer !== expectedPkgVer) fail(`package.json version "${pkgVer}" != "${expectedPkgVer}"`);
   else pass(`package.json version matches (${pkgVer})`);
+  // package.json must stay `"private": true` so this static web-app/game can never be
+  // accidentally `npm publish`-ed (security-review finding, v0.2.218).
+  if (pkg.private !== true) fail('package.json "private" must be true (prevents accidental npm publish)');
+  else pass('package.json is private (no accidental publish)');
 }
 
 // 6. dist markers (only if built)
