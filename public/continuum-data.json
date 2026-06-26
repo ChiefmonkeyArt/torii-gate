@@ -1,6 +1,6 @@
 {
-  "version": "v0.2.204-alpha",
-  "generatedAt": "2026-06-26T00:41:07.904Z",
+  "version": "v0.2.205-alpha",
+  "generatedAt": "2026-06-26T00:57:20.894Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
@@ -49,7 +49,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.204-alpha"
+        "value": "v0.2.205-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -79,7 +79,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.204-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.205-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -192,15 +192,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.204-alpha",
-    "gitCommit": "af4e256",
+    "version": "v0.2.205-alpha",
+    "gitCommit": "455d9de",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.204-alpha / pkg 0.2.204-alpha"
+        "detail": "config v0.2.205-alpha / pkg 0.2.205-alpha"
       },
       {
         "key": "tests",

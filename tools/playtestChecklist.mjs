@@ -1,5 +1,5 @@
 // tools/playtestChecklist.mjs — PURE, node-safe MVP MANUAL PLAYTEST ACCEPTANCE CHECKLIST
-// assembly + formatting (v0.2.203). Produces a clear, hand-runnable manual QA / acceptance
+// assembly + formatting. Produces a clear, hand-runnable manual QA / acceptance
 // checklist a human (or a future AI handoff) runs against the LIVE build by hand — launch/title,
 // the shooter loop, movement/footsteps, aim/hit-feedback/headshots/body-shots, reload feel,
 // gun/reflection sanity, mirror sanity, crates/physics-nudge sanity, NAP-monkey sanity, the
@@ -53,7 +53,7 @@ export const PLAYTEST_CHECKLIST_SECTIONS = Object.freeze([
           'Open the live build URL in a desktop browser.',
           'Wait for the title/landing screen to render.',
         ]),
-        expected: 'The title screen appears with the game name and a version label matching the build (e.g. v0.2.203-alpha); no console errors block the screen.',
+        expected: 'The title screen appears with the game name and a version label matching the build (the current vX.Y.Z-alpha marker); no console errors block the screen.',
         severity: 'blocker',
         ifFailed: 'Capture the browser console + network tab; check the deployed bundle/version label and re-run the build/deploy. File a blocker.',
       }),
@@ -340,7 +340,7 @@ export function playtestItemCount() {
 
 // buildPlaytestChecklistModel(inputs) → a plain, JSON-serialisable checklist model. All inputs
 // are plain data the CLI gathers; none are required (the checklist narrative is curated):
-//   version      config.js VERSION (e.g. 'v0.2.203-alpha'); stamped into the header
+//   version      config.js VERSION (a 'vX.Y.Z-alpha' marker); stamped into the header
 //   gitCommit    short commit string, or null
 //   liveUrl      display URL for the live instance (NOT fetched)
 //   generatedAt  OPTIONAL ISO stamp — the ONLY non-deterministic field; omit (null) for

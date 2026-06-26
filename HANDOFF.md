@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.204-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.205-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -464,7 +464,18 @@ Breaking one should fail CI/the check, not ship.
   navigates/serves/deploys/publishes/writes (beyond the explicit `--write`) NOTHING; NOT a gameplay
   change and not a live browser test; no gameplay/physics/shooter/Rapier change; no Nostr
   signing/publishing/live network write; `godMode` stays false.
-  Latest slice report: `torii-v0.2.204-playtest-results-template-report.md`.
+  **v0.2.205** cleared the non-blocking WARN from the v0.2.204 security review: two illustrative
+  `v0.2.203-alpha` example strings (plus a dated `(v0.2.203)` authorship stamp in the file header)
+  lingered in `tools/playtestChecklist.mjs` comments/examples and were re-flagged each review as
+  "stale". Made them VERSION-NEUTRAL so future reviews stop tripping on them — the `LAUNCH-1`
+  `expected` version-label example now reads "matching the build (the current vX.Y.Z-alpha marker)",
+  the `buildPlaytestChecklistModel` `version` input doc-comment now reads "config.js VERSION (a
+  'vX.Y.Z-alpha' marker)", and the file-header authorship stamp drops the bare `(v0.2.203)`.
+  Docs/comment cleanup ONLY — no behavior change, no CLI/schema/output change, and no new test file
+  (suite count unchanged at 1304/82; the existing `tests/playtest-checklist.test.js` only asserts
+  `expected` is a non-empty string, so the wording is free to change). No gameplay/physics/shooter/
+  Rapier change; no Nostr signing/publishing/live network write; `godMode` stays false.
+  Latest slice report: `torii-v0.2.205-playtest-doc-warning-cleanup-report.md`.
   v0.2.171 added `continuum` (the Torii Continuum project-oversight dashboard
   data model + pure static-page renderer — read-only, no live writes; v0.2.174
   added a `buildContinuumModel(overrides)` merge seam fed by the build-time doc
