@@ -1,11 +1,11 @@
 {
   "schema": "torii.next-action-state",
   "schemaVersion": 1,
-  "generatedAt": "2026-06-26T08:30:43.979Z",
+  "generatedAt": "2026-06-26T09:03:32.698Z",
   "badge": "NEXT-ACTION STATE · LOCAL · READ-ONLY",
-  "version": "v0.2.220-alpha",
-  "packageVersion": "0.2.220-alpha",
-  "gitCommit": "b30ff70",
+  "version": "v0.2.221-alpha",
+  "packageVersion": "0.2.221-alpha",
+  "gitCommit": "f78a2bc",
   "liveUrl": "https://torii-quest.pplx.app",
   "release": {
     "ready": true,
@@ -22,7 +22,7 @@
     "status": "READY"
   },
   "tests": {
-    "passing": 1443,
+    "passing": 1450,
     "files": 88
   },
   "manualBlocker": {
@@ -35,7 +35,7 @@
     "approved": false,
     "approvedBy": null,
     "approvedAt": null,
-    "version": "v0.2.220-alpha"
+    "version": "v0.2.221-alpha"
   },
   "nextSafeTask": {
     "title": "Continue the read-only oversight loop — next safe infra/dashboard/tooling slice",
@@ -63,10 +63,10 @@
     "HANDOFF.generated.md"
   ],
   "reports": [
+    "torii-v0.2.221-mvp-approval-dashboard-report.md",
     "torii-v0.2.220-mvp-approval-state-report.md",
     "torii-v0.2.219-service-worker-cache-hygiene-report.md",
-    "torii-v0.2.218-package-private-report.md",
-    "torii-v0.2.217-next-action-state-report.md"
+    "torii-v0.2.218-package-private-report.md"
   ],
   "safety": {
     "deploy": false,

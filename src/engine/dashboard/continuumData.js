@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.220-alpha';
+export const CONTINUUM_VERSION = 'v0.2.221-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -48,7 +48,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1443,
+  passing: 1450,
   files: 88,
   fastProfile: 5,
   foundationProfile: 25,
@@ -808,6 +808,94 @@ export function buildNoBlockerQueueModel(input = {}) {
 // build-continuum.mjs re-runs buildNoBlockerQueueModel with the freshly parsed todo/progress counts.
 const CURATED_NOBLOCKERQUEUE = buildNoBlockerQueueModel();
 
+// MVPAPPROVAL_BADGE (v0.2.221) — names the MVP-approval-state oversight card. The user MISSED the
+// manual-validation card before, so this surfaces the single approval gate (MVP_APPROVAL_STATE.json)
+// as its own compact, impossible-to-miss section. READ-ONLY · PENDING until explicit user approval.
+export const MVPAPPROVAL_BADGE = 'MVP APPROVAL · LOCAL · READ-ONLY · PENDING UNTIL EXPLICIT USER OK';
+
+// MVPAPPROVAL_LASTKNOWN (v0.2.221) — curated fallback approval posture, captured by hand and clearly
+// LABELLED last-known on the page. The build-time generator (build-continuum.mjs) overrides this with
+// the LIVE record read from MVP_APPROVAL_STATE.json (re-shaped via tools/mvpApproval.mjs
+// summarizeApprovalForState), so the card tracks the real approval state each deploy. Defaults to
+// PENDING with no approver — the floor this slice can never silently flip past.
+export const MVPAPPROVAL_LASTKNOWN = Object.freeze({
+  status: 'pending',
+  approved: false,
+  version: CONTINUUM_VERSION,
+  approvedBy: null,
+  approvedAt: null,
+});
+
+// buildMvpApprovalModel(input) — PURE, browser-safe builder (v0.2.221). Folds the MVP-approval state
+// into a render-ready card so project oversight sees, at a glance, the ONE thing the automated gates
+// can NOT prove: that a human ran the live-browser playtest and EXPLICITLY said "MVP approved". Inputs
+// are plain data the generator gathers from MVP_APPROVAL_STATE.json (status + approved flag + version +
+// approver who/when) — NO fs/network/THREE/DOM/child_process here, and it imports NO tools/ module so
+// the browser bundle stays clean. With no input it degrades to the honest LAST-KNOWN pending snapshot
+// and NEVER throws. `approved` is treated STRICTLY: only an exact 'approved' status WITH an approved:true
+// flag renders as approved, so a partial/garbled record stays PENDING on the page (matching the model's
+// isApproved() floor). Reuses the existing pill vocabulary + .metric markup (no new CSS/script) → the
+// continuum CSP/refresh-script hash stay intact. INFORMATIONAL only: it approves/releases NOTHING.
+export function buildMvpApprovalModel(input = {}) {
+  const i = (input && typeof input === 'object' && !Array.isArray(input)) ? input : {};
+  const lk = MVPAPPROVAL_LASTKNOWN;
+  const live = !!(typeof i.status === 'string' && i.status.trim());
+
+  const _str = (x, d) => (typeof x === 'string' && x.trim() ? x.trim() : d);
+
+  const rawStatus = _str(i.status, lk.status).toLowerCase();
+  const status = rawStatus === 'approved' ? 'approved' : (rawStatus === 'pending' ? 'pending' : rawStatus);
+  const version = _str(i.version, lk.version);
+  const approvedBy = _str(i.approvedBy, lk.approvedBy);
+  const approvedAt = _str(i.approvedAt, lk.approvedAt);
+  // STRICT: render as approved ONLY when the live record says status 'approved' AND carries the
+  // approved:true flag the model's isApproved() gate set — never infer approval from status alone.
+  const approved = status === 'approved' && i.approved === true && !!approvedBy && !!approvedAt;
+
+  let band; let bandLabel; let bandPill;
+  if (approved) {
+    band = 'approved'; bandLabel = 'MVP APPROVED'; bandPill = 'no-blocker';
+  } else {
+    band = 'pending'; bandLabel = 'MVP APPROVAL PENDING · USER PLAYTEST + EXPLICIT OK REQUIRED'; bandPill = 'manual';
+  }
+
+  const metrics = [
+    { label: 'Approval status', value: approved ? 'APPROVED' : 'PENDING' },
+    { label: 'Version', value: version || '(unset)' },
+    { label: 'Approved by', value: approved ? approvedBy : 'no approver yet' },
+    { label: 'Approved at', value: approved ? approvedAt : '—' },
+    { label: 'Next step', value: approved
+      ? 'none — MVP approved'
+      : 'User: run the live-browser MVP playtest, then explicitly say "MVP approved"' },
+  ];
+
+  return {
+    badge: MVPAPPROVAL_BADGE,
+    kind: live ? 'generated' : 'last-known',
+    band,
+    statusLabel: bandLabel,
+    pill: bandPill,
+    status,
+    approved,
+    version,
+    approvedBy,
+    approvedAt,
+    metrics,
+    note: 'MVP approval state — the single auditable record (MVP_APPROVAL_STATE.json) of whether a '
+      + 'human has EXPLICITLY approved the live-browser MVP. Local automated gates are green, but '
+      + 'approval is a manual step: the user must run the playtest and say "MVP approved" (which also '
+      + 'records approved_by + approved_at). Status stays PENDING until then and can never silently '
+      + 'flip — there is no --approve path in the read-only CLI (npm run approval:state). GENERATED at '
+      + 'packaging time from the on-disk record; LAST-KNOWN when not regenerated this build. It '
+      + 'approves/releases/tags/publishes/deploys NOTHING.',
+  };
+}
+
+// The curated fallback MVP-approval model — built at module load so renderContinuumPage() with NO
+// overrides (tests + the no-JS fallback) shows an honest LAST-KNOWN pending approval section.
+// build-continuum.mjs re-runs buildMvpApprovalModel with the freshly read MVP_APPROVAL_STATE.json.
+const CURATED_MVPAPPROVAL = buildMvpApprovalModel();
+
 // CONTINUUM_REFRESH_SCRIPT (v0.2.172) — the EXACT inline-script body the page ships,
 // kept as the single source of that text so its CSP hash can never silently drift.
 // It is STATIC (no model interpolation), so its sha256 is stable across deploys: a
@@ -869,12 +957,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.220-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.221-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.220 MVP APPROVAL STATE PLACEHOLDER (docs/tooling only, no runtime/gameplay change) — adds MVP_APPROVAL_STATE.json, a single auditable record of whether a human has EXPLICITLY approved the live-browser MVP, defaulting to status "pending". A pure module (tools/mvpApproval.mjs) + read-only CLI (npm run approval:state) build/validate/render it; the builder COERCES any non-"approved" value to pending so it can never silently flip, and validation ERRORS if an "approved" record lacks approved_by/approved_at + a concrete version. The next-action-state export now FOLDS the approval record (summarizeApprovalForState) so a future approval flips ONE state source instead of scattered docs. This slice does NOT approve anything — status stays pending until the user says so; there is no --approve path. Adds tests/mvp-approval-state.test.js (suite 1417→1443 / 87→88). Prior — v0.2.219 service-worker cache-version hygiene + guard; v0.2.218 package.json privacy hygiene + guard; v0.2.217 machine-readable NEXT_ACTION_STATE.json + handoff:next CLI. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.221 MVP APPROVAL ON THE DASHBOARD (docs/dashboard/tooling only, no runtime/gameplay change) — surfaces the MVP-approval gate as its OWN compact, impossible-to-miss Continuum section derived from MVP_APPROVAL_STATE.json (the v0.2.220 record). The card shows status PENDING, the version, no approver, and the clear next step: the user must run the live-browser MVP playtest and explicitly say "MVP approved". A pure browser-safe builder (buildMvpApprovalModel) renders it; build-continuum.mjs reads the on-disk record (re-shaped via the strict summarizeApprovalForState floor) so it can never render as approved from a partial record. Status stays PENDING — this slice approves nothing. Adds 7 dashboard tests (suite 1443→1450 / 88 files). Prior — v0.2.220 MVP_APPROVAL_STATE.json placeholder + approval:state CLI; v0.2.219 service-worker cache-version hygiene + guard; v0.2.218 package.json privacy hygiene + guard. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
@@ -1054,6 +1142,7 @@ export function buildContinuumModel(overrides = {}) {
     rcStatus: base.rcStatus || CURATED_RCSTATUS,
     manualValidation: base.manualValidation || CURATED_MANUALVALIDATION,
     noBlockerQueue: base.noBlockerQueue || CURATED_NOBLOCKERQUEUE,
+    mvpApproval: base.mvpApproval || CURATED_MVPAPPROVAL,
     readHealth: base.readHealth || CURATED_READHEALTH,
     taskTotals,
     derived,
@@ -1078,6 +1167,7 @@ export function continuumDataJSON(model = buildContinuumModel()) {
     rcStatus: model.rcStatus || null,
     manualValidation: model.manualValidation || null,
     noBlockerQueue: model.noBlockerQueue || null,
+    mvpApproval: model.mvpApproval || null,
     readHealth: model.readHealth || null,
   };
 }
@@ -1429,6 +1519,28 @@ ${note}
     </section>`;
 }
 
+// _mvpApprovalSection(mv) — the MVP-approval-state section (v0.2.221): an overall band pill +
+// provenance chip + badge, a compact grid of metric cards (status / version / approver who+when /
+// the clear next step), and a read-only note. Placed as its OWN section so the pending approval is
+// impossible to miss. Empty string when absent so an override-free legacy model omits it. Server-
+// rendered + escaped; reuses the .metric/.pill markup → no new script, no new data-k key, the
+// CSP/refresh-script hash stay intact. Pure.
+function _mvpApprovalSection(mv) {
+  if (!mv || !Array.isArray(mv.metrics) || !mv.metrics.length) return '';
+  const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+  const pillState = allowed.has(mv.pill) ? mv.pill : 'manual';
+  const note = mv.note ? `      <div class="focus">${escapeHtml(mv.note)}</div>` : '';
+  return `
+    <section>
+      <div class="h2row"><h2>MVP approval</h2> <span class="pill pill-${pillState}">${escapeHtml(mv.statusLabel)}</span> ${_healthChip(mv.kind)} <span class="badge">${escapeHtml(mv.badge)}</span></div>
+      <div class="lead">The single auditable approval gate (MVP_APPROVAL_STATE.json). Local gates are green, but the MVP is NOT approved until a human runs the live-browser playtest and explicitly says "MVP approved". Read-only.</div>
+      <div class="grid">
+${_metricRows(mv.metrics)}
+      </div>
+${note}
+    </section>`;
+}
+
 // renderContinuumPage(model) — full self-contained static HTML document string.
 // Dark Torii/nostrich/cyberpunk feel via inline CSS only; CSS bars + SVG rings.
 // The page renders fully WITHOUT JavaScript. A tiny, optional, same-origin-only
@@ -1584,6 +1696,7 @@ export function renderContinuumPage(model = buildContinuumModel()) {
     </section>
 ${_shipSection(m.ship)}
 ${_rcStatusSection(m.rcStatus)}
+${_mvpApprovalSection(m.mvpApproval)}
 ${_manualValidationSection(m.manualValidation)}
 ${_noBlockerQueueSection(m.noBlockerQueue)}
 ${_milestonesSection(m.milestones)}

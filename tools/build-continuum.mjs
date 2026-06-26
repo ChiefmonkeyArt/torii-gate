@@ -18,6 +18,7 @@ import {
   buildRcStatusModel,
   buildManualValidationModel,
   buildNoBlockerQueueModel,
+  buildMvpApprovalModel,
   SHIP_NEXT_SAFE_TASK,
   CURRENT_TEST_STATUS,
   testCountLabel,
@@ -30,6 +31,7 @@ import { REQUIRED_FALLBACK_DOCS, checkZoneFallbackReadiness } from './zoneFallba
 import { gatherReleaseReadiness } from './release-readiness.mjs';
 import { RELEASE_MANIFEST_REQUIRED, RELEASE_MANIFEST_OPTIONAL } from './releaseManifest.mjs';
 import { RC_SNAPSHOT_DOC_REFS, RC_SNAPSHOT_MANUAL_VALIDATION } from './rcSnapshot.mjs';
+import { buildApprovalState, summarizeApprovalForState, MVP_APPROVAL_FILE } from './mvpApproval.mjs';
 import {
   PLAYTEST_CHECKLIST_SECTIONS,
   PLAYTEST_SEVERITIES,
@@ -208,10 +210,31 @@ try {
   console.log(`[continuum] no-blocker queue: live gather unavailable (${e.message}) — using last-known`);
 }
 
+// MVP approval (v0.2.221): the single auditable approval gate. Read MVP_APPROVAL_STATE.json,
+// re-shape it through buildApprovalState (so a garbled/partial record is coerced to a safe pending
+// posture and can never silently render as approved) + summarizeApprovalForState (which uses the
+// strict isApproved() floor), and fold it into the dashboard card. Cheap file read only — no crypto,
+// no git, no network. On any failure (missing/unparseable file) we degrade to the curated pending card.
+let mvpApproval;
+try {
+  const raw = JSON.parse(readFileSync(join(ROOT, MVP_APPROVAL_FILE), 'utf8'));
+  const summary = summarizeApprovalForState(buildApprovalState(raw));
+  mvpApproval = buildMvpApprovalModel({
+    status: summary.status,
+    approved: summary.approved,
+    version: summary.version,
+    approvedBy: summary.approvedBy,
+    approvedAt: summary.approvedAt,
+  });
+} catch (e) {
+  mvpApproval = buildMvpApprovalModel(); // honest LAST-KNOWN pending fallback
+  console.log(`[continuum] mvp approval: live gather unavailable (${e.message}) — using last-known`);
+}
+
 // Stamp the packaged build time so the page can show when the data was packaged.
 const generatedAt = new Date().toISOString();
 const model = {
-  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
+  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, mvpApproval, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
   generatedAt,
 };
 
@@ -231,3 +254,4 @@ console.log(`[continuum] ship readiness: ${ship.statusLabel} (${ship.kind})${shi
 console.log(`[continuum] rc status: ${rcStatus.statusLabel} (${rcStatus.kind}) · manifest ${rcStatus.manifestStatus} ${rcStatus.manifestRequiredPresent}/${rcStatus.manifestRequired} req · rc-docs ${rcStatus.rcDocsPresent}/${rcStatus.rcDocsTotal}`);
 console.log(`[continuum] manual validation: ${manualValidation.statusLabel} (${manualValidation.kind}) · checklist ${manualValidation.sections} sections/${manualValidation.items} items · ${manualValidation.blocker}/${manualValidation.major}/${manualValidation.minor} b/M/m · areas ${manualValidation.validationAreas}`);
 console.log(`[continuum] no-blocker queue: ${noBlockerQueue.statusLabel} (${noBlockerQueue.kind}) · active ${noBlockerQueue.activeNow} · next ${noBlockerQueue.nextUp} · archive ${noBlockerQueue.archiveClusters} · done24h ${noBlockerQueue.completed24h} · manualPending ${noBlockerQueue.manualPending}`);
+console.log(`[continuum] mvp approval: ${mvpApproval.statusLabel} (${mvpApproval.kind}) · status ${mvpApproval.status} · approved ${mvpApproval.approved} · version ${mvpApproval.version}`);

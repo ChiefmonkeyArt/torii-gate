@@ -1,10 +1,10 @@
 {
-  "version": "v0.2.220-alpha",
-  "generatedAt": "2026-06-26T08:33:03.678Z",
+  "version": "v0.2.221-alpha",
+  "generatedAt": "2026-06-26T09:05:08.355Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
-    "activeTasks": 47,
+    "activeTasks": 48,
     "completedLast24h": 27,
     "archivedClusters": 11,
     "trackCount": 6,
@@ -25,14 +25,14 @@
     "isDerived": true,
     "todoCompletedMarkers": 12,
     "next12": 12,
-    "activeNow": 47,
+    "activeNow": 48,
     "completed24h": 27,
     "archiveClusters": 11
   },
   "derived": {
     "parsed": [
       "next12 (12)",
-      "activeNow (47)",
+      "activeNow (48)",
       "completed24h (27)",
       "archive (11)"
     ],
@@ -48,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.220-alpha"
+        "value": "v0.2.221-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -58,7 +58,7 @@
       {
         "label": "Total tests",
         "kind": "last-known",
-        "value": "1443 passing / 88 files"
+        "value": "1450 passing / 88 files"
       },
       {
         "label": "Profile timings",
@@ -78,7 +78,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.220-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.221-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -191,15 +191,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.220-alpha",
-    "gitCommit": "b30ff70",
+    "version": "v0.2.221-alpha",
+    "gitCommit": "f78a2bc",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.220-alpha / pkg 0.2.220-alpha"
+        "detail": "config v0.2.221-alpha / pkg 0.2.221-alpha"
       },
       {
         "key": "tests",
@@ -252,7 +252,7 @@
     "band": "gates-green",
     "statusLabel": "LOCAL GATES GREEN · MANUAL VALIDATION + APPROVAL PENDING",
     "pill": "manual",
-    "version": "v0.2.220-alpha",
+    "version": "v0.2.221-alpha",
     "manifestStatus": "COMPLETE",
     "manifestRequiredPresent": 6,
     "manifestRequired": 6,
@@ -260,14 +260,14 @@
     "manifestOptional": 6,
     "rcDocsPresent": 7,
     "rcDocsTotal": 7,
-    "testLabel": "1443 passing / 88 files",
+    "testLabel": "1450 passing / 88 files",
     "profileSummary": "fast ~5 · foundation ~25 · full",
     "manualValidationRemaining": 7,
     "gateStatusLabel": "READY",
     "metrics": [
       {
         "label": "Source version",
-        "value": "v0.2.220-alpha"
+        "value": "v0.2.221-alpha"
       },
       {
         "label": "Release manifest",
@@ -279,7 +279,7 @@
       },
       {
         "label": "Tests",
-        "value": "1443 passing / 88 files"
+        "value": "1450 passing / 88 files"
       },
       {
         "label": "Test profiles",
@@ -357,7 +357,7 @@
     "nextSafeTitle": "Continue the read-only oversight loop — next safe infra/dashboard slice",
     "nextSafeWhy": "Keep shipping no-runtime-risk tooling/docs that make AI handoff faster and the gate harder to get wrong (e.g. package the release:status verdict as a build artifact, or add a docs-freshness signal). SEC-gated live-relay / world-hop work stays parked behind SEC-1/2/3 and a manual deploy — not a safe pick yet.",
     "nextSafeKind": "infra",
-    "activeNow": 47,
+    "activeNow": 48,
     "nextUp": 12,
     "archiveClusters": 11,
     "completed24h": 27,
@@ -378,7 +378,7 @@
       },
       {
         "label": "Active now",
-        "value": "47 in progress"
+        "value": "48 in progress"
       },
       {
         "label": "Next up",
@@ -390,6 +390,41 @@
       }
     ],
     "note": "No-blocker queue — what an AI agent can pick up NEXT without any user input. The next safe task is a no-runtime-risk infra/docs/tooling slice (no deploy, no gate to unlock); the active/next/archive counts are DERIVED from the same parsed todo.md/progress.md the rest of the dashboard uses (no second source of truth). The ONLY thing waiting on a human is the MVP playtest + explicit approval (see the Manual validation card). GENERATED at packaging time; LAST-KNOWN when not regenerated this build. It queues/runs/deploys NOTHING."
+  },
+  "mvpApproval": {
+    "badge": "MVP APPROVAL · LOCAL · READ-ONLY · PENDING UNTIL EXPLICIT USER OK",
+    "kind": "generated",
+    "band": "pending",
+    "statusLabel": "MVP APPROVAL PENDING · USER PLAYTEST + EXPLICIT OK REQUIRED",
+    "pill": "manual",
+    "status": "pending",
+    "approved": false,
+    "version": "v0.2.221-alpha",
+    "approvedBy": null,
+    "approvedAt": null,
+    "metrics": [
+      {
+        "label": "Approval status",
+        "value": "PENDING"
+      },
+      {
+        "label": "Version",
+        "value": "v0.2.221-alpha"
+      },
+      {
+        "label": "Approved by",
+        "value": "no approver yet"
+      },
+      {
+        "label": "Approved at",
+        "value": "—"
+      },
+      {
+        "label": "Next step",
+        "value": "User: run the live-browser MVP playtest, then explicitly say \"MVP approved\""
+      }
+    ],
+    "note": "MVP approval state — the single auditable record (MVP_APPROVAL_STATE.json) of whether a human has EXPLICITLY approved the live-browser MVP. Local automated gates are green, but approval is a manual step: the user must run the playtest and say \"MVP approved\" (which also records approved_by + approved_at). Status stays PENDING until then and can never silently flip — there is no --approve path in the read-only CLI (npm run approval:state). GENERATED at packaging time from the on-disk record; LAST-KNOWN when not regenerated this build. It approves/releases/tags/publishes/deploys NOTHING."
   },
   "readHealth": {
     "badge": "NOSTR READ-PATH · READ-ONLY",

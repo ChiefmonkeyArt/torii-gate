@@ -20,6 +20,7 @@ import {
   RCSTATUS_BADGE, RCSTATUS_LASTKNOWN, buildRcStatusModel,
   MANUALVALIDATION_BADGE, MANUALVALIDATION_LASTKNOWN, buildManualValidationModel,
   NOBLOCKERQUEUE_BADGE, NOBLOCKERQUEUE_LASTKNOWN, buildNoBlockerQueueModel,
+  MVPAPPROVAL_BADGE, MVPAPPROVAL_LASTKNOWN, buildMvpApprovalModel,
   READHEALTH_BADGE, buildReadHealthModel,
   escapeHtml, clampPct, barCells, ringDash,
   computeTotals, buildContinuumModel, continuumDataJSON, renderContinuumPage,
@@ -30,7 +31,7 @@ import { DEFAULT_TEST_STATUS } from '../src/engine/status/mvpReadiness.js';
 
 describe('module shape', () => {
   it('pins the version (tracks the build) and the read-only oversight badge', () => {
-    expect(CONTINUUM_VERSION).toBe('v0.2.220-alpha');
+    expect(CONTINUUM_VERSION).toBe('v0.2.221-alpha');
     expect(CONTINUUM_VERSION).toBe(VERSION);
     expect(CONTINUUM_BADGE).toBe('PROJECT OVERSIGHT · STATIC · READ-ONLY');
   });
@@ -135,7 +136,7 @@ describe('continuumDataJSON', () => {
   it('is JSON-serialisable and carries totals + the seed contributors', () => {
     const j = continuumDataJSON();
     const round = JSON.parse(JSON.stringify(j));
-    expect(round.version).toBe('v0.2.220-alpha');
+    expect(round.version).toBe('v0.2.221-alpha');
     expect(round.totals.pocProgressPct).toBe(47);
     expect(round.contributors.isSeed).toBe(true);
   });
@@ -147,7 +148,7 @@ describe('renderContinuumPage', () => {
   it('returns a self-contained HTML document with the version', () => {
     expect(typeof html).toBe('string');
     expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('v0.2.220-alpha');
+    expect(html).toContain('v0.2.221-alpha');
     expect(html).toContain('Torii Continuum');
   });
 
@@ -893,6 +894,100 @@ describe('no-blocker queue (v0.2.216)', () => {
   });
 });
 
+describe('mvp approval card (v0.2.221)', () => {
+  it('degrades to an honest LAST-KNOWN pending model with no input (never throws)', () => {
+    const mv = buildMvpApprovalModel();
+    expect(mv.kind).toBe('last-known');
+    expect(mv.badge).toBe(MVPAPPROVAL_BADGE);
+    expect(mv.status).toBe('pending');
+    expect(mv.approved).toBe(false);
+    expect(mv.approvedBy).toBe(MVPAPPROVAL_LASTKNOWN.approvedBy);
+    expect(Array.isArray(mv.metrics)).toBe(true);
+    expect(mv.metrics.length).toBe(5);
+    expect(mv.band).toBe('pending');
+    expect(mv.pill).toBe('manual');
+    expect(mv.statusLabel).toMatch(/MVP APPROVAL PENDING/);
+    expect(mv.statusLabel).toMatch(/USER PLAYTEST \+ EXPLICIT OK REQUIRED/);
+  });
+
+  it('folds a LIVE pending record into a generated pending card with the clear next step', () => {
+    const mv = buildMvpApprovalModel({
+      status: 'pending', approved: false, version: 'v0.2.221-alpha',
+      approvedBy: null, approvedAt: null,
+    });
+    expect(mv.kind).toBe('generated');
+    expect(mv.band).toBe('pending');
+    expect(mv.approved).toBe(false);
+    const byLabel = Object.fromEntries(mv.metrics.map((m) => [m.label, m.value]));
+    expect(byLabel['Approval status']).toBe('PENDING');
+    expect(byLabel['Version']).toBe('v0.2.221-alpha');
+    expect(byLabel['Approved by']).toMatch(/no approver yet/);
+    expect(byLabel['Approved at']).toBe('—');
+    expect(byLabel['Next step']).toMatch(/MVP approved/);
+    expect(byLabel['Next step']).toMatch(/live-browser MVP playtest/);
+  });
+
+  it('renders approved ONLY when status approved AND approved flag AND who/when present (strict)', () => {
+    const full = buildMvpApprovalModel({
+      status: 'approved', approved: true, version: 'v0.2.221-alpha',
+      approvedBy: 'user', approvedAt: '2026-06-26T00:00:00Z',
+    });
+    expect(full.approved).toBe(true);
+    expect(full.band).toBe('approved');
+    expect(full.pill).toBe('no-blocker');
+    expect(full.statusLabel).toBe('MVP APPROVED');
+    // A partial "approved" record (no provenance, or flag not set) must NOT render as approved.
+    const partial = buildMvpApprovalModel({ status: 'approved', approved: false, version: 'v0.2.221-alpha' });
+    expect(partial.approved).toBe(false);
+    expect(partial.band).toBe('pending');
+    const flagOnly = buildMvpApprovalModel({ status: 'approved', approved: true, version: 'v0.2.221-alpha' });
+    expect(flagOnly.approved).toBe(false);
+    expect(flagOnly.band).toBe('pending');
+  });
+
+  it('the band pill uses only the existing pill vocabulary (no new CSS)', () => {
+    const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+    for (const input of [undefined,
+      { status: 'pending' },
+      { status: 'approved', approved: true, version: 'v0.2.221-alpha', approvedBy: 'u', approvedAt: 't' },
+      { status: 'weird' }]) {
+      expect(allowed.has(buildMvpApprovalModel(input).pill)).toBe(true);
+    }
+  });
+
+  it('continuumDataJSON carries the mvpApproval model', () => {
+    const j = continuumDataJSON();
+    expect(j.mvpApproval).toBeTruthy();
+    expect(typeof j.mvpApproval.statusLabel).toBe('string');
+    expect(j.mvpApproval.status).toBe('pending');
+    expect(Array.isArray(j.mvpApproval.metrics)).toBe(true);
+  });
+
+  it('renderContinuumPage shows the MVP-approval section + badge + pending band pill', () => {
+    const html = renderContinuumPage();
+    expect(html).toContain('>MVP approval<');
+    expect(html).toContain(MVPAPPROVAL_BADGE);
+    expect(html).toContain('Approval status');
+    expect(html).toContain('MVP APPROVAL PENDING');
+  });
+
+  it('SAFETY: a tag-injecting mvpApproval is escaped + no new script + hash intact', () => {
+    const hostile = buildMvpApprovalModel({
+      status: 'pending',
+      version: 'v0<script>alert(1)</script>',
+      approvedBy: '</section><script>evil()</script>',
+    });
+    const html = renderContinuumPage(buildContinuumModel({ mvpApproval: hostile }));
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).not.toContain('<script>evil()</script>');
+    expect((html.match(/<script/g) || []).length).toBe(1);
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    expect(m[1]).toBe(CONTINUUM_REFRESH_SCRIPT);
+    const pageHash = 'sha256-' + createHash('sha256').update(m[1], 'utf8').digest('base64');
+    expect(pageHash).toBe(CONTINUUM_SCRIPT_SHA256);
+  });
+});
+
 describe('layout / readability pass (v0.2.177)', () => {
   const html = renderContinuumPage();
 
@@ -1053,7 +1148,7 @@ describe('test-count freshness (v0.2.200 — single source of truth)', () => {
 
 describe('SDK exposure', () => {
   it('re-exports the continuum module at the experimental tier', () => {
-    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.220-alpha');
+    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.221-alpha');
     expect(typeof SDK.continuum.renderContinuumPage).toBe('function');
     expect(SDK.SDK_SURFACE.continuum.tier).toBe(SDK.STABILITY.EXPERIMENTAL);
   });
