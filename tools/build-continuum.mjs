@@ -15,6 +15,9 @@ import {
   buildHealthModel,
   buildReadinessModel,
   buildShipModel,
+  buildRcStatusModel,
+  CURRENT_TEST_STATUS,
+  testCountLabel,
   HEALTH_LASTKNOWN,
   renderContinuumPage,
   continuumDataJSON,
@@ -22,6 +25,8 @@ import {
 import { deriveContinuumData } from './continuumParse.mjs';
 import { REQUIRED_FALLBACK_DOCS, checkZoneFallbackReadiness } from './zoneFallbackReadiness.mjs';
 import { gatherReleaseReadiness } from './release-readiness.mjs';
+import { RELEASE_MANIFEST_REQUIRED, RELEASE_MANIFEST_OPTIONAL } from './releaseManifest.mjs';
+import { RC_SNAPSHOT_DOC_REFS, RC_SNAPSHOT_MANUAL_VALIDATION } from './rcSnapshot.mjs';
 import { PROFILES } from './testProfiles.mjs';
 import { VERSION } from '../src/config.js';
 
@@ -108,10 +113,44 @@ try {
   console.log(`[continuum] ship readiness: live gather unavailable (${e.message}) — using last-known`);
 }
 
+// RC / release-manifest status (v0.2.214) — surface the LOCAL release-candidate artifact posture
+// on the dashboard, DERIVED (not re-gated) from existing helpers/constants: stat each release-
+// manifest REQUIRED/OPTIONAL ref + RC package-doc ref on disk for a present count, fold in the
+// curated test count + profile summary, the always-pending manual-validation count, and the last
+// local release-gate verdict (the ship model gathered above). Cheap file-presence only — no
+// crypto, no git, no network — and it reuses the frozen ref lists so it can never drift from the
+// release-manifest / rc-snapshot CLIs. On any failure we degrade to the curated LAST-KNOWN card.
+let rcStatus;
+try {
+  const presentCount = (refs) => refs.filter((r) => existsSync(join(ROOT, r.file))).length;
+  const reqPresent = presentCount(RELEASE_MANIFEST_REQUIRED);
+  const optPresent = presentCount(RELEASE_MANIFEST_OPTIONAL);
+  const rcDocsPresent = presentCount(RC_SNAPSHOT_DOC_REFS);
+  const manifestStatus = reqPresent === RELEASE_MANIFEST_REQUIRED.length ? 'COMPLETE' : 'INCOMPLETE';
+  rcStatus = buildRcStatusModel({
+    version: VERSION,
+    testLabel: testCountLabel(CURRENT_TEST_STATUS),
+    profileSummary: `fast ~${CURRENT_TEST_STATUS.fastProfile} · foundation ~${CURRENT_TEST_STATUS.foundationProfile} · full`,
+    manifest: {
+      status: manifestStatus,
+      requiredPresent: reqPresent,
+      required: RELEASE_MANIFEST_REQUIRED.length,
+      optionalPresent: optPresent,
+      optional: RELEASE_MANIFEST_OPTIONAL.length,
+    },
+    rcDocs: { present: rcDocsPresent, total: RC_SNAPSHOT_DOC_REFS.length },
+    manualValidationRemaining: RC_SNAPSHOT_MANUAL_VALIDATION.length,
+    gateStatusLabel: ship.statusLabel,
+  });
+} catch (e) {
+  rcStatus = buildRcStatusModel(); // honest LAST-KNOWN fallback
+  console.log(`[continuum] rc status: live gather unavailable (${e.message}) — using last-known`);
+}
+
 // Stamp the packaged build time so the page can show when the data was packaged.
 const generatedAt = new Date().toISOString();
 const model = {
-  ...buildContinuumModel({ ...overrides, health, readiness, ship, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
+  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
   generatedAt,
 };
 
@@ -128,3 +167,4 @@ for (const g of gaps) console.log(`[continuum]   gap: ${g}`);
 console.log(`[continuum] health: profiles fast ${PROFILES.fast.length}/foundation ${PROFILES.foundation.length}, full ${countTestFiles()} files, docs ${docsInSync ? 'in sync' : 'DRIFT'}`);
 console.log(`[continuum] readiness: ${readiness.statusLabel} (zone-fallback ${zoneFallback.ok ? 'ok' : 'FAIL'}; dist ${distPaths ? 'checked' : 'skipped — no build yet'})`);
 console.log(`[continuum] ship readiness: ${ship.statusLabel} (${ship.kind})${ship.blockers && ship.blockers.length ? ` blockers: ${ship.blockers.join(', ')}` : ''}`);
+console.log(`[continuum] rc status: ${rcStatus.statusLabel} (${rcStatus.kind}) · manifest ${rcStatus.manifestStatus} ${rcStatus.manifestRequiredPresent}/${rcStatus.manifestRequired} req · rc-docs ${rcStatus.rcDocsPresent}/${rcStatus.rcDocsTotal}`);

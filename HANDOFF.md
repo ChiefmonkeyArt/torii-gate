@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.213-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.214-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -520,6 +520,28 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.214** CONTINUUM RC / RELEASE-MANIFEST STATUS CARD — a dashboard/docs/tooling slice (no
+  runtime change). The Torii Continuum oversight dashboard now surfaces a read-only **RC / release
+  manifest** section just below Ship readiness, folding the local release-candidate artifact posture
+  into one band: current version, the release-artifact MANIFEST verdict (required/optional present),
+  RC package-doc coverage, the curated test count + profile summary, how many MANUAL live-browser
+  validation checks remain, and the last local release-gate verdict. A new PURE, browser-safe
+  `buildRcStatusModel(input?)` in `src/engine/dashboard/continuumData.js` DERIVES this from existing
+  helpers/constants — the release-manifest `RELEASE_MANIFEST_REQUIRED`/`RELEASE_MANIFEST_OPTIONAL`
+  refs + `RC_SNAPSHOT_DOC_REFS`/`RC_SNAPSHOT_MANUAL_VALIDATION`, stat-ed on disk (cheap file-presence
+  only — no crypto/git/network) by `tools/build-continuum.mjs` and folded in via
+  `buildContinuumModel({rcStatus})` — rather than duplicating gate logic; with no input it degrades to
+  an honest `RCSTATUS_LASTKNOWN` fallback (`kind:'last-known'`) and never throws. Band: any required
+  artifact/RC doc missing → ARTIFACTS INCOMPLETE; complete + gate READY → LOCAL GATES GREEN · MANUAL
+  VALIDATION + APPROVAL PENDING; else NEAR · LOCAL GATES. Reuses the existing `.metric`/`.pill` markup
+  so the continuum CSP + inline refresh-script hash are untouched; every value HTML-escaped.
+  `tests/continuum-dashboard.test.js` (+7; suite now 1388/86): last-known model, live generated band,
+  ARTIFACTS INCOMPLETE on a missing required artifact/RC doc, pill vocabulary, `continuumDataJSON`
+  carries `rcStatus`, render shows the section, hostile-input escape + script-hash intact.
+  DASHBOARD/DOCS/TOOLING-ONLY — no generator output-shape break; no runtime/gameplay/physics/shooter/
+  Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/
+  self-update; `godMode` stays false; no new `setTimeout`/`Vector3`/`Matrix4`.
+  Latest slice report: `torii-v0.2.214-continuum-rc-status-report.md`.
   **v0.2.213** SHELL-LESS RELEASE TOOLING REPORT DISCOVERY — a pure tooling/docs slice (no runtime
   change). Finished the v0.2.212 cleanup across the remaining two tools the v0.2.212 security review
   flagged: `tools/rc-snapshot.mjs` and `tools/release-package.mjs` no longer shell out to

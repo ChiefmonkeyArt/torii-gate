@@ -1,10 +1,10 @@
 {
-  "version": "v0.2.213-alpha",
-  "generatedAt": "2026-06-26T03:43:03.679Z",
+  "version": "v0.2.214-alpha",
+  "generatedAt": "2026-06-26T04:06:45.404Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
-    "activeTasks": 40,
+    "activeTasks": 41,
     "completedLast24h": 27,
     "archivedClusters": 11,
     "trackCount": 6,
@@ -25,14 +25,14 @@
     "isDerived": true,
     "todoCompletedMarkers": 12,
     "next12": 12,
-    "activeNow": 40,
+    "activeNow": 41,
     "completed24h": 27,
     "archiveClusters": 11
   },
   "derived": {
     "parsed": [
       "next12 (12)",
-      "activeNow (40)",
+      "activeNow (41)",
       "completed24h (27)",
       "archive (11)"
     ],
@@ -48,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.213-alpha"
+        "value": "v0.2.214-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -58,7 +58,7 @@
       {
         "label": "Total tests",
         "kind": "last-known",
-        "value": "1381 passing / 86 files"
+        "value": "1388 passing / 86 files"
       },
       {
         "label": "Profile timings",
@@ -78,7 +78,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.213-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.214-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -191,15 +191,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.213-alpha",
-    "gitCommit": "76664db",
+    "version": "v0.2.214-alpha",
+    "gitCommit": "ef393fa",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.213-alpha / pkg 0.2.213-alpha"
+        "detail": "config v0.2.214-alpha / pkg 0.2.214-alpha"
       },
       {
         "key": "tests",
@@ -245,6 +245,56 @@
       "kind": "infra"
     },
     "note": "The last local release-readiness verdict (run: npm run release:status) plus the recommended next SAFE task. Read-only oversight — it mirrors the gate, never runs a deploy/publish. GENERATED at packaging time from the live signals; LAST-KNOWN (last green gate) when not regenerated this build. The regression gate stays the authority."
+  },
+  "rcStatus": {
+    "badge": "RC / RELEASE MANIFEST · LOCAL · READ-ONLY",
+    "kind": "generated",
+    "band": "gates-green",
+    "statusLabel": "LOCAL GATES GREEN · MANUAL VALIDATION + APPROVAL PENDING",
+    "pill": "manual",
+    "version": "v0.2.214-alpha",
+    "manifestStatus": "COMPLETE",
+    "manifestRequiredPresent": 6,
+    "manifestRequired": 6,
+    "manifestOptionalPresent": 6,
+    "manifestOptional": 6,
+    "rcDocsPresent": 7,
+    "rcDocsTotal": 7,
+    "testLabel": "1388 passing / 86 files",
+    "profileSummary": "fast ~5 · foundation ~25 · full",
+    "manualValidationRemaining": 7,
+    "gateStatusLabel": "READY",
+    "metrics": [
+      {
+        "label": "Source version",
+        "value": "v0.2.214-alpha"
+      },
+      {
+        "label": "Release manifest",
+        "value": "COMPLETE · 6/6 required present · 6/6 optional present"
+      },
+      {
+        "label": "RC package docs",
+        "value": "7/7 present"
+      },
+      {
+        "label": "Tests",
+        "value": "1388 passing / 86 files"
+      },
+      {
+        "label": "Test profiles",
+        "value": "fast ~5 · foundation ~25 · full"
+      },
+      {
+        "label": "Manual validation remaining",
+        "value": "7 live-browser checks pending"
+      },
+      {
+        "label": "Last release gate",
+        "value": "READY"
+      }
+    ],
+    "note": "Release-candidate artifact posture — the release-artifact MANIFEST (required/optional present) and RC package-doc coverage, the curated test count, the manual validation still outstanding, and the last local release-gate verdict, folded into one read-only band. GENERATED at packaging time from on-disk artifact presence; LAST-KNOWN when not regenerated this build. It releases/tags/publishes/deploys NOTHING — manual live-browser validation and explicit user approval stay required (run: npm run rc:snapshot / npm run release:manifest)."
   },
   "readHealth": {
     "badge": "NOSTR READ-PATH · READ-ONLY",

@@ -33,7 +33,7 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 
-export const CONTINUUM_VERSION = 'v0.2.213-alpha';
+export const CONTINUUM_VERSION = 'v0.2.214-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -48,7 +48,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1381,
+  passing: 1388,
   files: 86,
   fastProfile: 5,
   foundationProfile: 25,
@@ -461,6 +461,124 @@ export function buildReadHealthModel(input) {
 // shows an honest all-green READ-ONLY panel. No relay/network is ever touched.
 const CURATED_READHEALTH = buildReadHealthModel();
 
+// RCSTATUS_BADGE (v0.2.214) — names the RC / release-manifest oversight card as a local,
+// read-only summary of the release-candidate artifact posture — never a release/tag/publish.
+export const RCSTATUS_BADGE = 'RC / RELEASE MANIFEST · LOCAL · READ-ONLY';
+
+// RCSTATUS_LASTKNOWN (v0.2.214) — the curated fallback RC/release-manifest posture, captured by
+// hand and clearly LABELLED last-known on the page so a stale snapshot is obvious rather than
+// silently wrong. The build-time generator (build-continuum.mjs) overrides this with the LIVE
+// artifact presence (the release-manifest REQUIRED/OPTIONAL refs + RC package docs stat-ed on
+// disk), the curated test count, the manual-validation-remaining count, and the last release-gate
+// verdict — so the card tracks the real on-disk RC posture each deploy.
+export const RCSTATUS_LASTKNOWN = Object.freeze({
+  version: CONTINUUM_VERSION,
+  manifestStatus: 'COMPLETE',
+  manifestRequiredPresent: 6,
+  manifestRequired: 6,
+  manifestOptionalPresent: 6,
+  manifestOptional: 6,
+  rcDocsPresent: 7,
+  rcDocsTotal: 7,
+  testLabel: testCountLabel(),
+  profileSummary: `fast ~${CURRENT_TEST_STATUS.fastProfile} · foundation ~${CURRENT_TEST_STATUS.foundationProfile} · full`,
+  manualValidationRemaining: 7,
+  gateStatusLabel: 'READY',
+});
+
+// buildRcStatusModel(input) — PURE, browser-safe builder (v0.2.214). Folds the LOCAL
+// release-candidate artifact posture into a render-ready card so project oversight sees, at a
+// glance: the current version, the release-artifact MANIFEST verdict (required/optional present),
+// the RC package-doc coverage, the curated test count + profile summary, how much MANUAL
+// (live-browser) validation is still outstanding, the last release-gate verdict, and ONE coarse
+// readiness BAND tying them together. Inputs are plain data the generator gathers cheaply
+// (file-presence counts + curated constants + the already-gathered ship verdict) — NO fs/network/
+// THREE/DOM/child_process here, and it imports NO tools/ module so the browser bundle stays clean.
+// With no input it degrades to the honest LAST-KNOWN snapshot and NEVER throws. It reuses the
+// existing pill vocabulary + .metric markup (no new CSS) and adds NO script → the continuum
+// CSP/refresh-script hash stay intact. INFORMATIONAL only: it releases/tags/publishes/deploys
+// NOTHING — manual live-browser validation and explicit user approval stay REQUIRED.
+export function buildRcStatusModel(input = {}) {
+  const i = (input && typeof input === 'object' && !Array.isArray(input)) ? input : {};
+  const lk = RCSTATUS_LASTKNOWN;
+  const m = (i.manifest && typeof i.manifest === 'object' && !Array.isArray(i.manifest)) ? i.manifest : null;
+  const rd = (i.rcDocs && typeof i.rcDocs === 'object' && !Array.isArray(i.rcDocs)) ? i.rcDocs : null;
+  const live = !!(m || rd || i.gateStatusLabel);
+
+  const _int = (x, d) => (Number.isInteger(x) ? x : d);
+  const _str = (x, d) => (typeof x === 'string' && x.trim() ? x.trim() : d);
+
+  const version = _str(i.version, lk.version);
+  const manifestStatus = m ? _str(m.status, 'INCOMPLETE') : lk.manifestStatus;
+  const requiredPresent = m ? _int(m.requiredPresent, 0) : lk.manifestRequiredPresent;
+  const required = m ? _int(m.required, lk.manifestRequired) : lk.manifestRequired;
+  const optionalPresent = m ? _int(m.optionalPresent, 0) : lk.manifestOptionalPresent;
+  const optional = m ? _int(m.optional, lk.manifestOptional) : lk.manifestOptional;
+  const rcDocsPresent = rd ? _int(rd.present, 0) : lk.rcDocsPresent;
+  const rcDocsTotal = rd ? _int(rd.total, lk.rcDocsTotal) : lk.rcDocsTotal;
+  const testLabel = _str(i.testLabel, lk.testLabel);
+  const profileSummary = _str(i.profileSummary, lk.profileSummary);
+  const manualValidationRemaining = _int(i.manualValidationRemaining, lk.manualValidationRemaining);
+  const gateStatusLabel = _str(i.gateStatusLabel, lk.gateStatusLabel);
+
+  // Coarse, honest band — never over-claims a release. Manifest COMPLETE + every RC doc present
+  // + the last local gate READY → the artifacts are in place but MANUAL validation + explicit
+  // user approval are still pending (the live-browser things local gates can't prove). A missing
+  // required artifact or RC doc → ARTIFACTS INCOMPLETE (a future release would be blocked).
+  const artifactsComplete = manifestStatus === 'COMPLETE' && rcDocsPresent >= rcDocsTotal;
+  const gateReady = /^READY/i.test(gateStatusLabel);
+  let band; let bandLabel; let bandPill;
+  if (!artifactsComplete) {
+    band = 'artifacts-incomplete'; bandLabel = 'ARTIFACTS INCOMPLETE'; bandPill = 'gated';
+  } else if (gateReady) {
+    band = 'gates-green'; bandLabel = 'LOCAL GATES GREEN · MANUAL VALIDATION + APPROVAL PENDING'; bandPill = 'manual';
+  } else {
+    band = 'near'; bandLabel = 'NEAR · LOCAL GATES'; bandPill = 'manual';
+  }
+
+  const metrics = [
+    { label: 'Source version', value: version },
+    { label: 'Release manifest', value: `${manifestStatus} · ${requiredPresent}/${required} required present · ${optionalPresent}/${optional} optional present` },
+    { label: 'RC package docs', value: `${rcDocsPresent}/${rcDocsTotal} present` },
+    { label: 'Tests', value: testLabel },
+    { label: 'Test profiles', value: profileSummary },
+    { label: 'Manual validation remaining', value: `${manualValidationRemaining} live-browser checks pending` },
+    { label: 'Last release gate', value: gateStatusLabel },
+  ];
+
+  return {
+    badge: RCSTATUS_BADGE,
+    kind: live ? 'generated' : 'last-known',
+    band,
+    statusLabel: bandLabel,
+    pill: bandPill,
+    version,
+    manifestStatus,
+    manifestRequiredPresent: requiredPresent,
+    manifestRequired: required,
+    manifestOptionalPresent: optionalPresent,
+    manifestOptional: optional,
+    rcDocsPresent,
+    rcDocsTotal,
+    testLabel,
+    profileSummary,
+    manualValidationRemaining,
+    gateStatusLabel,
+    metrics,
+    note: 'Release-candidate artifact posture — the release-artifact MANIFEST (required/optional '
+      + 'present) and RC package-doc coverage, the curated test count, the manual validation still '
+      + 'outstanding, and the last local release-gate verdict, folded into one read-only band. '
+      + 'GENERATED at packaging time from on-disk artifact presence; LAST-KNOWN when not regenerated '
+      + 'this build. It releases/tags/publishes/deploys NOTHING — manual live-browser validation and '
+      + 'explicit user approval stay required (run: npm run rc:snapshot / npm run release:manifest).',
+  };
+}
+
+// The curated fallback RC-status model — built at module load so renderContinuumPage() with NO
+// overrides (tests + the no-JS fallback) shows an honest LAST-KNOWN RC/release-manifest section.
+// build-continuum.mjs re-runs buildRcStatusModel with the freshly gathered artifact presence.
+const CURATED_RCSTATUS = buildRcStatusModel();
+
 // CONTINUUM_REFRESH_SCRIPT (v0.2.172) — the EXACT inline-script body the page ships,
 // kept as the single source of that text so its CSP hash can never silently drift.
 // It is STATIC (no model interpolation), so its sha256 is stable across deploys: a
@@ -522,12 +640,12 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.213-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.214-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
-    { label: 'Active slice', value: 'v0.2.213 SHELL-LESS RELEASE TOOLING REPORT DISCOVERY (docs/tooling only, no runtime change) — the rc-snapshot and release-package CLIs now discover recent torii-v*-report.md slice reports through the shared pure selectRecentReports(readdirSync(ROOT)) helper instead of the old execSync("ls torii-v*-report.md") shell globs — no child_process for discovery, deterministically sorted and capped, identical output. This finishes the v0.2.212 cleanup (release-manifest) across the remaining two tools the v0.2.212 security review flagged; the shared helper in tools/releaseManifest.mjs is reused, not duplicated. +4 unit tests (tests/rc-snapshot.test.js, tests/release-package.test.js: each CLI no longer shells out to `ls` and uses the shared helper). Prior — v0.2.212 release-manifest shell-less discovery. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.214 CONTINUUM RC / RELEASE-MANIFEST STATUS CARD (dashboard/docs/tooling only, no runtime change) — the Continuum oversight dashboard now surfaces a read-only RC / RELEASE-MANIFEST status section just below Ship readiness, folding the release-candidate artifact posture into one band: current version, the release-artifact MANIFEST verdict (required/optional present), RC package-doc coverage, the curated test count + profile summary, how many MANUAL live-browser validation checks are still outstanding, and the last local release-gate verdict. The new pure buildRcStatusModel() DERIVES this from existing helpers/constants (release-manifest REQUIRED/OPTIONAL refs + RC_SNAPSHOT doc refs/manual-validation list, stat-ed on disk by build-continuum.mjs) rather than duplicating gate logic; it reuses the existing .metric/.pill markup so the continuum CSP/refresh-script hash are untouched, and honestly shows ARTIFACTS INCOMPLETE if any required artifact/RC doc is missing. +7 unit tests (tests/continuum-dashboard.test.js). Prior — v0.2.213 shell-less release tooling report discovery. NON-GOALS held: no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network write; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
@@ -704,6 +822,7 @@ export function buildContinuumModel(overrides = {}) {
     milestones: base.milestones || buildMilestoneModel({ leanRoute: base.leanRoute }),
     readiness: base.readiness || CURATED_READINESS,
     ship: base.ship || CURATED_SHIP,
+    rcStatus: base.rcStatus || CURATED_RCSTATUS,
     readHealth: base.readHealth || CURATED_READHEALTH,
     taskTotals,
     derived,
@@ -725,6 +844,7 @@ export function continuumDataJSON(model = buildContinuumModel()) {
     milestones: model.milestones || null,
     readiness: model.readiness || null,
     ship: model.ship || null,
+    rcStatus: model.rcStatus || null,
     readHealth: model.readHealth || null,
   };
 }
@@ -1009,6 +1129,28 @@ ${invariants}${note}
     </section>`;
 }
 
+// _rcStatusSection(rc) — the RC / release-manifest status section (v0.2.214): an overall
+// readiness-band pill + provenance chip + badge, a small grid of metric cards (version, manifest
+// verdict, RC-doc coverage, tests, profiles, manual validation remaining, last gate), and a
+// read-only note. Empty string when absent so an override-free legacy model omits it. Server-
+// rendered + escaped; reuses the .metric/.pill markup → no new script, no new data-k key, the
+// CSP/refresh-script hash stay intact. Pure.
+function _rcStatusSection(rc) {
+  if (!rc || !Array.isArray(rc.metrics) || !rc.metrics.length) return '';
+  const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+  const pillState = allowed.has(rc.pill) ? rc.pill : 'deferred';
+  const note = rc.note ? `      <div class="focus">${escapeHtml(rc.note)}</div>` : '';
+  return `
+    <section>
+      <div class="h2row"><h2>RC / release manifest</h2> <span class="pill pill-${pillState}">${escapeHtml(rc.statusLabel)}</span> ${_healthChip(rc.kind)} <span class="badge">${escapeHtml(rc.badge)}</span></div>
+      <div class="lead">Release-candidate artifact posture — manifest + RC-doc coverage, test count, and the manual validation still outstanding. Read-only; release/tag/publish stay manual + user-approved.</div>
+      <div class="grid">
+${_metricRows(rc.metrics)}
+      </div>
+${note}
+    </section>`;
+}
+
 // renderContinuumPage(model) — full self-contained static HTML document string.
 // Dark Torii/nostrich/cyberpunk feel via inline CSS only; CSS bars + SVG rings.
 // The page renders fully WITHOUT JavaScript. A tiny, optional, same-origin-only
@@ -1163,6 +1305,7 @@ export function renderContinuumPage(model = buildContinuumModel()) {
       <div class="focus">${escapeHtml(m.focus)}</div>
     </section>
 ${_shipSection(m.ship)}
+${_rcStatusSection(m.rcStatus)}
 ${_milestonesSection(m.milestones)}
 
     <section>

@@ -17,6 +17,7 @@ import {
   SEED_MILESTONES, buildMilestoneModel,
   READINESS_BADGE, buildReadinessModel,
   SHIP_BADGE, SHIP_LASTKNOWN, SHIP_NEXT_SAFE_TASK, buildShipModel,
+  RCSTATUS_BADGE, RCSTATUS_LASTKNOWN, buildRcStatusModel,
   READHEALTH_BADGE, buildReadHealthModel,
   escapeHtml, clampPct, barCells, ringDash,
   computeTotals, buildContinuumModel, continuumDataJSON, renderContinuumPage,
@@ -27,7 +28,7 @@ import { DEFAULT_TEST_STATUS } from '../src/engine/status/mvpReadiness.js';
 
 describe('module shape', () => {
   it('pins the version (tracks the build) and the read-only oversight badge', () => {
-    expect(CONTINUUM_VERSION).toBe('v0.2.213-alpha');
+    expect(CONTINUUM_VERSION).toBe('v0.2.214-alpha');
     expect(CONTINUUM_VERSION).toBe(VERSION);
     expect(CONTINUUM_BADGE).toBe('PROJECT OVERSIGHT · STATIC · READ-ONLY');
   });
@@ -132,7 +133,7 @@ describe('continuumDataJSON', () => {
   it('is JSON-serialisable and carries totals + the seed contributors', () => {
     const j = continuumDataJSON();
     const round = JSON.parse(JSON.stringify(j));
-    expect(round.version).toBe('v0.2.213-alpha');
+    expect(round.version).toBe('v0.2.214-alpha');
     expect(round.totals.pocProgressPct).toBe(47);
     expect(round.contributors.isSeed).toBe(true);
   });
@@ -144,7 +145,7 @@ describe('renderContinuumPage', () => {
   it('returns a self-contained HTML document with the version', () => {
     expect(typeof html).toBe('string');
     expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('v0.2.213-alpha');
+    expect(html).toContain('v0.2.214-alpha');
     expect(html).toContain('Torii Continuum');
   });
 
@@ -601,6 +602,103 @@ describe('ship readiness & next task (v0.2.188)', () => {
   });
 });
 
+describe('RC / release-manifest status (v0.2.214)', () => {
+  it('degrades to an honest LAST-KNOWN model with no input (never throws)', () => {
+    const rc = buildRcStatusModel();
+    expect(rc.kind).toBe('last-known');
+    expect(rc.badge).toBe(RCSTATUS_BADGE);
+    expect(rc.version).toBe(RCSTATUS_LASTKNOWN.version);
+    expect(rc.manifestStatus).toBe('COMPLETE');
+    expect(Array.isArray(rc.metrics)).toBe(true);
+    expect(rc.metrics.length).toBe(7);
+    // COMPLETE artifacts + a READY last gate → local gates green, manual validation still pending.
+    expect(rc.band).toBe('gates-green');
+    expect(rc.pill).toBe('manual');
+    expect(rc.statusLabel).toMatch(/MANUAL VALIDATION/);
+  });
+
+  it('folds LIVE artifact-presence inputs into a generated band', () => {
+    const rc = buildRcStatusModel({
+      version: 'v9.9.9-test',
+      testLabel: '42 passing / 7 files',
+      profileSummary: 'fast ~5 · foundation ~25 · full',
+      manifest: { status: 'COMPLETE', requiredPresent: 6, required: 6, optionalPresent: 6, optional: 6 },
+      rcDocs: { present: 7, total: 7 },
+      manualValidationRemaining: 7,
+      gateStatusLabel: 'READY',
+    });
+    expect(rc.kind).toBe('generated');
+    expect(rc.band).toBe('gates-green');
+    expect(rc.version).toBe('v9.9.9-test');
+    expect(rc.testLabel).toBe('42 passing / 7 files');
+    const byLabel = Object.fromEntries(rc.metrics.map((m) => [m.label, m.value]));
+    expect(byLabel['Release manifest']).toContain('6/6 required present');
+    expect(byLabel['RC package docs']).toBe('7/7 present');
+    expect(byLabel['Manual validation remaining']).toContain('7 live-browser checks');
+  });
+
+  it('reports ARTIFACTS INCOMPLETE when a required artifact or RC doc is missing', () => {
+    const missingReq = buildRcStatusModel({
+      manifest: { status: 'INCOMPLETE', requiredPresent: 5, required: 6, optionalPresent: 6, optional: 6 },
+      rcDocs: { present: 7, total: 7 }, gateStatusLabel: 'READY',
+    });
+    expect(missingReq.band).toBe('artifacts-incomplete');
+    expect(missingReq.pill).toBe('gated');
+    expect(missingReq.statusLabel).toBe('ARTIFACTS INCOMPLETE');
+    const missingDoc = buildRcStatusModel({
+      manifest: { status: 'COMPLETE', requiredPresent: 6, required: 6, optionalPresent: 6, optional: 6 },
+      rcDocs: { present: 6, total: 7 }, gateStatusLabel: 'READY',
+    });
+    expect(missingDoc.band).toBe('artifacts-incomplete');
+  });
+
+  it('the band pill uses only the existing pill vocabulary (no new CSS)', () => {
+    const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+    for (const input of [undefined,
+      { manifest: { status: 'COMPLETE', requiredPresent: 6, required: 6, optionalPresent: 6, optional: 6 }, rcDocs: { present: 7, total: 7 }, gateStatusLabel: 'NEAR' },
+      { manifest: { status: 'INCOMPLETE', requiredPresent: 4, required: 6 }, rcDocs: { present: 3, total: 7 } }]) {
+      expect(allowed.has(buildRcStatusModel(input).pill)).toBe(true);
+    }
+  });
+
+  it('continuumDataJSON carries the rcStatus model', () => {
+    const j = continuumDataJSON();
+    expect(j.rcStatus).toBeTruthy();
+    expect(typeof j.rcStatus.statusLabel).toBe('string');
+    expect(Array.isArray(j.rcStatus.metrics)).toBe(true);
+  });
+
+  it('renderContinuumPage shows the RC / release-manifest section + badge + band pill', () => {
+    const html = renderContinuumPage();
+    expect(html).toContain('RC / release manifest');
+    expect(html).toContain(RCSTATUS_BADGE);
+    expect(html).toContain('Release manifest');
+    expect(html).toContain('Manual validation remaining');
+    expect(html).toContain('pill pill-');
+  });
+
+  it('SAFETY: a tag-injecting rcStatus is escaped + no new script + hash intact', () => {
+    const hostile = buildRcStatusModel({
+      version: 'v9<img src=x>',
+      testLabel: '<script>alert(1)</script>',
+      gateStatusLabel: 'READY',
+      manifest: { status: 'COMPLETE', requiredPresent: 6, required: 6, optionalPresent: 6, optional: 6 },
+      rcDocs: { present: 7, total: 7 }, manualValidationRemaining: 7,
+    });
+    const html = renderContinuumPage(buildContinuumModel({ rcStatus: hostile }));
+    for (const bad of ['javascript:', 'window.location', 'location.href', 'eval(', 'window.open']) {
+      expect(html).not.toContain(bad);
+    }
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).not.toContain('<img src=x>');
+    expect((html.match(/<script/g) || []).length).toBe(1);
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    expect(m[1]).toBe(CONTINUUM_REFRESH_SCRIPT);
+    const pageHash = 'sha256-' + createHash('sha256').update(m[1], 'utf8').digest('base64');
+    expect(pageHash).toBe(CONTINUUM_SCRIPT_SHA256);
+  });
+});
+
 describe('layout / readability pass (v0.2.177)', () => {
   const html = renderContinuumPage();
 
@@ -761,7 +859,7 @@ describe('test-count freshness (v0.2.200 — single source of truth)', () => {
 
 describe('SDK exposure', () => {
   it('re-exports the continuum module at the experimental tier', () => {
-    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.213-alpha');
+    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.214-alpha');
     expect(typeof SDK.continuum.renderContinuumPage).toBe('function');
     expect(SDK.SDK_SURFACE.continuum.tier).toBe(SDK.STABILITY.EXPERIMENTAL);
   });
