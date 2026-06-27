@@ -1,6 +1,6 @@
 {
   "name": "torii-quest",
-  "version": "0.2.234-alpha",
+  "version": "0.2.235-alpha",
   "private": true,
   "type": "module",
   "scripts": {
@@ -24,6 +24,7 @@
     "playtest:results": "node tools/playtest-results.mjs",
     "playtest:status": "node tools/playtest-results-status.mjs",
     "playtest:capture": "node tools/playtest-capture.mjs",
+    "playtest:verdict": "node tools/playtest-verdict.mjs",
     "zones:check": "node tools/zone-fallback-check.mjs",
     "vps:dry-run": "node tools/vps-dry-run.mjs",
     "docs:stale": "node tools/stale-docs.mjs",

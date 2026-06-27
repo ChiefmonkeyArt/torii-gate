@@ -32,7 +32,7 @@ import { DEFAULT_TEST_STATUS } from '../src/engine/status/mvpReadiness.js';
 
 describe('module shape', () => {
   it('pins the version (tracks the build) and the read-only oversight badge', () => {
-    expect(CONTINUUM_VERSION).toBe('v0.2.234-alpha');
+    expect(CONTINUUM_VERSION).toBe('v0.2.235-alpha');
     expect(CONTINUUM_VERSION).toBe(VERSION);
     expect(CONTINUUM_BADGE).toBe('PROJECT OVERSIGHT · STATIC · READ-ONLY');
   });
@@ -137,7 +137,7 @@ describe('continuumDataJSON', () => {
   it('is JSON-serialisable and carries totals + the seed contributors', () => {
     const j = continuumDataJSON();
     const round = JSON.parse(JSON.stringify(j));
-    expect(round.version).toBe('v0.2.234-alpha');
+    expect(round.version).toBe('v0.2.235-alpha');
     expect(round.totals.pocProgressPct).toBe(47);
     expect(round.contributors.isSeed).toBe(true);
   });
@@ -149,7 +149,7 @@ describe('renderContinuumPage', () => {
   it('returns a self-contained HTML document with the version', () => {
     expect(typeof html).toBe('string');
     expect(html).toMatch(/^<!DOCTYPE html>/);
-    expect(html).toContain('v0.2.234-alpha');
+    expect(html).toContain('v0.2.235-alpha');
     expect(html).toContain('Torii Continuum');
   });
 
@@ -1369,9 +1369,86 @@ describe('MVP approval gate section (v0.2.234)', () => {
   });
 });
 
+describe('Playtest verdict section (v0.2.235)', () => {
+  it('renders the verdict section with the badge, the focus categories, and the how-to', () => {
+    const html = renderContinuumPage();
+    expect(html).toContain('>Playtest verdict<');
+    expect(html).toContain('MVP PLAYTEST VERDICT · LOCAL · READ-ONLY · TESTER VERDICT ≠ MVP APPROVAL');
+    // Curated default ships blank → pending (no verdict recorded yet).
+    expect(html).toContain('NO VERDICT RECORDED YET');
+    // The one-line how-to so a tester knows exactly how to report.
+    expect(html).toContain('Verdict: MVP OK');
+    expect(html).toContain('Verdict: blockers:');
+    // The verdict is a confidence signal — never an approval.
+    const lower = html.toLowerCase();
+    expect(lower).toContain('tester verdict');
+    expect(lower).toContain('mvp_approval_state.json');
+  });
+
+  it('keeps every reported blocker VISIBLE in the rendered section', () => {
+    const model = buildContinuumModel({
+      playtestVerdict: {
+        badge: 'MVP PLAYTEST VERDICT · LOCAL · READ-ONLY · TESTER VERDICT ≠ MVP APPROVAL',
+        kind: 'generated', band: 'blocked',
+        statusLabel: 'BLOCKERS REPORTED (2) — TRIAGE BEFORE APPROVAL', pill: 'open-edge',
+        verdict: 'blocked', blockers: ['headshots flaky', 'crate jitter'], blockerCount: 2,
+        metrics: [
+          { label: 'Verdict', value: 'BLOCKED — 2 blocker(s)' },
+          { label: 'Blockers', value: 'headshots flaky · crate jitter' },
+        ],
+        note: 'verdict note',
+      },
+    });
+    const html = renderContinuumPage(model);
+    const section = html.slice(html.indexOf('>Playtest verdict<'));
+    expect(section).toContain('headshots flaky');
+    expect(section).toContain('crate jitter');
+  });
+
+  it('the verdict copy contains NO religious language', () => {
+    const html = renderContinuumPage();
+    const denied = ['sacred', 'holy', 'worship', 'prayer', 'divine', 'scripture', 'doctrine', 'gospel', 'salvation'];
+    for (const term of denied) {
+      expect(new RegExp(`\\b${term}\\b`, 'i').test(html)).toBe(false);
+    }
+  });
+
+  it('escapes injected verdict content and keeps exactly one inline script + the CSP hash', () => {
+    const evil = buildContinuumModel({
+      playtestVerdict: {
+        badge: 'B<script>alert(1)</script>',
+        kind: 'generated', band: 'blocked',
+        statusLabel: 'V<script>evil()</script>', pill: 'open-edge',
+        verdict: 'blocked', blockers: ['<img src=x onerror=alert(1)>'], blockerCount: 1,
+        metrics: [{ label: 'X</section><script>x()</script>', value: '<img src=x onerror=alert(1)>' }],
+        note: 'n<script>boom()</script>',
+      },
+    });
+    const html = renderContinuumPage(evil);
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).not.toContain('<script>evil()</script>');
+    expect(html).not.toContain('<script>x()</script>');
+    expect(html).not.toContain('<script>boom()</script>');
+    expect((html.match(/<script/g) || []).length).toBe(1);
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    expect(m).toBeTruthy();
+    const pageHash = 'sha256-' + createHash('sha256').update(m[1], 'utf8').digest('base64');
+    expect(pageHash).toBe(CONTINUUM_SCRIPT_SHA256);
+  });
+
+  it('the verdict pill stays within the allowed vocabulary', () => {
+    const html = renderContinuumPage();
+    const allowed = ['pill-no-blocker', 'pill-gated', 'pill-manual', 'pill-deferred', 'pill-open-edge'];
+    const section = html.slice(html.indexOf('>Playtest verdict<'));
+    const pillMatch = section.match(/class="pill (pill-[a-z-]+)"/);
+    expect(pillMatch).toBeTruthy();
+    expect(allowed).toContain(pillMatch[1]);
+  });
+});
+
 describe('SDK exposure', () => {
   it('re-exports the continuum module at the experimental tier', () => {
-    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.234-alpha');
+    expect(SDK.continuum.CONTINUUM_VERSION).toBe('v0.2.235-alpha');
     expect(typeof SDK.continuum.renderContinuumPage).toBe('function');
     expect(SDK.SDK_SURFACE.continuum.tier).toBe(SDK.STABILITY.EXPERIMENTAL);
   });

@@ -38,6 +38,7 @@ import { buildLiveSmokeState, LIVE_SMOKE_FILE, LIVE_SMOKE_RESULTS, summarizeLive
 import { buildDashboardSmokeState, DASHBOARD_SMOKE_FILE, DASHBOARD_SMOKE_RESULTS, summarizeDashboardSmokeForState } from './dashboardSmokeState.mjs';
 import { buildHandoffControlPanel, buildHandoffControlPanelCard, HANDOFF_LIVE_URL, HANDOFF_DASHBOARD_URL } from '../src/engine/status/handoffControlPanel.js';
 import { buildMvpApprovalGate, buildMvpApprovalGateCard } from '../src/engine/status/mvpApprovalGate.js';
+import { buildPlaytestVerdictCard, summarizePlaytestVerdictForState, parsePlaytestVerdict, PLAYTEST_VERDICT_FILE } from '../src/engine/status/playtestVerdict.js';
 import {
   PLAYTEST_CHECKLIST_SECTIONS,
   PLAYTEST_SEVERITIES,
@@ -334,10 +335,24 @@ try {
   console.log(`[continuum] mvp approval gate: live gather unavailable (${e.message}) — using last-known`);
 }
 
+// MVP playtest verdict (v0.2.235) — the one-line tester report ("MVP OK" / "blockers: …"). Read the
+// source-controlled MVP_PLAYTEST_VERDICT.md, parse it through the pure summarizePlaytestVerdictForState
+// (blank/garbled → pending; approvalImplied pinned false), and fold it into the dashboard card so any
+// reported blocker stays visible. Cheap file read only — no crypto, no git, no network. On any failure
+// we degrade to the curated CURATED_PLAYTEST_VERDICT card. A verdict NEVER implies approval.
+let playtestVerdict;
+try {
+  const text = readDocSafe(PLAYTEST_VERDICT_FILE);
+  playtestVerdict = buildPlaytestVerdictCard(summarizePlaytestVerdictForState(parsePlaytestVerdict(text == null ? '' : text)));
+} catch (e) {
+  playtestVerdict = undefined; // fall back to the curated CURATED_PLAYTEST_VERDICT in continuumData.js
+  console.log(`[continuum] playtest verdict: live gather unavailable (${e.message}) — using last-known`);
+}
+
 // Stamp the packaged build time so the page can show when the data was packaged.
 const generatedAt = new Date().toISOString();
 const model = {
-  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, mvpApproval, mvpGate, playtestResults, handoffPanel, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
+  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, mvpApproval, mvpGate, playtestResults, playtestVerdict, handoffPanel, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
   generatedAt,
 };
 
@@ -361,3 +376,4 @@ console.log(`[continuum] mvp approval: ${mvpApproval.statusLabel} (${mvpApproval
 console.log(`[continuum] handoff panel: ${model.handoffPanel.statusLabel} (${model.handoffPanel.kind}) · green ${model.handoffPanel.green} · pill ${model.handoffPanel.pill}`);
 console.log(`[continuum] mvp approval gate: ${model.mvpGate.statusLabel} (${model.mvpGate.kind}) · verdict ${model.mvpGate.verdict} · approved ${model.mvpGate.approved} · pill ${model.mvpGate.pill}`);
 console.log(`[continuum] playtest results: ${playtestResults.statusLabel} (${playtestResults.kind}) · status ${playtestResults.status} · recorded ${playtestResults.ran} · ${playtestResults.counts.pass}/${playtestResults.counts.fail}/${playtestResults.counts.blank} p/f/b of ${playtestResults.total} · implies approval ${playtestResults.approvalImplied}`);
+console.log(`[continuum] playtest verdict: ${model.playtestVerdict.statusLabel} (${model.playtestVerdict.kind}) · verdict ${model.playtestVerdict.verdict} · ${model.playtestVerdict.blockerCount} blocker(s) · pill ${model.playtestVerdict.pill}`);

@@ -159,6 +159,27 @@ describe('buildNextActionState — assembly', () => {
     expect(s.playtestResults.approvalImplied).toBe(false);
   });
 
+  it('folds the one-line playtest verdict, keeps blockers visible, and never implies approval', () => {
+    const pending = buildNextActionState({ agentHandoff: handoff(), playtestVerdict: null });
+    expect(pending.playtestVerdict.verdict).toBe('pending');
+    expect(pending.playtestVerdict.approvalImplied).toBe(false);
+
+    const ok = buildNextActionState({ agentHandoff: handoff(), playtestVerdict: { schema: 'torii.playtest-verdict', verdict: 'ok', blockers: [], reportedBy: 'Chiefmonkey', reportedAt: '2026-06-27' } });
+    expect(ok.playtestVerdict.verdict).toBe('ok');
+    expect(ok.playtestVerdict.reported).toBe(true);
+    expect(ok.playtestVerdict.approvalImplied).toBe(false);
+
+    const blocked = buildNextActionState({ agentHandoff: handoff(), playtestVerdict: { schema: 'torii.playtest-verdict', verdict: 'blocked', blockers: ['headshots flaky', 'crate jitter'] } });
+    expect(blocked.playtestVerdict.verdict).toBe('blocked');
+    expect(blocked.playtestVerdict.blockerCount).toBe(2);
+    expect(blocked.playtestVerdict.blockers).toEqual(['headshots flaky', 'crate jitter']);
+    expect(blocked.playtestVerdict.approvalImplied).toBe(false);
+  });
+
+  it('exposes playtestVerdict as a required key', () => {
+    expect(NEXT_ACTION_STATE_REQUIRED_KEYS).toContain('playtestVerdict');
+  });
+
   it('folds the live-smoke state and pins impliesApproval false', () => {
     const unknown = buildNextActionState({ agentHandoff: handoff(), liveSmoke: null });
     expect(unknown.liveSmoke).toMatchObject({ result: 'unknown', pass: false, impliesApproval: false });

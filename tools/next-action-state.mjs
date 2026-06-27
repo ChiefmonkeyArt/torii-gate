@@ -50,6 +50,7 @@ import { buildDashboardSmokeState, DASHBOARD_SMOKE_FILE, DASHBOARD_SMOKE_RESULTS
 import { SHIP_NEXT_SAFE_TASK } from '../src/engine/dashboard/continuumData.js';
 import { buildHandoffControlPanel, HANDOFF_LIVE_URL, HANDOFF_DASHBOARD_URL } from '../src/engine/status/handoffControlPanel.js';
 import { buildMvpApprovalGate } from '../src/engine/status/mvpApprovalGate.js';
+import { parsePlaytestVerdict, summarizePlaytestVerdictForState, PLAYTEST_VERDICT_FILE } from '../src/engine/status/playtestVerdict.js';
 
 const ROOT = process.cwd();
 
@@ -118,6 +119,14 @@ function gatherPlaytestResults() {
   const text = readSafe(PLAYTEST_RESULTS_STATE_FILE);
   if (text == null) return null;
   return summarizePlaytestResults(parsePlaytestResults(text));
+}
+
+// Load + summarise the canonical MVP_PLAYTEST_VERDICT.md so the export shows the one-line tester
+// verdict ("MVP OK" / "blockers: …") and keeps any reported blocker visible. Missing/blank file →
+// pending. Read-only; this tool never records a verdict or approves.
+function gatherPlaytestVerdict() {
+  const text = readSafe(PLAYTEST_VERDICT_FILE);
+  return summarizePlaytestVerdictForState(parsePlaytestVerdict(text == null ? '' : text));
 }
 
 // Load the committed live-smoke state (re-shaped through buildLiveSmokeState so a hand-edited file
@@ -240,6 +249,7 @@ if (invokedDirectly) {
     docs: gatherDocs(),
     mvpApproval,
     playtestResults: gatherPlaytestResults(),
+    playtestVerdict: gatherPlaytestVerdict(),
     liveSmoke,
     dashboardSmoke,
     handoffControlPanel,

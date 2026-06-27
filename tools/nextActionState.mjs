@@ -25,6 +25,7 @@ import { summarizeLiveSmokeForState } from './liveSmokeState.mjs';
 import { summarizeDashboardSmokeForState } from './dashboardSmokeState.mjs';
 import { summarizeHandoffControlPanelForState } from '../src/engine/status/handoffControlPanel.js';
 import { summarizeMvpApprovalGateForState } from '../src/engine/status/mvpApprovalGate.js';
+import { summarizePlaytestVerdictForState } from '../src/engine/status/playtestVerdict.js';
 
 // Badge naming the export as read-only oversight, never a deploy/publish/upload action.
 export const NEXT_ACTION_STATE_BADGE = 'NEXT-ACTION STATE · LOCAL · READ-ONLY';
@@ -60,7 +61,7 @@ function _bool(x) { return x === true; }
 //                     reproducible tests; the CLI passes a real stamp at print time.
 export function buildNextActionState({
   agentHandoff = null, manualValidation = null, testStatus = null,
-  docs = null, mvpApproval = null, playtestResults = null, liveSmoke = null,
+  docs = null, mvpApproval = null, playtestResults = null, playtestVerdict = null, liveSmoke = null,
   dashboardSmoke = null, handoffControlPanel = null, mvpGate = null, generatedAt = null,
 } = {}) {
   const stamp = _str(generatedAt);
@@ -122,6 +123,10 @@ export function buildNextActionState({
     // MVP_PLAYTEST_RESULTS.md (not-run / incomplete / attention / complete) + counts. `approvalImplied`
     // is pinned false: a recorded playtest is necessary but NOT sufficient for approval.
     playtestResults: summarizePlaytestForState(playtestResults),
+    // MVP playtest verdict — the one-line tester report ("MVP OK" / "blockers: …") read from the
+    // canonical MVP_PLAYTEST_VERDICT.md. Folded so every reported blocker stays VISIBLE here.
+    // `approvalImplied` is pinned false: a tester verdict is a confidence signal, not approval.
+    playtestVerdict: summarizePlaytestVerdictForState(playtestVerdict),
     // Live smoke — the latest cloud-browser smoke of the DEPLOYED site (the posture local gates can
     // never prove). Folded from LIVE_SMOKE_STATE.json so the next agent sees whether production was
     // actually observed green. `impliesApproval` is pinned false: a green smoke is not MVP approval.
@@ -164,7 +169,7 @@ export function buildNextActionState({
 // present, regardless of how degraded the inputs are. buildNextActionState never omits these.
 export const NEXT_ACTION_STATE_REQUIRED_KEYS = Object.freeze([
   'schema', 'schemaVersion', 'badge', 'version', 'gitCommit', 'liveUrl',
-  'release', 'readiness', 'tests', 'manualBlocker', 'mvpApproval', 'playtestResults',
+  'release', 'readiness', 'tests', 'manualBlocker', 'mvpApproval', 'playtestResults', 'playtestVerdict',
   'liveSmoke', 'dashboardSmoke', 'controlPanel', 'mvpGate', 'nextSafeTask', 'docs', 'reports', 'safety',
 ]);
 
@@ -196,6 +201,8 @@ export function formatNextActionState(state) {
   L.push(`MVP approval: ${ap.approved ? 'APPROVED' : (ap.status || 'unknown')}${ap.approvedBy ? ` by ${ap.approvedBy}` : ''}${ap.approvedAt ? ` @ ${ap.approvedAt}` : ''}`);
   const pr = state.playtestResults || {};
   L.push(`MVP playtest: ${pr.status || 'unknown'} (pending ${pr.pending ? 'yes' : 'no'}; implies approval: no)`);
+  const pv = state.playtestVerdict || {};
+  L.push(`MVP playtest verdict: ${pv.verdict || 'pending'}${pv.blockerCount ? ` — ${pv.blockerCount} blocker(s): ${(pv.blockers || []).join(', ')}` : ''} (implies approval: no)`);
   const ls = state.liveSmoke || {};
   L.push(`live smoke: ${ls.result || 'unknown'}${ls.pass ? ' ✓' : ''}${ls.version ? ` @ ${ls.version}` : ''} (${ls.passed ?? '?'}/${ls.checks ?? '?'} checks; implies approval: no)`);
   const ds = state.dashboardSmoke || {};
