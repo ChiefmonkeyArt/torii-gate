@@ -1,11 +1,11 @@
 {
   "schema": "torii.next-action-state",
   "schemaVersion": 1,
-  "generatedAt": "2026-06-27T11:23:45.855Z",
+  "generatedAt": "2026-06-27T15:22:48.397Z",
   "badge": "NEXT-ACTION STATE · LOCAL · READ-ONLY",
-  "version": "v0.2.237-alpha",
-  "packageVersion": "0.2.237-alpha",
-  "gitCommit": "37c6472",
+  "version": "v0.2.238-alpha",
+  "packageVersion": "0.2.238-alpha",
+  "gitCommit": "16f72f3",
   "liveUrl": "https://torii-quest.pplx.app",
   "release": {
     "ready": false,
@@ -24,8 +24,8 @@
     "status": "READY"
   },
   "tests": {
-    "passing": 1640,
-    "files": 98
+    "passing": 1649,
+    "files": 99
   },
   "manualBlocker": {
     "pending": true,
@@ -37,7 +37,7 @@
     "approved": false,
     "approvedBy": null,
     "approvedAt": null,
-    "version": "v0.2.237-alpha"
+    "version": "v0.2.238-alpha"
   },
   "playtestResults": {
     "schema": "torii.playtest-results-state",
@@ -104,7 +104,7 @@
   },
   "controlPanel": {
     "green": true,
-    "version": "v0.2.237-alpha",
+    "version": "v0.2.238-alpha",
     "liveUrl": "https://torii-quest.pplx.app",
     "dashboardUrl": "https://torii-quest.pplx.app/continuum.html",
     "entrySmoke": {
@@ -173,10 +173,10 @@
     "HANDOFF.generated.md"
   ],
   "reports": [
+    "torii-v0.2.237-useful-job-cancellation-rule-report.md",
     "torii-v0.2.236-nostr-login-runtime-fix-report.md",
     "torii-v0.2.235-playtest-result-capture-loop-report.md",
-    "torii-v0.2.234-mvp-approval-gate-report.md",
-    "torii-v0.2.233-handoff-release-control-report.md"
+    "torii-v0.2.234-mvp-approval-gate-report.md"
   ],
   "safety": {
     "deploy": false,

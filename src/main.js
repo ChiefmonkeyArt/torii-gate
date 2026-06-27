@@ -54,8 +54,17 @@ initPlayer();
 initBots(playerObj, spawnBullet);
 initWeapons(bots, takeDamage, getPlayerCollider);
 initTargetReticle({ bots, playerObj, getPlayerCollider });
-initLoop(update);
-startLoop();
+// v0.2.238: the render loop is started at the BOTTOM of this module, NOT here.
+// startLoop() invokes the first update() tick SYNCHRONOUSLY; update() reads
+// module-level state declared further down (e.g. _portalTrigger, the footstep/
+// minimap let-vars). Starting the loop here ran that first tick before those
+// bindings existed — in the minified prod bundle they hoist to `undefined`, so
+// `_portalTrigger.reset()` threw "Cannot read properties of undefined (reading
+// 'reset')" every frame. Worse, that synchronous throw propagated out of the
+// top-level startLoop() call and aborted the rest of module eval, so the ENTER
+// handler + the enter-ready window flag (set below) never ran and ENTER stayed
+// stuck on the inline "Engine still loading" fallback. Deferring the start to
+// the end guarantees every binding the loop touches is initialised first.
 
 // Shoot wire: player emits EV.SHOOT → spawn bullet + recoil + SFX.
 // Suppressed entirely in the NAP zone — weapon is disabled past the torii
@@ -633,3 +642,21 @@ function update(dt, frame) {
     console.warn('[render] frame skipped:', e.message);
   }
 }
+
+// ── Render loop start (LAST — see the note at the top of the Boot block) ────────
+// nostrich: the loop fails closed after a streak of update() throws (see loop.js).
+// Surface a precise, actionable message instead of a silent freeze + console flood.
+function _onLoopFatal() {
+  showEntryStatus('⚠ Engine error — the arena stopped unexpectedly. Please reload the page.');
+  if (elEnterBtn) {
+    elEnterBtn.textContent = 'ENTER ARENA';
+    elEnterBtn.disabled = false;
+  }
+}
+
+// Every module-level binding update() touches (incl. _portalTrigger + the
+// footstep/minimap let-vars) is initialised by now, and the ENTER handler +
+// window.__toriiEnterReady are already wired above — so the first synchronous
+// tick can neither read an uninitialised binding nor abort handler registration.
+initLoop(update, _onLoopFatal);
+startLoop();

@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.237-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.238-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -525,6 +525,33 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.238** ENTER-ARENA RESET-CRASH FIX (runtime repair) — fixes the live v0.2.237 boot failure where
+  **ENTER ARENA** stayed stuck on the generic `Engine still loading - reload the page if this persists.`
+  fallback while the console flooded with thousands of `Uncaught TypeError: Cannot read properties of
+  undefined (reading 'reset')` throws (minified `db.reset()` = source `_portalTrigger.reset()` in `update()`).
+  ROOT CAUSE: `src/main.js` started the render loop EAGERLY at the top of the boot block
+  (`initLoop(update); startLoop()`), and `startLoop()` runs the FIRST `update()` tick SYNCHRONOUSLY — before
+  the module-level bindings `update()` reads (`_portalTrigger` + the footstep/minimap `let`-vars, declared
+  further down) were initialised. The prod minifier hoists those `const`s to `undefined`, so frame-0 `update()`
+  threw on `_portalTrigger.reset()`; and because the OLD `loop.js` scheduled the next `requestAnimationFrame`
+  BEFORE calling `update()`, the loop re-armed ahead of every throw → an infinite per-frame crash flood. That
+  synchronous throw ALSO aborted the rest of module eval BEFORE `window.__toriiEnterReady` + the ENTER click
+  handler were wired — so ENTER never stood down from the inline fallback. (LOGIN kept working because v0.2.236
+  decoupled it into a self-installing `loginBootstrap.js` imported before `scene.js`.) FIX (root-cause, not a
+  mask): moved `initLoop(update, _onLoopFatal)` + `startLoop()` to the VERY END of `main.js`, after EVERY module
+  binding and the ENTER readiness wiring; and hardened `src/loop.js` to FAIL CLOSED — `update()` runs inside
+  `try/catch`, the next `rAF` is scheduled ONLY while healthy, and after `LOOP_ERROR_ABORT_STREAK` (8)
+  consecutive throws the loop STOPS rescheduling (no flood) and calls an optional fatal handler ONCE. `main.js`
+  `_onLoopFatal` shows a precise, actionable message (`⚠ Engine error … Please reload the page.`) and re-enables
+  ENTER instead of a silent freeze; a one-off transient throw still resets the streak and is tolerated. New
+  `tests/loop-fail-closed.test.js` (+9) locks BOTH the loop fail-closed behaviour AND the `main.js` boot-order
+  contract (loop started after `window.__toriiEnterReady = true` and after `const _portalTrigger`; the boot
+  block no longer starts the loop eagerly; the fatal handler surfaces a visible "reload the page" message)
+  (suite 1640→1649, files 98→99). RUNTIME REPAIR — entry-flow/render-loop only; no gameplay/physics/shooter/
+  Rapier balance change; no Nostr signing/publishing/live network write beyond the existing NIP-07 read; no new
+  `setTimeout` (loop uses `rAF` only); no new hot-path `Vector3`/`Matrix4`; debug tools ship unconditionally;
+  non-religious ethics guard + useful-job invariant intact; `godMode` stays false; no deploy/publish/push (parent
+  agent handles those). Latest slice report: `torii-v0.2.238-enter-arena-reset-crash-fix-report.md`.
   **v0.2.237** WORKFLOW-INVARIANT SLICE (status/dashboard/docs-only, no runtime change) — records a standing
   process rule so future agents/humans honour it: **do NOT cancel a useful in-progress job halfway through —
   finish it first, THEN process the next request** (cancelling useful work wastes compute time and money), with
