@@ -1,5 +1,5 @@
 // config.js — ALL constants. Never scatter magic numbers.
-export const VERSION   = 'v0.2.238-alpha';
+export const VERSION   = 'v0.2.239-alpha';
 export const GAME_NAME = 'Torii Quest';
 export const ARENA_HALF     = 20;
 export const WALL_H         = 2.6;  // was 8 → 5.5 → 4.4 → 3.52 → 2.6 (reduced again, user request v0.2.57)
@@ -13,6 +13,11 @@ export const EAST_GAP_HALF  = 3.4;  // matches torii pillar outer face — wall 
 // gate so crossing the threshold flips the rules immediately.
 export const NAP_X          = ARENA_HALF; // 20 — east wall plane
 export const NAP_FAR_X      = ARENA_HALF + 25; // outer edge of NAP zone floor
+// Travel gateway — the metaverse PORTAL (torii-gateway-experience.glb), distinct
+// from the entrance torii-gate.glb at NAP_X. Sits on the FAR side of the NAP zone
+// so the player walks the full peace-zone to reach it. x=40 leaves the portal's
+// outer ring (radius = trigger range 3 → x∈[37,43]) clear of the floor edge at 45.
+export const TRAVEL_GATE_X  = ARENA_HALF + 20; // 40 — far-side travel portal plane
 export const PLAYER_HP      = 100;
 export const PLAYER_SPEED   = 8;
 export const PLAYER_RADIUS  = 0.35;

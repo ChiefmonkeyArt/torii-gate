@@ -8,7 +8,7 @@
 // assets — no stale assets after an asset-changing deploy. Bump in lockstep with the
 // other version markers; regression-check [5] FAILS if this does not embed the current
 // EXPECTED_VERSION (so it can never silently rot back to a stale literal like 'tq-v1').
-const CACHE_VERSION = 'tq-v0.2.238-alpha';
+const CACHE_VERSION = 'tq-v0.2.239-alpha';
 const CACHE_NAME    = `torii-quest-${CACHE_VERSION}`;
 
 // Static assets to precache on install — ONLY immutable binary assets whose URL never
@@ -29,6 +29,7 @@ const PRECACHE_ASSETS = [
   '/chiefmonkey6.glb',
   '/nostrich3.glb',
   '/torii-gate.glb',
+  '/torii-gateway-experience.glb',
   '/gun-steampunk.glb',
 ];
 

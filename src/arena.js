@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene } from './scene.js';
-import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X } from './config.js';
+import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X, TRAVEL_GATE_X } from './config.js';
 import { buildFoliage } from './arena-foliage.js';
 import { buildProofSurfaceMeshes } from './engine/world/proofSurfaceMeshes.js';
 
@@ -42,6 +42,7 @@ export function buildArena() {
   _buildWalls();
   _buildCrates();
   _buildToriiGate();
+  _buildTravelGateway(); // far-side metaverse travel portal model (v0.2.239)
   _buildNapZone();     // floor extension + tree past the torii gate
   buildFoliage();      // grass + wildflowers — arena-foliage.js (NAP zone only)
   _loadWallTexture();  // async, deferred 1 rAF
@@ -202,6 +203,67 @@ function _buildToriiGate() {
     draco.dispose();
   }, undefined, err => {
     console.warn('[arena] torii-gate.glb failed, using fallback:', err);
+    draco.dispose();
+  });
+}
+
+// ── Travel gateway — the metaverse PORTAL model (v0.2.239) ───────────────────
+// Distinct from the entrance torii-gate.glb. This is the actual travel portal,
+// placed on the FAR side of the NAP zone (TRAVEL_GATE_X). The portal trigger,
+// rings, spinning diamond, detection zone and "Press F to travel" prompt all sit
+// here (wired in main.js) — the entrance gate stays a pure marker, no travel.
+function _buildTravelGateway() {
+  // Fallback procedural gateway shown immediately; GLB replaces it on load.
+  const mat = new THREE.MeshStandardMaterial({
+    color: C_TURQ, emissive: 0x0e8f86, emissiveIntensity: 0.6, roughness: 0.4,
+  });
+  const fallback = new THREE.Group();
+  const lp = new THREE.Mesh(new THREE.BoxGeometry(0.5, 5, 0.5), mat);
+  lp.position.set(0, 2.5, -3); fallback.add(lp);
+  const rp = lp.clone(); rp.position.set(0, 2.5, 3); fallback.add(rp);
+  const cb = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 6.5), mat);
+  cb.position.set(0, 5.2, 0); fallback.add(cb);
+  fallback.position.set(TRAVEL_GATE_X, 0, 0);
+  fallback.rotation.y = Math.PI / 2;
+  fallback.name = 'travel-gateway';
+  scene.add(fallback);
+
+  // Accent light — turquoise, marks the travel portal regardless of GLB.
+  const gl = new THREE.PointLight(C_TURQ, 3, 12);
+  gl.position.set(TRAVEL_GATE_X - 1, 4, 0); scene.add(gl);
+
+  const draco = new DRACOLoader();
+  draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+  const loader = new GLTFLoader();
+  loader.setDRACOLoader(draco);
+  loader.load('/torii-gateway-experience.glb', gltf => {
+    scene.remove(fallback);
+    const gate = gltf.scene;
+
+    // Scale to an imposing portal — a touch taller than the entrance gate so the
+    // far-side destination reads as the bigger landmark. Uniform scale preserves
+    // the GLB aspect ratio.
+    const box = new THREE.Box3().setFromObject(gate);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const targetH = WALL_H * 1.6;
+    const s = targetH / (size.y || 1);
+    gate.scale.setScalar(s);
+
+    // Centre on the far-side travel plane, feet on the floor, front facing the
+    // approaching player (who walks east from the entrance).
+    box.setFromObject(gate);
+    gate.position.set(TRAVEL_GATE_X, -box.min.y, 0);
+    gate.rotation.y = Math.PI;
+
+    gate.traverse(o => {
+      if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+    });
+    gate.name = 'travel-gateway';
+    scene.add(gate);
+    draco.dispose();
+  }, undefined, err => {
+    console.warn('[arena] torii-gateway-experience.glb failed, using fallback:', err);
     draco.dispose();
   });
 }

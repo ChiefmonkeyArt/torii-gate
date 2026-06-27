@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.238-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.239-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -525,6 +525,24 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.239** TRAVEL-GATEWAY PLACEMENT (game slice) — adds the uploaded `torii-gateway-experience.glb` as the
+  actual metaverse TRAVEL portal and moves the whole travel experience to the FAR side of the NAP zone, while the
+  original `torii-gate.glb` stays at `NAP_X` as a PURE entrance marker (no travel). NEW constant `TRAVEL_GATE_X`
+  (`ARENA_HALF + 20` = 40 — strictly between `NAP_X`=20 and `NAP_FAR_X`=45; the portal ring radius 3 stays clear of
+  the floor edge). `arena.js` gains `_buildTravelGateway()` loading `/torii-gateway-experience.glb` at
+  `TRAVEL_GATE_X` (DRACOLoader, procedural fallback, named `travel-gateway`, imposing `WALL_H*1.6` scale, front
+  facing the approaching player). `main.js` re-anchors the portal trigger + gateway component `portalPos` from
+  `ARENA_HALF` to `TRAVEL_GATE_X`, so the proximity detection, the two ground rings, the spinning diamond, the beam
+  and the "Press F to travel" prompt/KeyF interact all arm at the far gateway — the portal mesh is built from
+  `_portalTrigger.portalPos()` so the visuals follow automatically. ASSET: the 3,803,216-byte upload was
+  Draco-compressed in-repo via `gltf-pipeline` to 705,696 bytes (~81% smaller) and shipped at
+  `public/torii-gateway-experience.glb` (also precached by `sw.js`). New `tests/travel-gateway-placement.test.js`
+  locks the asset presence + SW precache, the far-side placement bounds, the arena GLB load/name, and the `main.js`
+  travel anchoring (no portal pinned at `ARENA_HALF`). Preserves the v0.2.238 fail-closed loop + boot-order fix and
+  the v0.2.236 NIP-07 login decoupling. Gameplay slice — no physics/shooter/Rapier balance change; no Nostr
+  signing/publishing/live network write beyond the existing NIP-07 read; no new timers; no new hot-path
+  `Vector3`/`Matrix4`; debug tools ship unconditionally; `godMode` stays false; no deploy/publish/push (parent agent
+  handles those). Latest slice report: `torii-v0.2.239-travel-gateway-placement-report.md`.
   **v0.2.238** ENTER-ARENA RESET-CRASH FIX (runtime repair) — fixes the live v0.2.237 boot failure where
   **ENTER ARENA** stayed stuck on the generic `Engine still loading - reload the page if this persists.`
   fallback while the console flooded with thousands of `Uncaught TypeError: Cannot read properties of
