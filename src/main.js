@@ -1,6 +1,12 @@
 // main.js — wiring only. No game logic here.
 import { state, isTitle, isPlaying, isPaused, isLive, needsPointerLock, isReloading, transition, GAME_EVENT, resetRun } from './state.js';
 import { emit, on, EV } from './events.js';
+// v0.2.236: install the REAL "LOGIN WITH NOSTR" handler BEFORE ./scene.js is imported. scene.js
+// constructs a WebGLRenderer at import time and the boot sequence below can throw, either of which
+// used to abort main.js before login was ever wired — leaving the inline fallback stuck on
+// "Login still loading". loginBootstrap.js has no THREE/scene deps and self-installs on import, so a
+// loaded bundle wires login (and raises __toriiLoginReady) regardless of the 3D boot. nostrich.
+import './engine/ui/loginBootstrap.js';
 import { renderer, renderFrame } from './scene.js';
 import { initAtmosphere, tickAtmosphere } from './atmosphere.js';
 import { buildArena } from './arena.js';
@@ -25,7 +31,6 @@ import { buildPortalMesh, tickPortalMesh } from './engine/gateway/portalMesh.js'
 import { parseZoneRoute, ZONE_ROUTE_KIND } from './engine/gateway/zoneRoute.js';
 import { portalPromptLabel, enteredZoneLabel } from './engine/gateway/zoneLabel.js';
 import { scene } from './scene.js';
-import { nostrLogin } from './nostr.js';
 import { playShoot, playFootstep, playJumpLand } from './audio.js';
 import { initPlayerStats } from './playerStats.js';
 import { installToriiDebug } from './engine/debug/toriiDebug.js';
@@ -333,8 +338,8 @@ document.querySelectorAll('.char-btn').forEach(btn => {
     setCharacter(btn.dataset.char);
   });
 });
-// Left-panel login button removed in v0.2.47 — only centre button remains.
-const elNostrCentreBtn = document.getElementById('btn-nostr-centre');
+// Login button (#btn-nostr-centre) is wired in engine/ui/loginBootstrap.js, imported above BEFORE
+// scene.js so login survives a WebGL/boot throw (v0.2.236). Only centre button remains since v0.2.47.
 const elResumeBtn= document.getElementById('btn-resume');
 const elHomeBtn  = document.getElementById('btn-home');
 // v0.2.228: #nostr-status never existed in index.html, so login feedback was
@@ -428,31 +433,9 @@ elEnterBtn?.addEventListener('click', async () => {
 // listener gives visible feedback instead of a silent no-op (the live MVP blocker).
 window.__toriiEnterReady = true;
 
-// Nostr login (left panel + centre panel buttons share same handler)
-async function _doNostrLogin() {
-  // v0.2.228: surface the result on the visible #entry-status line. Anonymous
-  // entry is by design — login is never required to ENTER ARENA — so when no
-  // NIP-07 signer exists this just shows "NIP-07 extension not found" rather
-  // than failing silently. No network/write beyond the existing NIP-07 read.
-  showEntryStatus('Connecting…');
-  // v0.2.229: guard the await so a THROW (not just a returned error string) still
-  // surfaces a visible message instead of leaving the interim "Connecting…" stuck
-  // on screen. nostrLogin() already returns 'NIP-07 extension not found' for the
-  // no-signer case; this only catches unexpected throws. textContent (via
-  // showEntryStatus), never innerHTML — no secret/markup injection.
-  try {
-    const result = await nostrLogin();
-    showEntryStatus(result);
-  } catch (e) {
-    console.error('Nostr login failed:', e);
-    showEntryStatus('⚠ Login unavailable — you can still ENTER ARENA anonymously.');
-  }
-}
-elNostrCentreBtn?.addEventListener('click', _doNostrLogin);
-// v0.2.230: signal the index.html inline fallback that the REAL LOGIN handler is bound
-// (see window.__toriiEnterReady). Until set, the inline path surfaces the no-provider
-// case visibly so a dead bundle is never a silent no-op.
-window.__toriiLoginReady = true;
+// Nostr login (#btn-nostr-centre) is wired + window.__toriiLoginReady is raised in
+// engine/ui/loginBootstrap.js (imported at the top of this file, BEFORE scene.js) so login survives
+// a WebGL/boot throw that would abort the rest of this module. See that file for the full rationale.
 
 // ESC is the universal override — toggles the pause modal in BOTH directions
 // regardless of pointer-lock state, and runs in the capture phase so nothing

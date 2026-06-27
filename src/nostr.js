@@ -25,7 +25,9 @@ export async function nostrLogin() {
     _fetchProfile(pk);
     return `⚡ ${state.nostrName}`;
   } catch(e) {
-    return 'Login failed';
+    // Provider exists but the getPublicKey() request was rejected/failed — give an actionable
+    // message (the usual cause is the extension prompt being dismissed), not a dead-end "failed".
+    return 'Login failed — approve the request in your Nostr extension and try again';
   }
 }
 
