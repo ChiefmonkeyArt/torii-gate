@@ -1,11 +1,11 @@
 {
   "schema": "torii.next-action-state",
   "schemaVersion": 1,
-  "generatedAt": "2026-06-27T00:35:45.007Z",
+  "generatedAt": "2026-06-27T07:23:38.106Z",
   "badge": "NEXT-ACTION STATE · LOCAL · READ-ONLY",
-  "version": "v0.2.233-alpha",
-  "packageVersion": "0.2.233-alpha",
-  "gitCommit": "f05f4cd",
+  "version": "v0.2.234-alpha",
+  "packageVersion": "0.2.234-alpha",
+  "gitCommit": "30c0787",
   "liveUrl": "https://torii-quest.pplx.app",
   "release": {
     "ready": true,
@@ -22,8 +22,8 @@
     "status": "READY"
   },
   "tests": {
-    "passing": 1574,
-    "files": 95
+    "passing": 1595,
+    "files": 96
   },
   "manualBlocker": {
     "pending": true,
@@ -35,7 +35,7 @@
     "approved": false,
     "approvedBy": null,
     "approvedAt": null,
-    "version": "v0.2.233-alpha"
+    "version": "v0.2.234-alpha"
   },
   "playtestResults": {
     "schema": "torii.playtest-results-state",
@@ -81,7 +81,7 @@
   },
   "controlPanel": {
     "green": true,
-    "version": "v0.2.233-alpha",
+    "version": "v0.2.234-alpha",
     "liveUrl": "https://torii-quest.pplx.app",
     "dashboardUrl": "https://torii-quest.pplx.app/continuum.html",
     "entrySmoke": {
@@ -98,6 +98,21 @@
     "nextSafeTask": "Continue the read-only oversight loop — next safe infra/dashboard slice",
     "principles": 11,
     "ethicsNonReligious": true,
+    "impliesApproval": false,
+    "impliesPlaytestComplete": false
+  },
+  "mvpGate": {
+    "verdict": "awaiting-approval",
+    "approved": false,
+    "confidenceGreen": true,
+    "confidenceSignals": {
+      "releaseReady": true,
+      "entrySmokePass": true,
+      "dashboardSmokePass": true,
+      "suiteGreen": true
+    },
+    "approvalStatus": "pending",
+    "focusCount": 11,
     "impliesApproval": false,
     "impliesPlaytestComplete": false
   },
@@ -127,10 +142,10 @@
     "HANDOFF.generated.md"
   ],
   "reports": [
+    "torii-v0.2.233-handoff-release-control-report.md",
     "torii-v0.2.232-dashboard-smoke-status-report.md",
     "torii-v0.2.231-live-smoke-status-report.md",
-    "torii-v0.2.230-entry-flow-runtime-fix-report.md",
-    "torii-v0.2.229-entry-status-visibility-fix-report.md"
+    "torii-v0.2.230-entry-flow-runtime-fix-report.md"
   ],
   "safety": {
     "deploy": false,

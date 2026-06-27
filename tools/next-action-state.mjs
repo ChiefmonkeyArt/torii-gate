@@ -42,13 +42,14 @@ import {
 import { RC_SNAPSHOT_MANUAL_VALIDATION } from './rcSnapshot.mjs';
 import { buildManualValidationModel, CURRENT_TEST_STATUS } from '../src/engine/dashboard/continuumData.js';
 import { runMvpReadiness } from '../src/engine/status/mvpReadiness.js';
-import { buildApprovalState, MVP_APPROVAL_FILE, MVP_APPROVAL_STATUSES } from './mvpApproval.mjs';
+import { buildApprovalState, summarizeApprovalForState, MVP_APPROVAL_FILE, MVP_APPROVAL_STATUSES } from './mvpApproval.mjs';
 import { parsePlaytestResults, summarizePlaytestResults } from './playtestResults.mjs';
 import { PLAYTEST_RESULTS_STATE_FILE } from './playtestResultsState.mjs';
 import { buildLiveSmokeState, LIVE_SMOKE_FILE, LIVE_SMOKE_RESULTS, summarizeLiveSmokeForState } from './liveSmokeState.mjs';
 import { buildDashboardSmokeState, DASHBOARD_SMOKE_FILE, DASHBOARD_SMOKE_RESULTS, summarizeDashboardSmokeForState } from './dashboardSmokeState.mjs';
 import { SHIP_NEXT_SAFE_TASK } from '../src/engine/dashboard/continuumData.js';
 import { buildHandoffControlPanel, HANDOFF_LIVE_URL, HANDOFF_DASHBOARD_URL } from '../src/engine/status/handoffControlPanel.js';
+import { buildMvpApprovalGate } from '../src/engine/status/mvpApprovalGate.js';
 
 const ROOT = process.cwd();
 
@@ -219,6 +220,19 @@ if (invokedDirectly) {
     nextSafeTask: SHIP_NEXT_SAFE_TASK,
   });
 
+  // Build the MVP approval gate from the SAME pure module the Continuum dashboard renders, so the
+  // sign-off rubric folded here can never drift from the page. Read-only: it folds already-gathered
+  // signals (release readiness, the two smoke summaries, the curated test count, the approval
+  // record). The gate reads approved ONLY when the approval record carries an explicit human OK.
+  const mvpGate = buildMvpApprovalGate({
+    version: configVersion(),
+    releaseReady: !!(agentHandoff && agentHandoff.gate && agentHandoff.gate.ready === true),
+    entrySmokePass: summarizeLiveSmokeForState(liveSmoke).pass === true,
+    dashboardSmokePass: summarizeDashboardSmokeForState(dashboardSmoke).pass === true,
+    tests: { passing: CURRENT_TEST_STATUS.passing, files: CURRENT_TEST_STATUS.files },
+    approval: summarizeApprovalForState(mvpApproval),
+  });
+
   const state = buildNextActionState({
     agentHandoff,
     manualValidation,
@@ -229,6 +243,7 @@ if (invokedDirectly) {
     liveSmoke,
     dashboardSmoke,
     handoffControlPanel,
+    mvpGate,
     generatedAt: new Date().toISOString(),
   });
 

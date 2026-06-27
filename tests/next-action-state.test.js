@@ -15,6 +15,7 @@ import {
 import { VERSION } from '../src/config.js';
 import { CURRENT_TEST_STATUS } from '../src/engine/dashboard/continuumData.js';
 import { buildHandoffControlPanel } from '../src/engine/status/handoffControlPanel.js';
+import { buildMvpApprovalGate } from '../src/engine/status/mvpApprovalGate.js';
 
 const V = 'v0.2.217-alpha';
 const PKG = '0.2.217-alpha';
@@ -220,6 +221,37 @@ describe('buildNextActionState — assembly', () => {
     });
   });
 
+  it('folds the MVP approval gate, never reading approved without an explicit OK', () => {
+    const unknown = buildNextActionState({ agentHandoff: handoff(), mvpGate: null });
+    expect(unknown.mvpGate).toMatchObject({
+      verdict: 'unknown', approved: false, impliesApproval: false, impliesPlaytestComplete: false,
+    });
+
+    // A confidence-green but approval-pending gate folds as awaiting-approval, NOT approved.
+    const pendingGate = buildMvpApprovalGate({
+      version: VERSION, releaseReady: true, entrySmokePass: true, dashboardSmokePass: true,
+      tests: { passing: 1600, files: 96 }, approval: { approved: false, status: 'pending' },
+    });
+    const pending = buildNextActionState({ agentHandoff: handoff(), mvpGate: pendingGate });
+    expect(pending.mvpGate).toMatchObject({
+      verdict: 'awaiting-approval', approved: false, confidenceGreen: true,
+      impliesApproval: false, impliesPlaytestComplete: false,
+    });
+
+    // Only an explicit human OK (approver + timestamp) folds as approved.
+    const approvedGate = buildMvpApprovalGate({
+      version: VERSION, releaseReady: true, entrySmokePass: true, dashboardSmokePass: true,
+      tests: { passing: 1600, files: 96 },
+      approval: { approved: true, status: 'approved', approvedBy: 'Chiefmonkey', approvedAt: '2026-06-27T12:00:00Z' },
+    });
+    const approved = buildNextActionState({ agentHandoff: handoff(), mvpGate: approvedGate });
+    expect(approved.mvpGate).toMatchObject({ verdict: 'approved', approved: true, impliesApproval: false });
+  });
+
+  it('includes mvpGate in the required-keys list', () => {
+    expect(NEXT_ACTION_STATE_REQUIRED_KEYS).toContain('mvpGate');
+  });
+
   it('pins the standing safety posture all-false (read-only oversight, godMode false)', () => {
     const s = buildNextActionState({ agentHandoff: handoff() });
     expect(s.safety).toEqual({
@@ -258,6 +290,7 @@ describe('next-action-state — formatters', () => {
     expect(txt).toContain('1417 passing / 87 files');
     expect(txt).toContain('manual blocker: PENDING');
     expect(txt).toContain('MVP playtest:');
+    expect(txt).toContain('MVP approval gate:');
     expect(txt).toContain('implies approval: no');
     expect(txt).toContain('Next infra slice');
     expect(txt).toContain(V);

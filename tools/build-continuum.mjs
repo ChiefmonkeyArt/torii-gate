@@ -37,6 +37,7 @@ import { summarizePlaytestForState, PLAYTEST_RESULTS_STATE_FILE } from './playte
 import { buildLiveSmokeState, LIVE_SMOKE_FILE, LIVE_SMOKE_RESULTS, summarizeLiveSmokeForState } from './liveSmokeState.mjs';
 import { buildDashboardSmokeState, DASHBOARD_SMOKE_FILE, DASHBOARD_SMOKE_RESULTS, summarizeDashboardSmokeForState } from './dashboardSmokeState.mjs';
 import { buildHandoffControlPanel, buildHandoffControlPanelCard, HANDOFF_LIVE_URL, HANDOFF_DASHBOARD_URL } from '../src/engine/status/handoffControlPanel.js';
+import { buildMvpApprovalGate, buildMvpApprovalGateCard } from '../src/engine/status/mvpApprovalGate.js';
 import {
   PLAYTEST_CHECKLIST_SECTIONS,
   PLAYTEST_SEVERITIES,
@@ -299,10 +300,44 @@ try {
   console.log(`[continuum] handoff panel: live gather unavailable (${e.message}) — using last-known`);
 }
 
+// MVP approval gate (v0.2.234) — the rubric that keeps an automated green run from being mistaken
+// for human game-feel approval. Built from the SAME pure module the next-action-state CLI uses
+// (src/engine/status/mvpApprovalGate.js), folding already-gathered signals: the release-readiness
+// verdict (ship.ready), the committed app-entry + oversight-dashboard cloud smoke passes, the curated
+// test count, and the MVP-approval record. APPROVAL-REQUIRES-EXPLICIT-OK lives in the pure module: the
+// gate reads approved ONLY when the approval record carries an explicit human OK. Cheap file reads only
+// — no crypto, no git, no network. On any failure we degrade to the curated CURATED_MVP_GATE card.
+let mvpGate;
+try {
+  const lsRaw = readDocSafe(LIVE_SMOKE_FILE);
+  const dsRaw = readDocSafe(DASHBOARD_SMOKE_FILE);
+  const parseJson = (raw) => { try { return raw ? JSON.parse(raw) : null; } catch { return null; } };
+  const lsj = parseJson(lsRaw);
+  const dsj = parseJson(dsRaw);
+  const lsState = lsj
+    ? buildLiveSmokeState({ result: lsj.result, version: lsj.version, commit: lsj.commit, liveUrl: lsj.liveUrl, smokedAt: lsj.smokedAt, smokedBy: lsj.smokedBy, checks: lsj.checks, notes: lsj.notes })
+    : buildLiveSmokeState({ result: LIVE_SMOKE_RESULTS.UNKNOWN, version: VERSION });
+  const dsState = dsj
+    ? buildDashboardSmokeState({ result: dsj.result, version: dsj.version, commit: dsj.commit, dashboardUrl: dsj.dashboardUrl, surface: dsj.surface, smokedAt: dsj.smokedAt, smokedBy: dsj.smokedBy, checks: dsj.checks, notes: dsj.notes })
+    : buildDashboardSmokeState({ result: DASHBOARD_SMOKE_RESULTS.UNKNOWN, version: VERSION });
+  const gate = buildMvpApprovalGate({
+    version: VERSION,
+    releaseReady: ship.ready === true,
+    entrySmokePass: summarizeLiveSmokeForState(lsState).pass === true,
+    dashboardSmokePass: summarizeDashboardSmokeForState(dsState).pass === true,
+    tests: { passing: CURRENT_TEST_STATUS.passing, files: CURRENT_TEST_STATUS.files },
+    approval: { approved: mvpApproval.approved === true, status: mvpApproval.status, approvedBy: mvpApproval.approvedBy, approvedAt: mvpApproval.approvedAt },
+  });
+  mvpGate = buildMvpApprovalGateCard(gate);
+} catch (e) {
+  mvpGate = undefined; // fall back to the curated CURATED_MVP_GATE in continuumData.js
+  console.log(`[continuum] mvp approval gate: live gather unavailable (${e.message}) — using last-known`);
+}
+
 // Stamp the packaged build time so the page can show when the data was packaged.
 const generatedAt = new Date().toISOString();
 const model = {
-  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, mvpApproval, playtestResults, handoffPanel, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
+  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, mvpApproval, mvpGate, playtestResults, handoffPanel, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
   generatedAt,
 };
 
@@ -324,4 +359,5 @@ console.log(`[continuum] manual validation: ${manualValidation.statusLabel} (${m
 console.log(`[continuum] no-blocker queue: ${noBlockerQueue.statusLabel} (${noBlockerQueue.kind}) · active ${noBlockerQueue.activeNow} · next ${noBlockerQueue.nextUp} · archive ${noBlockerQueue.archiveClusters} · done24h ${noBlockerQueue.completed24h} · manualPending ${noBlockerQueue.manualPending}`);
 console.log(`[continuum] mvp approval: ${mvpApproval.statusLabel} (${mvpApproval.kind}) · status ${mvpApproval.status} · approved ${mvpApproval.approved} · version ${mvpApproval.version}`);
 console.log(`[continuum] handoff panel: ${model.handoffPanel.statusLabel} (${model.handoffPanel.kind}) · green ${model.handoffPanel.green} · pill ${model.handoffPanel.pill}`);
+console.log(`[continuum] mvp approval gate: ${model.mvpGate.statusLabel} (${model.mvpGate.kind}) · verdict ${model.mvpGate.verdict} · approved ${model.mvpGate.approved} · pill ${model.mvpGate.pill}`);
 console.log(`[continuum] playtest results: ${playtestResults.statusLabel} (${playtestResults.kind}) · status ${playtestResults.status} · recorded ${playtestResults.ran} · ${playtestResults.counts.pass}/${playtestResults.counts.fail}/${playtestResults.counts.blank} p/f/b of ${playtestResults.total} · implies approval ${playtestResults.approvalImplied}`);

@@ -33,8 +33,9 @@
 
 import { runReadHealth } from '../nostr/readHealth.js';
 import { buildHandoffControlPanel, buildHandoffControlPanelCard } from '../status/handoffControlPanel.js';
+import { buildMvpApprovalGate, buildMvpApprovalGateCard } from '../status/mvpApprovalGate.js';
 
-export const CONTINUUM_VERSION = 'v0.2.233-alpha';
+export const CONTINUUM_VERSION = 'v0.2.234-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -49,8 +50,8 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1574,
-  files: 95,
+  passing: 1595,
+  files: 96,
   fastProfile: 5,
   foundationProfile: 25,
 });
@@ -1062,6 +1063,21 @@ const CURATED_HANDOFF_PANEL = buildHandoffControlPanelCard(buildHandoffControlPa
   nextSafeTask: SHIP_NEXT_SAFE_TASK,
 }));
 
+// CURATED_MVP_GATE (v0.2.234) — the curated fallback MVP-approval-gate card, built at module load so
+// renderContinuumPage() with NO overrides (tests + the no-JS fallback) shows an honest LAST-KNOWN
+// gate. The build-time generator (build-continuum.mjs) re-builds it from the freshly gathered release
+// readiness + smoke summaries + the approval record. Defaults to confidence-green / approval-pending:
+// the automated signals look healthy, but the explicit human OK is the floor the gate can never flip
+// past on its own. APPROVAL-REQUIRES-EXPLICIT-OK lives in the pure mvpApprovalGate.js module.
+const CURATED_MVP_GATE = buildMvpApprovalGateCard(buildMvpApprovalGate({
+  version: CONTINUUM_VERSION,
+  releaseReady: true,
+  entrySmokePass: HANDOFF_LASTKNOWN_ENTRY_SMOKE.pass,
+  dashboardSmokePass: HANDOFF_LASTKNOWN_DASHBOARD_SMOKE.pass,
+  tests: { passing: CURRENT_TEST_STATUS.passing, files: CURRENT_TEST_STATUS.files },
+  approval: { approved: false, status: 'pending' },
+}));
+
 // CONTINUUM_REFRESH_SCRIPT (v0.2.172) — the EXACT inline-script body the page ships,
 // kept as the single source of that text so its CSP hash can never silently drift.
 // It is STATIC (no model interpolation), so its sha256 is stable across deploys: a
@@ -1123,13 +1139,13 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.233-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.234-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
     { label: 'Smoke (entry + dashboard)', value: 'Both cloud smokes consolidated into the Handoff / release control panel at the top of this page — app-entry v0.2.230-alpha PASS 3/3, oversight-dashboard v0.2.231-alpha PASS 4/4. A smoke pass does not imply MVP approval or a completed human playtest.' },
-    { label: 'Active slice', value: 'v0.2.233 HANDOFF / RELEASE CONTROL PANEL (status/dashboard/docs-only, no runtime change) — consolidates the project pickup posture into ONE read-only surface at the top of this page so a fresh AI agent (Claude / GPT / DeepSeek) or human can, in a single glance, see: the current live version + the game URL (torii-quest.pplx.app) and dashboard URL (torii-quest.pplx.app/continuum.html), the latest app-entry cloud smoke ([[live-smoke-state]], v0.2.230-alpha PASS 3/3), the latest oversight-dashboard cloud smoke ([[dashboard-smoke-state]], v0.2.231-alpha PASS 4/4), the one manual blocker (the human must run the live-browser MVP playtest + explicitly approve), the next safe no-blocker task, the exact actions NOT to take without user input, and the project\'s practical NON-RELIGIOUS operating principles (self-sovereignty, consent, privacy by default, user-owned npub, open protocols, FOSS, Bitcoin/Nostr/ecash alignment, local circular economics, no dark patterns, no surveillance, no lock-in, reversible user-controlled actions, truthful status reporting). New PURE browser-safe single-source-of-truth module (src/engine/status/handoffControlPanel.js — build/validate/isGreen/format/summarize + a dashboard card builder) consumed by BOTH this page and the next-action state (tools/nextActionState.mjs), so the "is the handoff surface complete?" logic can never drift between the page and the CLI. GREEN-REQUIRES-EVIDENCE floor: the panel can never read complete without a current version marker, both live URLs, PASSING entry- and dashboard-smoke evidence (≥1 check, all passing, a version marker), an EXPLICIT manual-blocker boolean (truthful status reporting — never "unknown"), AND non-religious ethics copy (a religious-language guard makes any flagged term a validator ERROR; the brand vocabulary torii/gate/shrine/⛩ is intentionally NOT guarded). GREEN means the handoff SURFACE is complete + trustworthy — NOT that the MVP is approved: impliesApproval AND impliesPlaytestComplete stay pinned false everywhere, a smoke pass is not approval, a dashboard pass is not a completed human playtest, and no live Nostr write is ever implied. The two former at-a-glance "Live smoke" / "Dashboard smoke" rows are consolidated into this panel (no duplicate noisy sections). New tests/handoff-control-panel.test.js + extended tests/continuum-dashboard.test.js and tests/next-action-state.test.js cover the green-requires-evidence floor, the non-religious-ethics guard, the dashboard card + CSP-hash intactness, and the next-action fold. Prior — v0.2.232 dashboard-smoke status slice; v0.2.231 live-smoke status slice; v0.2.230 entry-flow runtime fix. NON-GOALS held: status/dashboard/docs only; no gameplay/physics/shooter/Rapier logic change; no Nostr signing/publishing/live network write beyond the existing NIP-07 read; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
+    { label: 'Active slice', value: 'v0.2.234 MVP APPROVAL GATE (status/dashboard/docs-only, no runtime change) — adds ONE compact rubric, right after the MVP approval card on this page, that keeps an automated green run from being mistaken for human game-feel approval. It answers three things plainly: (1) the automated CONFIDENCE signals (the release gate, the app-entry cloud smoke, the oversight-dashboard cloud smoke, and the test suite) — each labelled "confidence only, not approval"; (2) MVP approval still requires an EXPLICIT human OK — a person (Chiefmonkey / the user) runs the live-browser playtest and says "MVP approved", which records the approver + timestamp in MVP_APPROVAL_STATE.json; (3) the manual PLAYTEST FOCUS a human must judge by hand — entry flow, shooter feel, hit registration / headshots, bot behaviour, movement / footsteps, reload feel, mirror / reflection, crates, the NAP monkey, dashboard clarity, and any subjective fun / feel blocker. New PURE browser-safe single-source-of-truth module (src/engine/status/mvpApprovalGate.js — build/validate/isApproved/summarize + a dashboard card builder) consumed by BOTH this page and the next-action state (tools/nextActionState.mjs), so the "what does MVP approval require?" rubric can never drift between the page and the CLI. APPROVAL-REQUIRES-EXPLICIT-OK floor: the gate verdict can read "approved" ONLY when the approval record carries approved===true with an approver + timestamp — green confidence signals NEVER flip it; a verdict of "approved" without the explicit OK is a validator ERROR. impliesApproval AND impliesPlaytestComplete stay pinned false: a smoke pass is not approval, a dashboard pass is not a completed human playtest, and no live Nostr write is ever implied. New tests/mvp-approval-gate.test.js + extended tests/continuum-dashboard.test.js and tests/next-action-state.test.js cover the approval-requires-explicit-OK floor, the visible playtest-focus + clarifications wording, the dashboard card + CSP-hash intactness, and the next-action fold. Prior — v0.2.233 handoff / release control panel; v0.2.232 dashboard-smoke status slice; v0.2.231 live-smoke status slice; v0.2.230 entry-flow runtime fix. NON-GOALS held: status/dashboard/docs only; no gameplay/physics/shooter/Rapier logic change; no Nostr signing/publishing/live network write beyond the existing NIP-07 read; no network/deploy/publish/tag/release/self-update; godMode stays false; no new timers or hot-path Vector3/Matrix4 allocations.' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the
@@ -1310,6 +1326,7 @@ export function buildContinuumModel(overrides = {}) {
     manualValidation: base.manualValidation || CURATED_MANUALVALIDATION,
     noBlockerQueue: base.noBlockerQueue || CURATED_NOBLOCKERQUEUE,
     mvpApproval: base.mvpApproval || CURATED_MVPAPPROVAL,
+    mvpGate: base.mvpGate || CURATED_MVP_GATE,
     playtestResults: base.playtestResults || CURATED_PLAYTESTRESULTS,
     handoffPanel: base.handoffPanel || CURATED_HANDOFF_PANEL,
     readHealth: base.readHealth || CURATED_READHEALTH,
@@ -1337,6 +1354,7 @@ export function continuumDataJSON(model = buildContinuumModel()) {
     manualValidation: model.manualValidation || null,
     noBlockerQueue: model.noBlockerQueue || null,
     mvpApproval: model.mvpApproval || null,
+    mvpGate: model.mvpGate || null,
     playtestResults: model.playtestResults || null,
     handoffPanel: model.handoffPanel || null,
     readHealth: model.readHealth || null,
@@ -1737,6 +1755,31 @@ ${note}
     </section>`;
 }
 
+// _mvpApprovalGateSection(mg) — the MVP-approval-gate section (v0.2.234): the rubric that keeps an
+// automated green run from being mistaken for human game-feel approval. An overall band pill +
+// provenance chip + badge, a compact grid of metric cards (the gate verdict, each automated
+// CONFIDENCE signal labelled "confidence only, not approval", the explicit-approval row, how
+// approval works, and the manual playtest focus), and a read-only note. Placed right after the MVP
+// approval card so oversight reads the current approval STATE then the rubric for what approval
+// REQUIRES. Empty string when absent so an override-free legacy model omits it. Server-rendered +
+// escaped; reuses the .metric/.pill markup → no new script, no new data-k key, the CSP/refresh-script
+// hash stay intact. Pure.
+function _mvpApprovalGateSection(mg) {
+  if (!mg || !Array.isArray(mg.metrics) || !mg.metrics.length) return '';
+  const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+  const pillState = allowed.has(mg.pill) ? mg.pill : 'manual';
+  const note = mg.note ? `      <div class="focus">${escapeHtml(mg.note)}</div>` : '';
+  return `
+    <section>
+      <div class="h2row"><h2>MVP approval gate</h2> <span class="pill pill-${pillState}">${escapeHtml(mg.statusLabel)}</span> ${_healthChip(mg.kind)} <span class="badge">${escapeHtml(mg.badge)}</span></div>
+      <div class="lead">The rubric for sign-off. Automated tests, the release gate, and the cloud smokes are CONFIDENCE signals — green means the code and deployed surfaces look healthy, NOT that the MVP is approved. Approval is a separate explicit step: a human runs the live-browser playtest and says "MVP approved". Read-only.</div>
+      <div class="grid">
+${_metricRows(mg.metrics)}
+      </div>
+${note}
+    </section>`;
+}
+
 // _playtestResultsSection(pr) — the MVP-playtest-results-state section (v0.2.223): an overall band
 // pill + provenance chip + badge, a compact grid of metric cards (results status / recorded? /
 // pass-fail-blank counts / the pinned "implies approval: no" / the clear next step / any failing item
@@ -1917,6 +1960,7 @@ ${_handoffControlPanelSection(m.handoffPanel)}
 ${_shipSection(m.ship)}
 ${_rcStatusSection(m.rcStatus)}
 ${_mvpApprovalSection(m.mvpApproval)}
+${_mvpApprovalGateSection(m.mvpGate)}
 ${_playtestResultsSection(m.playtestResults)}
 ${_manualValidationSection(m.manualValidation)}
 ${_noBlockerQueueSection(m.noBlockerQueue)}
