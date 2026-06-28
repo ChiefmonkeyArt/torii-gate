@@ -1,12 +1,12 @@
 {
   "name": "torii-quest",
-  "version": "0.2.240-alpha",
+  "version": "0.2.241-alpha",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build:continuum": "node tools/build-continuum.mjs",
-    "build": "node tools/build-continuum.mjs && vite build",
+    "build": "node tools/build-continuum.mjs && vite build && node tools/generate-zone-shells.mjs",
     "preview": "vite preview",
     "check": "node tools/regression-check.mjs",
     "bundle:report": "node tools/bundle-report.mjs",
@@ -26,6 +26,7 @@
     "playtest:capture": "node tools/playtest-capture.mjs",
     "playtest:verdict": "node tools/playtest-verdict.mjs",
     "zones:check": "node tools/zone-fallback-check.mjs",
+    "zones:shells": "node tools/generate-zone-shells.mjs",
     "vps:dry-run": "node tools/vps-dry-run.mjs",
     "docs:stale": "node tools/stale-docs.mjs",
     "release:meta": "node tools/release-meta.mjs",

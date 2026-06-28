@@ -36,7 +36,7 @@ import { buildHandoffControlPanel, buildHandoffControlPanelCard } from '../statu
 import { buildMvpApprovalGate, buildMvpApprovalGateCard } from '../status/mvpApprovalGate.js';
 import { buildPlaytestVerdictCard } from '../status/playtestVerdict.js';
 
-export const CONTINUUM_VERSION = 'v0.2.240-alpha';
+export const CONTINUUM_VERSION = 'v0.2.241-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -51,8 +51,8 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1670,
-  files: 101,
+  passing: 1682,
+  files: 102,
   fastProfile: 5,
   foundationProfile: 25,
 });
@@ -1147,13 +1147,13 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.240-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.241-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile}, test:foundation ~${CURRENT_TEST_STATUS.foundationProfile})` },
     { label: 'Regression check', value: '15 / 15 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },
     { label: 'Gates', value: 'SEC-1 / SEC-2 / SEC-3 intact · godMode false · continuum CSP enforced' },
     { label: 'Smoke (entry + dashboard)', value: 'Both cloud smokes consolidated into the Handoff / release control panel at the top of this page — app-entry v0.2.230-alpha PASS 3/3, oversight-dashboard v0.2.231-alpha PASS 4/4. A smoke pass does not imply MVP approval or a completed human playtest.' },
-    { label: 'Active slice', value: 'v0.2.240 TRAVEL-GATEWAY ENTRY REPAIR (game slice) — restores live ENTER ARENA after v0.2.239. ROOT CAUSE: sw.js precached the new large /torii-gateway-experience.glb via the ATOMIC cache.addAll(), so a single not-yet-propagated asset on a fresh deploy rejected the whole SW install, self.skipWaiting() never ran, the upgrade wedged, and a stale controlling SW served a bundle/wasm pair that mismatched the new shell — ENTER ARENA then failed in initPhysics() (Rapier WASM) and fell back to the menu. FIX: sw.js now precaches each asset INDEPENDENTLY (per-asset cache.add().catch()), so one bad/decorative asset can never block install/activation. arena.js _buildTravelGateway() is hardened to be strictly fail-soft: the turquoise procedural fallback is shown immediately and swapped to the real model ONLY after a fully successful load+process; any loader-init/load/process failure keeps the fallback, logs a specific error, and sets window.__toriiTravelGatewayFailed so smoke harnesses can assert the fallback path — the decorative gateway never blocks boot or entry. The travel portal trigger/rings/diamond/detection/prompt stay anchored at TRAVEL_GATE_X. Preserves the v0.2.238 fail-closed loop + boot-order fix and the v0.2.236 NIP-07 login decoupling. Prior — v0.2.239 travel-gateway placement; v0.2.238 ENTER-ARENA reset-crash fix; v0.2.237 workflow-invariant slice; v0.2.236 nostr-login runtime fix; v0.2.235 MVP playtest verdict capture loop. HARD CONSTRAINTS held: godMode false; no new timers (loop uses rAF only); no new hot-path Vector3/Matrix4; nostrich comments; Chiefmonkey exact; debug tools ship unconditionally; non-religious ethics guard + useful-job invariant intact; no Nostr writes/signing beyond the existing login/read; no deploy/publish/push (parent handles those).' },
+    { label: 'Active slice', value: 'v0.2.241 ZONE HARD-REFRESH DEEP-LINK FIX (game slice) — fixes a published-host 404 on a hard-refresh / deep-link of an in-app zone route. ROOT CAUSE: the static host (torii-quest.pplx.app) matches files by EXACT path and has no SPA rewrite, so a cold load of /zone/plebeian-market-bazaar returned the host JSON 404 ("No static asset at /zone/...") because no real file lives there — the v0.2.182 client route parser never got a chance to run. FIX (no backend): the build now generates byte-identical static SHELL copies of index.html at dist/zone/<slug>/index.html for each DEPLOYABLE_ZONE_SLUGS entry (single source of truth in zoneRoute.js), via a pure planner (tools/zoneShells.mjs) + an fs generator (tools/generate-zone-shells.mjs) wired into npm build. index.html uses root-absolute /assets/* URLs, so a subdirectory shell loads the same bundle; the host serves the shell as text/html and the parser then resolves the slug exactly as for an in-world portal hop. The zone-fallback readiness guard (zoneFallbackReadiness checkDistRoutes + zones:check + regression [15]) was reconciled to ALLOW these verified shells (a /zone/<slug>/index.html byte-identical to index.html) while still failing on any other /zone/* file that would shadow the fallback. Preserves the v0.2.240 service-worker fail-soft precache (zone shells are HTML → network-first), the v0.2.238 fail-closed loop, and the v0.2.236 NIP-07 login decoupling; root entry flow + ESC pause unchanged. Prior — v0.2.240 travel-gateway entry repair; v0.2.239 travel-gateway placement; v0.2.238 ENTER-ARENA reset-crash fix; v0.2.237 workflow-invariant slice; v0.2.236 nostr-login runtime fix. HARD CONSTRAINTS held: godMode false; no new timers (loop uses rAF only); no new hot-path Vector3/Matrix4; nostrich comments; Chiefmonkey exact; debug tools ship unconditionally; non-religious ethics guard + useful-job invariant intact; no Nostr writes/signing beyond the existing login/read; no deploy/publish/push (parent handles those).' },
   ],
 
   // Engineering-health model (v0.2.175) — the efficiency/oversight loop surfaced on the

@@ -124,6 +124,51 @@ describe('checkDistRoutes', () => {
     expect(r.ok).toBe(false);
     expect(r.errors.some((e) => e.includes('/zone/') && e.toUpperCase().includes('SHADOW'))).toBe(true);
   });
+
+  it('ALLOWS a verified /zone/<slug>/index.html shell byte-identical to index.html (v0.2.241)', () => {
+    const shell = '<!doctype html><html><body>torii shell</body></html>';
+    const r = checkDistRoutes({
+      paths: ['index.html', 'zone/plebeian-market-bazaar/index.html', 'assets/app.js'],
+      contents: {
+        '/index.html': shell,
+        '/zone/plebeian-market-bazaar/index.html': shell,
+      },
+    });
+    expect(r.ok).toBe(true);
+    expect(r.shellPaths).toEqual(['/zone/plebeian-market-bazaar/index.html']);
+  });
+
+  it('still SHADOW-fails a /zone/<slug>/index.html shell that does NOT match index.html', () => {
+    const r = checkDistRoutes({
+      paths: ['index.html', 'zone/plebeian-market-bazaar/index.html'],
+      contents: {
+        '/index.html': '<!doctype html>REAL',
+        '/zone/plebeian-market-bazaar/index.html': '<!doctype html>DIFFERENT',
+      },
+    });
+    expect(r.ok).toBe(false);
+    expect(r.errors.some((e) => e.toUpperCase().includes('SHADOW'))).toBe(true);
+  });
+
+  it('still SHADOW-fails a /zone/* shell when no contents are supplied to verify it', () => {
+    const r = checkDistRoutes({ paths: ['index.html', 'zone/plebeian-market-bazaar/index.html'] });
+    expect(r.ok).toBe(false);
+    expect(r.shellPaths).toEqual([]);
+  });
+
+  it('does NOT treat a bad-slug or nested non-shell /zone/* file as a verified shell', () => {
+    const shell = '<html>shell</html>';
+    const r = checkDistRoutes({
+      paths: ['index.html', 'zone/Bad_Slug/index.html', 'zone/foo/bar/index.html'],
+      contents: {
+        '/index.html': shell,
+        '/zone/Bad_Slug/index.html': shell,
+        '/zone/foo/bar/index.html': shell,
+      },
+    });
+    expect(r.ok).toBe(false);
+    expect(r.shellPaths).toEqual([]);
+  });
 });
 
 describe('checkZoneFallbackReadiness', () => {

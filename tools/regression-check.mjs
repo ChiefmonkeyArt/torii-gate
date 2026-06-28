@@ -44,7 +44,7 @@ import { execSync } from 'node:child_process';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.240-alpha';
+const EXPECTED_VERSION = 'v0.2.241-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -376,7 +376,15 @@ console.log('[15] SPA /zone/* fallback readiness (zoneFallbackReadiness)');
         }
       };
       walkDist(distDir);
-      dist = { paths };
+      // Gather index.html + /zone/<slug>/index.html shell bodies so the guard can
+      // recognise intentional byte-identical shells (v0.2.241) instead of flagging them.
+      const contents = {};
+      for (const rel of paths) {
+        if (rel === 'index.html' || /^zone\/[^/]+\/index\.html$/.test(rel)) {
+          try { contents[`/${rel}`] = readFileSync(join(distDir, rel), 'utf8'); } catch { /* skip */ }
+        }
+      }
+      dist = { paths, contents };
     }
     const r = checkZoneFallbackReadiness({ docs, dist });
     for (const w of r.warnings) console.log(`  · advisory: ${w}`);

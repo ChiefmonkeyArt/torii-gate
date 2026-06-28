@@ -51,9 +51,25 @@ function distPaths() {
   return out;
 }
 
+// Read index.html + any /zone/<slug>/index.html shell bodies into a leading-slash
+// { path → content } map so the guard can verify intentional shells are byte-identical to
+// index.html (v0.2.241). Only HTML entry/shell files are read — not every asset.
+function shellContents(paths) {
+  if (!Array.isArray(paths)) return undefined;
+  const out = {};
+  for (const rel of paths) {
+    const norm = rel.replace(/\\/g, '/');
+    if (norm === 'index.html' || /^zone\/[^/]+\/index\.html$/.test(norm)) {
+      try { out[`/${norm}`] = readFileSync(join(DIST, norm), 'utf8'); } catch { /* skip unreadable */ }
+    }
+  }
+  return out;
+}
+
 const docs = readDocs();
 const paths = distPaths();
-const result = checkZoneFallbackReadiness({ docs, dist: paths ? { paths } : {} });
+const contents = shellContents(paths);
+const result = checkZoneFallbackReadiness({ docs, dist: paths ? { paths, contents } : {} });
 
 console.log(`\n${ZONE_FALLBACK_BADGE}`);
 console.log(`zone route prefix: /zone/  ·  required docs: ${REQUIRED_FALLBACK_DOCS.join(', ')}`);
@@ -66,7 +82,12 @@ for (const e of result.docs.errors) console.error(`  ✗ ${e}`);
 // Dist
 console.log('\n[dist] built route shape relies on the fallback');
 if (result.dist.skipped) console.log('  · no dist/ — skipped (run npm run build for the route-shape check)');
-else if (result.dist.ok) console.log(`  ✓ index.html present; no static file published under /zone/*`);
+else if (result.dist.ok) {
+  const shells = result.dist.shellPaths || [];
+  console.log(shells.length
+    ? `  ✓ index.html present; ${shells.length} verified /zone/<slug>/index.html shell(s): ${shells.join(', ')}`
+    : `  ✓ index.html present; no static file published under /zone/*`);
+}
 for (const e of result.dist.errors) console.error(`  ✗ ${e}`);
 
 for (const w of result.warnings) console.log(`  · advisory: ${w}`);

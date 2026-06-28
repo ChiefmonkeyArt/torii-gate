@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.240-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.241-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -525,6 +525,26 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.241** ZONE HARD-REFRESH DEEP-LINK FIX (game slice) — fixes a published-host 404 on a hard-refresh /
+  deep-link of an in-app zone route. ROOT CAUSE: the static host (`torii-quest.pplx.app`) matches files by EXACT
+  path and has no SPA rewrite, so a cold load of `/zone/plebeian-market-bazaar` returned the host JSON 404
+  (`{"detail":"No static asset at /zone/..."}`) — the v0.2.182 client route parser never got a chance to run.
+  FIX (no backend): the build now generates byte-identical static SHELL copies of `index.html` at
+  `dist/zone/<slug>/index.html` for each `DEPLOYABLE_ZONE_SLUGS` entry (single source of truth in
+  `src/engine/gateway/zoneRoute.js`), via a PURE planner (`tools/zoneShells.mjs`) + an fs generator
+  (`tools/generate-zone-shells.mjs`) wired into `npm run build` (also `npm run zones:shells`). `index.html` uses
+  root-absolute `/assets/*` URLs, so a subdirectory shell loads the same bundle; the exact-path host serves the
+  shell as `text/html` and `_applyZoneRoute()` resolves the slug exactly as for an in-world portal hop. The
+  zone-fallback readiness guard (`zoneFallbackReadiness.checkDistRoutes` + `npm run zones:check` + regression
+  `[15]`) was reconciled to ALLOW verified shells (a `/zone/<slug>/index.html` byte-identical to `index.html`)
+  while STILL failing on any other `/zone/*` file that would shadow the fallback. New `tests/zone-hard-refresh.test.js`
+  (+8) and extended `tests/zone-fallback-readiness.test.js` (+4) lock the slug list, the shell planner, the verified-
+  shell allow/deny logic, and (when a build is present) the on-disk byte-identical shell. Preserves the v0.2.240
+  service-worker fail-soft precache (zone shells are HTML → network-first, no SW change), the v0.2.238 fail-closed
+  loop, and the v0.2.236 NIP-07 login decoupling; root entry flow + ESC pause unchanged. Gameplay slice — no
+  physics/shooter/Rapier balance change; no Nostr signing/publishing/live network write; no new timers; no new
+  hot-path `Vector3`/`Matrix4`; debug tools ship unconditionally; `godMode` stays false; no deploy/publish/push
+  (parent agent handles those). Latest slice report: `torii-v0.2.241-zone-hard-refresh-report.md`.
   **v0.2.240** TRAVEL-GATEWAY ENTRY REPAIR (game slice) — restores live **ENTER ARENA** after v0.2.239. ROOT
   CAUSE: `sw.js` precached the new large `/torii-gateway-experience.glb` through the ATOMIC `cache.addAll()`, so a
   single not-yet-propagated asset on a fresh deploy rejected the WHOLE service-worker install — `self.skipWaiting()`
