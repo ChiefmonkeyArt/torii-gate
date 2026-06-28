@@ -6,9 +6,9 @@
 //   1. trigger arms ON proximity            — createPortalTrigger over a demo gate
 //   2. proximity ALONE never navigates      — tick() arms but performs nothing
 //   3. explicit confirm is required          — interact() acts only when armed, else null
-//   4. same-origin route only                — hop targets `/zone/<slug>`, external:false
-//   5. allowlist is never permit-everything  — scoped `/zone/` prefix, never `['/']`
-//   6. /zone/<slug> route resolves            — parseZoneRoute classifies a valid zone
+//   4. same-origin route only                — hop targets `/#/zone/<slug>`, external:false
+//   5. allowlist is never permit-everything  — scoped `/#/zone/` prefix, never `['/']`
+//   6. /#/zone/<slug> route resolves          — parseZoneRoute classifies a valid zone
 //   7. hostile routes are rejected            — traversal/scheme/protocol-relative → invalid
 //   8. no external URL is carried             — a gateway `website` is dropped from the hop
 //   9. consent gates travel                   — no grant → blocked; a grant → allowed only
@@ -38,7 +38,7 @@ import {
   DEFAULT_PORTAL_ALLOWLIST,
 } from './gatewayPortalActivation.js';
 import { createPortalTrigger } from './portalTrigger.js';
-import { parseZoneRoute, ZONE_ROUTE_KIND, ZONE_ROUTE_PREFIX } from './zoneRoute.js';
+import { parseZoneRoute, ZONE_ROUTE_KIND, ZONE_CANONICAL_PREFIX } from './zoneRoute.js';
 import { prepareTravelIntent } from './travelConfirm.js';
 
 // TRAVEL_SMOKE_VERSION — bumped when the smoke report shape changes.
@@ -52,7 +52,7 @@ export const TRAVEL_SMOKE_BADGE = 'GATEWAY TRAVEL SMOKE · READ-ONLY · DRY-RUN'
 const SAFETY_FLAGS = Object.freeze(['navigated', 'performed', 'external', 'signed', 'published', 'network']);
 
 // A deterministic same-origin demo gate the harness travels THROUGH. Its internal
-// `target` becomes the destination zone id (→ `/zone/plebeian-market-bazaar`); the
+// `target` becomes the destination zone id (→ `/#/zone/plebeian-market-bazaar`); the
 // `website` is an external URL the same-origin hop MUST drop. Fixed so the smoke is
 // reproducible; not used by gameplay.
 export function demoGatewayComponent() {
@@ -166,10 +166,10 @@ export function runGatewayTravelSmoke(opts = {}) {
   try {
     activation = _watch(activatePortalHandoff(component, context, true, { confirmed: true, dryRun: true }));
     const route = activation.targetRoute;
-    const routeOk = typeof route === 'string' && route.startsWith(ZONE_ROUTE_PREFIX) && activation.external === false;
+    const routeOk = typeof route === 'string' && route.startsWith(ZONE_CANONICAL_PREFIX) && activation.external === false;
     signals.push(_signal(
       'same-origin-route-only',
-      'Hop targets a same-origin /zone/ route',
+      'Hop targets the canonical /#/zone/ hash route',
       routeOk,
       `targetRoute=${route}, external=${activation.external}`,
     ));
@@ -186,17 +186,17 @@ export function runGatewayTravelSmoke(opts = {}) {
     signals.push(_signal('allowlist-scoped', 'Route allowlist is scoped, never "/"', false, `threw: ${e.message}`));
   }
 
-  // 6. A valid /zone/<slug> route resolves to a zone display state.
+  // 6. A valid canonical /#/zone/<slug> route resolves to a zone display state.
   try {
-    const r = parseZoneRoute(`${ZONE_ROUTE_PREFIX}plebeian-market-bazaar`);
+    const r = parseZoneRoute(`${ZONE_CANONICAL_PREFIX}plebeian-market-bazaar`);
     signals.push(_signal(
       'zone-route-resolves',
-      'Valid /zone/<slug> resolves',
+      'Valid /#/zone/<slug> resolves',
       r.kind === ZONE_ROUTE_KIND.ZONE && r.ok === true && r.slug === 'plebeian-market-bazaar' && r.navigated === false,
       `kind=${r.kind}, slug=${r.slug}`,
     ));
   } catch (e) {
-    signals.push(_signal('zone-route-resolves', 'Valid /zone/<slug> resolves', false, `threw: ${e.message}`));
+    signals.push(_signal('zone-route-resolves', 'Valid /#/zone/<slug> resolves', false, `threw: ${e.message}`));
   }
 
   // 7. Every hostile route classifies as INVALID (never a zone, never navigated).

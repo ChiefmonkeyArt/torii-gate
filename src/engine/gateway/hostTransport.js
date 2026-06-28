@@ -158,7 +158,9 @@ export function createBrowserHostTransport(win, opts = {}) {
     },
     getRoute() {
       const loc = win.location;
-      return loc ? `${loc.pathname || ''}${loc.search || ''}` : null;
+      // Include the hash: the v0.2.244 canonical zone route lives in the fragment
+      // (`/#/zone/<slug>`), so a snapshot/rollback must capture it to restore correctly.
+      return loc ? `${loc.pathname || ''}${loc.search || ''}${loc.hash || ''}` : null;
     },
   };
   return createHostTransport(host, opts);

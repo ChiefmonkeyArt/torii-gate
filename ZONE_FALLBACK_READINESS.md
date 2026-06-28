@@ -1,6 +1,6 @@
 # torii.quest `/zone/*` SPA Fallback — Deployment Readiness Checklist
 
-> **Status:** documentation + a pure local CHECK only (v0.2.243-alpha). **No code in this
+> **Status:** documentation + a pure local CHECK only (v0.2.244-alpha). **No code in this
 > repo touches a server, performs a deploy, or changes app runtime behaviour.** This page
 > makes the one outstanding hosting prerequisite for the gateway travel feature —
 > *serve `index.html` for any `/zone/<slug>` path* — explicit and locally checkable BEFORE a
@@ -26,6 +26,22 @@
 > distinguishes a byte-identical `/zone/<slug>/index.html` shell from a rogue `/zone/*` file.
 > RESIDUAL RISK: a COLD no-slash `/zone/<slug>` hit (no trailing slash) still depends on host
 > default behaviour and is unverifiable locally — confirm via a live re-smoke after publish.
+>
+> **v0.2.244 update — canonical route is now the URL FRAGMENT `/#/zone/<slug>` (no shell on
+> pplx.app).** The live rendered screenshot of `/zone/plebeian-market-bazaar/` STILL showed the
+> JSON 404, confirming the published host (`torii-quest.pplx.app`) normalises BOTH `/zone/<slug>`
+> AND `/zone/<slug>/` to an exact static-asset lookup with no directory index — so the v0.2.243
+> directory-index shell 404d too and EVERY `/zone/*` PATH strategy is non-viable on this host.
+> Only the root `/` reliably serves `index.html` as `text/html`. v0.2.244 therefore moves the
+> zone into the URL FRAGMENT: the canonical route is `/#/zone/<slug>`, whose request path is
+> always `/` (the fragment is never sent to the server), so the root shell always renders on a
+> hard refresh and the client parser reads the fragment. **No per-slug static shell is generated
+> any more** — the build step and `tools/zoneShells.mjs` / `tools/generate-zone-shells.mjs` were
+> removed, and the dist ships NO `/zone/*` file (so §7 below is historical). The legacy
+> `/zone/<slug>` path still PARSES client-side (normalised to the canonical hash route) but is
+> NON-CANONICAL on pplx.app — never generate/share it as a cold deep-link, because it 404s before
+> the bundle loads. The `index.html` SPA-fallback documented below remains the right model for any
+> non-pplx host that supports a `try_files … /index.html` rewrite, and is kept for that case.
 >
 > See also: `HANDOFF.md` §7 (the SPA-rewrite note), `VPS_INSTALL.md` §6a/§6b/§11 (the
 > concrete Caddy/Nginx config), `GATEWAY_PROTOCOL.md`, and `UPDATE_CHECK.md` §4 (the

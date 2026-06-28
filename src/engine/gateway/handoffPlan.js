@@ -90,14 +90,15 @@ function _zoneSlug(zoneId) {
   return slug.length > SLUG_MAX_LEN ? slug.slice(0, SLUG_MAX_LEN) : slug;
 }
 
-// handoffRouteFor(destination) → the inert SAME-SITE route a host WOULD load for a
-// destination zone (canonical trailing-slash `/zone/<slug>/`, v0.2.243), or null when
-// the zone id yields no safe slug. The trailing slash makes the static host resolve the
-// directory-index shell and serve it as renderable `text/html`. Pure — builds a string,
-// navigates nothing.
+// handoffRouteFor(destination) → the inert CANONICAL hash route a host WOULD load for a
+// destination zone (`/#/zone/<slug>`, v0.2.244), or null when the zone id yields no safe
+// slug. The hash fragment keeps the request path at `/` so the root shell always renders
+// on the exact-path static host (every `/zone/*` PATH 404s there). Pure — builds a string,
+// navigates nothing. (Literal, not imported: zoneRoute.js imports safeRoutePath from here,
+// so this module must not import zoneRoute back.)
 export function handoffRouteFor(destination) {
   const slug = _zoneSlug(destination && destination.zoneId);
-  return slug ? `/zone/${slug}/` : null;
+  return slug ? `/#/zone/${slug}` : null;
 }
 
 // handoffUrlFor(destination) → the https-only external preview URL a host MIGHT

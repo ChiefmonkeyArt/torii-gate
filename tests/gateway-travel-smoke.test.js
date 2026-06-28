@@ -23,7 +23,7 @@ describe('constants', () => {
     expect(Object.isFrozen(HOSTILE_ROUTES)).toBe(true);
   });
   it('re-exports the scoped default allowlist (never permit-everything)', () => {
-    expect(DEFAULT_PORTAL_ALLOWLIST).toEqual(['/zone/']);
+    expect(DEFAULT_PORTAL_ALLOWLIST).toEqual(['/#/zone/']);
     expect(DEFAULT_PORTAL_ALLOWLIST).not.toContain('/');
   });
 });

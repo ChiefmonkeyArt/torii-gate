@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.243-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.244-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -525,6 +525,25 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.244** HOST-SAFE CANONICAL ZONE ROUTE (game slice) — fixes the v0.2.243 follow-up: the live rendered
+  screenshot of `/zone/plebeian-market-bazaar/` STILL showed the JSON 404 (`{"detail":"No static asset at
+  /zone/plebeian-market-bazaar"}`). ROOT CAUSE: the published exact-path static host (`torii-quest.pplx.app`) has NO
+  SPA rewrite and NO directory index and normalises BOTH `/zone/<slug>` AND `/zone/<slug>/` to an exact static-asset
+  lookup → 404, so EVERY `/zone/*` PATH strategy fails (v0.2.242 extensionless → octet-stream download; v0.2.243
+  directory-index shell → 404). Only the root `/` reliably serves `index.html` as `text/html`. FIX (no backend): the
+  canonical zone route is now the URL FRAGMENT `/#/zone/<slug>` — the fragment is never sent to the server, so the
+  request path is always `/` and the root shell ALWAYS renders on hard refresh; the client parser reads the fragment.
+  `zoneRouteFor` + `handoffRouteFor` build `/#/zone/<slug>`; the portal allowlists are `/#/zone/`; `main._applyZoneRoute`
+  reads the URL hash fragment (+ a `hashchange` listener) and falls back to the path for a LEGACY `/zone/<slug>` link,
+  which `parseZoneRoute` still resolves client-side. `/zone/<slug>` is NON-CANONICAL on this host (a cold deep-link 404s
+  before the bundle loads) so it is never generated/shared. No per-slug static shell is generated any more — the build
+  step + `tools/zoneShells.mjs` + `tools/generate-zone-shells.mjs` were removed; the dist ships NO `/zone/*` file. (The
+  documented index.html SPA-fallback below remains valid for any non-pplx host that supports it.) Preserves the v0.2.240
+  SW fail-soft precache (HTML network-first; root `/` is always the cache key), the v0.2.238 fail-closed loop, and the
+  v0.2.236 NIP-07 login decoupling; root entry flow + ENTER ARENA + ESC pause unchanged. Gameplay slice — no
+  physics/shooter/Rapier balance change; no Nostr signing/publishing/live network write; no new timers; no new hot-path
+  `Vector3`/`Matrix4`; debug tools ship unconditionally; `godMode` stays false; no deploy/publish/push (parent agent
+  handles those). Latest slice report: `torii-v0.2.244-host-safe-zone-route-report.md`.
   **v0.2.243** ZONE RENDERABLE-ROUTE REPAIR (game slice) — fixes the v0.2.242 follow-up: a live fetch saw the
   HTML, but an interactive Playwright `page.goto` of `https://torii-quest.pplx.app/zone/plebeian-market-bazaar`
   reported "Download is starting". ROOT CAUSE: the static host infers Content-Type from file EXTENSION, so the

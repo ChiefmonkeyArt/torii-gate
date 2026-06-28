@@ -19,7 +19,7 @@ describe('module shape', () => {
     expect(ZONE_ROUTE_PREFIX).toBe('/zone/');
     expect(ZONE_SLUG_MAX_LEN).toBe(64);
     expect(ZONE_ROUTE_KIND).toEqual({ HOME: 'home', ZONE: 'zone', INVALID: 'invalid' });
-    expect(DEMO_ZONE_ROUTE).toBe('/zone/plebeian-market-bazaar/');
+    expect(DEMO_ZONE_ROUTE).toBe('/#/zone/plebeian-market-bazaar');
   });
 });
 
@@ -55,20 +55,20 @@ describe('humanizeZoneSlug / zoneRouteFor', () => {
     expect(humanizeZoneSlug('plebeian-market-bazaar')).toBe('Plebeian Market Bazaar');
     expect(humanizeZoneSlug('Bad Slug!')).toBe('');
   });
-  it('builds the canonical trailing-slash /zone/<slug>/ only for a valid slug', () => {
-    expect(zoneRouteFor('plebeian-market-bazaar')).toBe('/zone/plebeian-market-bazaar/');
+  it('builds the canonical hash /#/zone/<slug> only for a valid slug', () => {
+    expect(zoneRouteFor('plebeian-market-bazaar')).toBe('/#/zone/plebeian-market-bazaar');
     expect(zoneRouteFor('Bad Slug!')).toBeNull();
   });
 });
 
-describe('parseZoneRoute — happy path (the route the portal trigger pushes)', () => {
-  const r = parseZoneRoute('/zone/plebeian-market-bazaar');
-  it('classifies a valid /zone/<slug> as a ZONE with inert display state', () => {
+describe('parseZoneRoute — happy path (the canonical hash route the portal trigger pushes)', () => {
+  const r = parseZoneRoute('/#/zone/plebeian-market-bazaar');
+  it('classifies the canonical /#/zone/<slug> as a ZONE with inert display state', () => {
     expect(r.kind).toBe(ZONE_ROUTE_KIND.ZONE);
     expect(r.ok).toBe(true);
     expect(r.slug).toBe('plebeian-market-bazaar');
     expect(r.zoneId).toBe('plebeian-market-bazaar');
-    expect(r.route).toBe('/zone/plebeian-market-bazaar/');
+    expect(r.route).toBe('/#/zone/plebeian-market-bazaar');
     expect(r.title).toBe('Plebeian Market Bazaar');
     expect(r.notice).toContain('Plebeian Market Bazaar');
   });
@@ -80,32 +80,31 @@ describe('parseZoneRoute — happy path (the route the portal trigger pushes)', 
     expect(r.published).toBe(false);
     expect(r.network).toBe(false);
   });
-  it('drops a trailing query/hash before classifying', () => {
-    const q = parseZoneRoute('/zone/plebeian-market-bazaar?ref=x#frag');
-    expect(q.kind).toBe(ZONE_ROUTE_KIND.ZONE);
-    expect(q.slug).toBe('plebeian-market-bazaar');
-  });
 });
 
-describe('parseZoneRoute — canonical trailing slash (v0.2.243)', () => {
-  it('accepts the canonical /zone/<slug>/ form and normalises route to trailing slash', () => {
-    const r = parseZoneRoute('/zone/plebeian-market-bazaar/');
+describe('parseZoneRoute — legacy /zone/<slug> path still parses, normalised to canonical (v0.2.244)', () => {
+  it('the legacy bare /zone/<slug> path resolves to a ZONE whose route is the canonical hash form', () => {
+    const r = parseZoneRoute('/zone/plebeian-market-bazaar');
     expect(r.kind).toBe(ZONE_ROUTE_KIND.ZONE);
     expect(r.ok).toBe(true);
     expect(r.slug).toBe('plebeian-market-bazaar');
-    expect(r.route).toBe('/zone/plebeian-market-bazaar/');
+    expect(r.route).toBe('/#/zone/plebeian-market-bazaar');
   });
-  it('the no-slash form resolves identically (normalised to trailing slash)', () => {
+  it('the tolerated trailing-slash /zone/<slug>/ form resolves identically', () => {
     const a = parseZoneRoute('/zone/plebeian-market-bazaar');
     const b = parseZoneRoute('/zone/plebeian-market-bazaar/');
     expect(a.slug).toBe(b.slug);
     expect(a.route).toBe(b.route);
-    expect(a.route).toBe('/zone/plebeian-market-bazaar/');
+    expect(b.route).toBe('/#/zone/plebeian-market-bazaar');
   });
-  it('drops query/hash on the trailing-slash form too', () => {
-    const q = parseZoneRoute('/zone/plebeian-market-bazaar/?ref=x#frag');
+  it('drops a trailing query on the legacy path form', () => {
+    const q = parseZoneRoute('/zone/plebeian-market-bazaar?ref=x');
     expect(q.kind).toBe(ZONE_ROUTE_KIND.ZONE);
-    expect(q.route).toBe('/zone/plebeian-market-bazaar/');
+    expect(q.slug).toBe('plebeian-market-bazaar');
+    expect(q.route).toBe('/#/zone/plebeian-market-bazaar');
+  });
+  it('an empty fragment (#) is HOME — nothing to resolve', () => {
+    expect(parseZoneRoute('/#').kind).toBe(ZONE_ROUTE_KIND.HOME);
   });
 });
 

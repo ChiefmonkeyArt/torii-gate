@@ -184,7 +184,8 @@ renderGatewayPreview();
 // navigates. A real same-origin `/zone/…` hop happens ONLY on the explicit KeyF
 // interact below, which clears all three v0.2.178 gates (confirmed===true → consent
 // → scoped allowlist). External website URLs are dropped by portalActivationInput;
-// the allowlist is hard-scoped to ['/zone/'] (never ['/']).
+// the allowlist is hard-scoped to ['/#/zone/'] (never ['/']) — the v0.2.244 canonical hash
+// route, whose request path is always '/' so the root shell renders on the exact-path host.
 const _portalGateway = createToriiGateway({
   target: 'plebeian-market-bazaar',
   relay: 'wss://relay.example.com',
@@ -192,10 +193,10 @@ const _portalGateway = createToriiGateway({
 });
 const _portalBoundary = createGatewayPortalBoundary({
   window,                         // ← the ONLY browser-window injection point
-  routeAllowlist: ['/zone/'],     // scoped same-origin prefix; never permit-all
+  routeAllowlist: ['/#/zone/'],   // scoped canonical hash prefix; never permit-all
   hostContext: {
-    currentRoute: window.location?.pathname || '/',
-    rollbackRoute: window.location?.pathname || '/',
+    currentRoute: `${window.location?.pathname || '/'}${window.location?.hash || ''}`,
+    rollbackRoute: `${window.location?.pathname || '/'}${window.location?.hash || ''}`,
   },
   home: '/',
 });
@@ -227,24 +228,29 @@ buildPortalMesh(scene, {
   title: 'Plebeian Market Bazaar',
 });
 
-// ── SPA /zone/<slug> route resolution (v0.2.182) ──────────────────────────────
-// Give the same-origin URL the portal trigger pushes a safe client-side meaning on
-// hard-refresh / deep-link / back-forward. The PURE parser (zoneRoute.js) classifies
-// window.location.pathname; the app only shows an INERT notice — it loads no zone
-// scene, fetches nothing, and never navigates. A valid `/zone/<slug>` shows the
-// resolved title + placeholder; an invalid/unsafe path shows a staying-home notice;
-// the bare home route clears it. NOTE: a hard refresh only reaches this code if the
-// static host serves index.html for `/zone/*` (SPA fallback — see HANDOFF.md); when
-// it does, this is the resolution.
+// ── Canonical /#/zone/<slug> hash route resolution (v0.2.182; hash-canonical v0.2.244) ──
+// Give the URL the portal trigger pushes a safe client-side meaning on hard-refresh /
+// deep-link / back-forward. The canonical route lives in the URL FRAGMENT
+// (`/#/zone/<slug>`), so the request path is always `/` and the root shell ALWAYS renders
+// on the exact-path host (every `/zone/*` PATH 404s there — see HANDOFF.md). We read the
+// hash first, falling back to the pathname for a legacy `/zone/<slug>` link. The PURE
+// parser (zoneRoute.js) classifies it; the app only shows an INERT notice — it loads no
+// zone scene, fetches nothing, and never navigates.
 function _applyZoneRoute() {
-  const r = parseZoneRoute(window.location?.pathname || '/');
+  const loc = window.location || {};
+  const hash = typeof loc.hash === 'string' ? loc.hash : '';
+  // A present hash carries the canonical route (`#/zone/<slug>` → `/#/zone/<slug>`);
+  // otherwise classify the legacy path form.
+  const input = hash ? `/${hash}` : (loc.pathname || '/');
+  const r = parseZoneRoute(input);
   if (r.kind === ZONE_ROUTE_KIND.HOME) hideZoneNotice();
   else showZoneNotice(r.notice);
   return r;
 }
 _applyZoneRoute();
-// Back/forward between pushed zone states + home re-resolves the notice (inert).
+// Back/forward + in-app hash hops between pushed zone states + home re-resolve the notice (inert).
 window.addEventListener('popstate', _applyZoneRoute);
+window.addEventListener('hashchange', _applyZoneRoute);
 
 // Plebeian/Nostr product/market PREVIEW (LEAN-3, v0.2.140) — render the inert,
 // read-only title-screen product card ONCE from the pure productPreview block.

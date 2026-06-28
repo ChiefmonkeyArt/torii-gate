@@ -1,21 +1,21 @@
-// tests/zone-hard-refresh.test.js — the v0.2.243 renderable zone deep-link fix. The
-// exact-path static host (torii-quest.pplx.app: no SPA rewrite) infers Content-Type from
-// file EXTENSION, so the v0.2.242 EXTENSIONLESS file `dist/zone/<slug>` was served as
-// application/octet-stream and a real browser DOWNLOADED it (Playwright: "Download is
-// starting") instead of rendering. v0.2.243 reinstates the directory-index shell
-// `dist/zone/<slug>/index.html`: the host resolves the canonical trailing-slash URL
-// `/zone/<slug>/` onto that nested `.html` file and serves it as renderable text/html.
-// These tests pin: the slug list is valid + parseable, the pure planner emits the
-// directory-index `.html` shape + canonical trailing-slash route, and (when a build is
-// present) every planned shell is the directory-index file, byte-identical to dist/index.html,
-// with no leftover bare extensionless file.
+// tests/zone-hard-refresh.test.js — the v0.2.244 HOST-SAFE canonical zone route. The
+// published exact-path static host (torii-quest.pplx.app) has NO SPA rewrite and NO
+// directory index: it returns a JSON 404 for BOTH `/zone/<slug>` AND `/zone/<slug>/`, so
+// every `/zone/*` PATH strategy failed live (v0.2.242 extensionless file → octet-stream
+// download; v0.2.243 directory-index shell → 404). Only the root `/` reliably serves
+// index.html as text/html. v0.2.244 makes the CANONICAL route a URL FRAGMENT
+// `/#/zone/<slug>`: the fragment is never sent to the server, so the request path stays `/`
+// and the root shell ALWAYS renders on a hard refresh; the client parser reads the
+// fragment. These tests pin: the canonical route is hash-based and host-safe, the legacy
+// `/zone/<slug>` path still PARSES (non-canonical fallback), and the build ships NO
+// `/zone/*` file (no shell is generated any more — it would only 404 on the host).
 import { describe, it, expect } from 'vitest';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  DEPLOYABLE_ZONE_SLUGS, isValidZoneSlug, parseZoneRoute, ZONE_ROUTE_KIND,
+  DEPLOYABLE_ZONE_SLUGS, isValidZoneSlug, parseZoneRoute, zoneRouteFor,
+  ZONE_ROUTE_KIND, ZONE_CANONICAL_PREFIX,
 } from '../src/engine/gateway/zoneRoute.js';
-import { planZoneShells, zoneShellPathFor, zoneShellRouteFor } from '../tools/zoneShells.mjs';
 
 const DIST = join(process.cwd(), 'dist');
 
@@ -25,7 +25,7 @@ describe('DEPLOYABLE_ZONE_SLUGS', () => {
     expect(DEPLOYABLE_ZONE_SLUGS.length).toBeGreaterThan(0);
     for (const slug of DEPLOYABLE_ZONE_SLUGS) {
       expect(isValidZoneSlug(slug)).toBe(true);
-      const r = parseZoneRoute(`/zone/${slug}/`);
+      const r = parseZoneRoute(zoneRouteFor(slug));
       expect(r.kind).toBe(ZONE_ROUTE_KIND.ZONE);
       expect(r.slug).toBe(slug);
     }
@@ -36,78 +36,62 @@ describe('DEPLOYABLE_ZONE_SLUGS', () => {
   });
 });
 
-describe('zoneShellPathFor / zoneShellRouteFor', () => {
-  it('builds a directory-index (.html) shell path + canonical trailing-slash route for a valid slug', () => {
-    expect(zoneShellPathFor('plebeian-market-bazaar')).toBe('zone/plebeian-market-bazaar/index.html');
-    expect(zoneShellRouteFor('plebeian-market-bazaar')).toBe('/zone/plebeian-market-bazaar/');
+describe('canonical hash route is host-safe', () => {
+  it('builds a /#/zone/<slug> fragment route whose request path is the root', () => {
+    expect(zoneRouteFor('plebeian-market-bazaar')).toBe('/#/zone/plebeian-market-bazaar');
+    // The fragment is everything after '#'; the path the server sees is always '/'.
+    const route = zoneRouteFor('plebeian-market-bazaar');
+    expect(route.startsWith(ZONE_CANONICAL_PREFIX)).toBe(true);
+    const pathSentToServer = route.split('#')[0];
+    expect(pathSentToServer).toBe('/');
   });
 
-  it('shell path ends in /index.html so the host serves it as renderable text/html', () => {
-    const p = zoneShellPathFor('plebeian-market-bazaar');
-    expect(p.endsWith('/index.html')).toBe(true);
-    // The canonical route is the directory (trailing slash); the file is its index.html.
-    expect(zoneShellRouteFor('plebeian-market-bazaar')).toBe('/zone/plebeian-market-bazaar/');
-    expect(`/${p}`.replace(/index\.html$/, '')).toBe(zoneShellRouteFor('plebeian-market-bazaar'));
+  it('resolves the canonical /#/zone/<slug> route to a zone display state', () => {
+    const r = parseZoneRoute('/#/zone/plebeian-market-bazaar');
+    expect(r.kind).toBe(ZONE_ROUTE_KIND.ZONE);
+    expect(r.slug).toBe('plebeian-market-bazaar');
+    expect(r.route).toBe('/#/zone/plebeian-market-bazaar');
+    // Still inert — resolving a route never navigates.
+    expect(r.navigated).toBe(false);
   });
 
-  it('returns null for an invalid slug (never builds an unsafe path)', () => {
-    expect(zoneShellPathFor('Bad_Slug')).toBeNull();
-    expect(zoneShellPathFor('a/b')).toBeNull();
-    expect(zoneShellPathFor('')).toBeNull();
-    expect(zoneShellRouteFor('-bad')).toBeNull();
-  });
-});
-
-describe('planZoneShells', () => {
-  it('plans one directory-index shell per deployable slug', () => {
-    const plan = planZoneShells(DEPLOYABLE_ZONE_SLUGS);
-    expect(plan.ok).toBe(true);
-    expect(plan.errors).toEqual([]);
-    expect(plan.shells.length).toBe(DEPLOYABLE_ZONE_SLUGS.length);
-    for (const s of plan.shells) {
-      expect(s.path).toBe(`zone/${s.slug}/index.html`);
-      expect(s.route).toBe(`/zone/${s.slug}/`);
-      expect(parseZoneRoute(s.route).kind).toBe(ZONE_ROUTE_KIND.ZONE);
-    }
-  });
-
-  it('reports invalid and duplicate slugs without throwing', () => {
-    const plan = planZoneShells(['plebeian-market-bazaar', 'Bad_Slug', 'plebeian-market-bazaar']);
-    expect(plan.ok).toBe(false);
-    expect(plan.shells.length).toBe(1);
-    expect(plan.errors.some((e) => e.includes('invalid'))).toBe(true);
-    expect(plan.errors.some((e) => e.includes('duplicate'))).toBe(true);
-  });
-
-  it('is safe on bad input', () => {
-    expect(planZoneShells(null).shells).toEqual([]);
-    expect(planZoneShells(undefined).ok).toBe(true);
+  it('returns null for an invalid slug (never builds an unsafe route)', () => {
+    expect(zoneRouteFor('Bad_Slug')).toBeNull();
+    expect(zoneRouteFor('a/b')).toBeNull();
+    expect(zoneRouteFor('')).toBeNull();
+    expect(zoneRouteFor('-bad')).toBeNull();
   });
 });
 
-describe('built dist/ shells (when a build is present)', () => {
-  it('emits a byte-identical directory-index shell file for every deployable slug', () => {
-    const indexPath = join(DIST, 'index.html');
-    if (!existsSync(indexPath)) return; // no build in this run — covered by test:release
-    const indexBody = readFileSync(indexPath, 'utf8');
-    for (const slug of DEPLOYABLE_ZONE_SLUGS) {
-      const shellPath = join(DIST, 'zone', slug, 'index.html');
-      expect(existsSync(shellPath), `missing directory-index shell for /zone/${slug}/`).toBe(true);
-      expect(statSync(shellPath).isFile(), `/zone/${slug}/index.html must be a file`).toBe(true);
-      expect(readFileSync(shellPath, 'utf8')).toBe(indexBody);
-    }
+describe('legacy /zone/<slug> path stays parseable but is NON-CANONICAL', () => {
+  it('still resolves a bare /zone/<slug> path client-side (legacy in-app hop / typed URL)', () => {
+    const r = parseZoneRoute('/zone/plebeian-market-bazaar');
+    expect(r.kind).toBe(ZONE_ROUTE_KIND.ZONE);
+    expect(r.slug).toBe('plebeian-market-bazaar');
+    // But the canonical route it reports is the host-safe hash form.
+    expect(r.route).toBe('/#/zone/plebeian-market-bazaar');
   });
 
-  it('does NOT leave a bare extensionless file (the v0.2.242 form browsers downloaded)', () => {
+  it('also tolerates a legacy trailing-slash /zone/<slug>/ path', () => {
+    const r = parseZoneRoute('/zone/plebeian-market-bazaar/');
+    expect(r.kind).toBe(ZONE_ROUTE_KIND.ZONE);
+    expect(r.slug).toBe('plebeian-market-bazaar');
+  });
+});
+
+describe('built dist/ ships NO /zone/* file (when a build is present)', () => {
+  it('emits index.html and never a /zone/* static file that would only 404 on the host', () => {
     const indexPath = join(DIST, 'index.html');
     if (!existsSync(indexPath)) return; // no build in this run — covered by test:release
-    for (const slug of DEPLOYABLE_ZONE_SLUGS) {
-      // The v0.2.242 extensionless file dist/zone/<slug> served as octet-stream → download.
-      // The directory-index shell needs dist/zone/<slug>/ to be a directory, which cannot
-      // coexist with a file of the same name; assert the bare file is absent so the
-      // renderable .html is the single served artifact.
-      const bare = join(DIST, 'zone', slug);
-      expect(existsSync(bare) && statSync(bare).isFile()).toBe(false);
+    const zoneDir = join(DIST, 'zone');
+    expect(existsSync(zoneDir), 'dist/zone/ must not exist — /zone/* 404s on the host').toBe(false);
+    // Defensive: no top-level dist entry named "zone" of any kind.
+    const top = readdirSync(DIST);
+    for (const name of top) {
+      if (name === 'zone') {
+        const p = join(DIST, name);
+        expect(statSync(p).isDirectory() || statSync(p).isFile()).toBe(false);
+      }
     }
   });
 });

@@ -280,6 +280,6 @@ export function activateGatewayHandoff(input = {}, grant = null, opts = {}) {
 // call resolves a no-op unless a recording host is supplied). Not used by gameplay.
 export const DEMO_ACTIVATION_OPTS = Object.freeze({
   confirmed: true,
-  routeAllowlist: Object.freeze(['/zone/']),
+  routeAllowlist: Object.freeze(['/#/zone/']),
   hostContext: Object.freeze({ currentRoute: '/', rollbackRoute: '/' }),
 });

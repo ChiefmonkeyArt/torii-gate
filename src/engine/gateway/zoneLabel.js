@@ -16,7 +16,7 @@
 //     to that same safe set, so a label can never carry markup, a `javascript:`/`data:`
 //     scheme, or any dangerous token — even though the HUD sink is `textContent`.
 
-import { isValidZoneSlug, humanizeZoneSlug, ZONE_ROUTE_PREFIX } from './zoneRoute.js';
+import { isValidZoneSlug, humanizeZoneSlug, ZONE_ROUTE_PREFIX, ZONE_CANONICAL_PREFIX } from './zoneRoute.js';
 
 // ZONE_LABEL_VERSION — bumped when the label contract changes.
 export const ZONE_LABEL_VERSION = 1;
@@ -42,17 +42,19 @@ function _safeTitle(s) {
   return s.replace(/[^A-Za-z0-9 -]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, LABEL_MAX_LEN);
 }
 
-// _titleFrom(input) → a safe Title-Case label from a zone slug, a `/zone/<slug>`
-// route, or a pre-humanised title string; '' when nothing usable. A valid slug/route
-// is resolved via `humanizeZoneSlug` (alnum by construction); a free title is run
-// through `_safeTitle`. Pure, never throws.
+// _titleFrom(input) → a safe Title-Case label from a zone slug, a canonical
+// `/#/zone/<slug>` route, a legacy `/zone/<slug>` route, or a pre-humanised title string;
+// '' when nothing usable. A valid slug/route is resolved via `humanizeZoneSlug` (alnum by
+// construction); a free title is run through `_safeTitle`. Pure, never throws.
 function _titleFrom(input) {
   if (typeof input !== 'string' || input === '') return '';
   let slug = input;
-  if (slug.startsWith(ZONE_ROUTE_PREFIX)) {
+  if (slug.startsWith(ZONE_CANONICAL_PREFIX)) {
+    slug = slug.slice(ZONE_CANONICAL_PREFIX.length); // canonical `/#/zone/<slug>` route
+  } else if (slug.startsWith(ZONE_ROUTE_PREFIX)) {
     slug = slug.slice(ZONE_ROUTE_PREFIX.length);
-    if (slug.endsWith('/')) slug = slug.slice(0, -1); // canonical `/zone/<slug>/` route
   }
+  if (slug.endsWith('/')) slug = slug.slice(0, -1); // tolerate a trailing slash
   if (isValidZoneSlug(slug)) return humanizeZoneSlug(slug);
   return _safeTitle(input);
 }

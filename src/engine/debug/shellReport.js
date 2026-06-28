@@ -709,7 +709,7 @@ export function portalTriggerReport(component = DEMO_GATEWAY, context = DEMO_POR
   const portalPos = (o.portalPos && typeof o.portalPos === 'object') ? o.portalPos : { x: 20, y: 0, z: 0 };
   const range = Number(o.range) > 0 ? Number(o.range) : 3;
   const host = createRecordingHost('/');
-  const boundary = createGatewayPortalBoundary({ host, routeAllowlist: ['/zone/'] });
+  const boundary = createGatewayPortalBoundary({ host, routeAllowlist: ['/#/zone/'] });
   const promptLog = [];
   const trigger = createPortalTrigger({
     boundary, component, context, portalPos, range,

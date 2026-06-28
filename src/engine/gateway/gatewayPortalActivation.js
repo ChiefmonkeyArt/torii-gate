@@ -42,8 +42,9 @@ export const PORTAL_ACTIVATION_VERSION = 1;
 export const PORTAL_ACTIVATION_BADGE = 'GATEWAY PORTAL · CONFIRMED · SAME-ORIGIN HOP';
 
 // The default, MEANINGFUL scoped allowlist for the in-world portal boundary. A hop
-// may only land on a same-origin `/zone/…` route. Never `'/'` (SEC v0.2.179).
-export const DEFAULT_PORTAL_ALLOWLIST = Object.freeze(['/zone/']);
+// may only land on the canonical hash route `/#/zone/…` (v0.2.244). Never `'/'` (SEC
+// v0.2.179).
+export const DEFAULT_PORTAL_ALLOWLIST = Object.freeze(['/#/zone/']);
 
 // Boundary lifecycle states. `idle` = nothing armed; `armed` = a valid portal is
 // staged and awaiting an explicit confirm; `navigated`/`blocked` = the outcome of
@@ -79,7 +80,7 @@ export function sanitizePortalAllowlist(allowlist) {
 // portalActivationInput(component, context) → { ok, errors, input }. Pure, never
 // throws. Maps a gateway component's manifest destination onto a same-origin
 // activation input for activateGatewayHandoff. The INTERNAL `target` becomes the
-// destination `zoneId` (so handoffRouteFor yields `/zone/<slug>`); any external
+// destination `zoneId` (so handoffRouteFor yields `/#/zone/<slug>`); any external
 // `website` is intentionally NOT carried (same-origin hop only). A gateway with no
 // `target` is rejected — there is no same-origin destination to travel to.
 //

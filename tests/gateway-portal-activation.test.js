@@ -1,9 +1,9 @@
 // tests/gateway-portal-activation.test.js — locks the in-world GATEWAY PORTAL
 // activation seam (src/engine/gateway/gatewayPortalActivation.js, v0.2.180). Proves:
 // a gateway component maps to a same-origin activation input (internal `target` →
-// `/zone/<slug>`, external website dropped); arming a portal NEVER navigates; only an
+// `/#/zone/<slug>`, external website dropped); arming a portal NEVER navigates; only an
 // explicit confirm acts and uses the injected browser/host transport; the allowlist
-// is sanitised to a meaningful scoped prefix (a `['/']` is folded to `['/zone/']`,
+// is sanitised to a meaningful scoped prefix (a `['/']` is folded to `['/#/zone/']`,
 // never permit-everything); rollback/back-home maps through; an unidentifiable /
 // non-gateway destination is blocked with no navigation; and every external/world/
 // network/sign/publish flag stays false. Pure module → node-safe.
@@ -48,7 +48,7 @@ describe('module shape', () => {
   it('pins a version and a confirmed-portal-hop badge', () => {
     expect(PORTAL_ACTIVATION_VERSION).toBe(1);
     expect(PORTAL_ACTIVATION_BADGE).toBe('GATEWAY PORTAL · CONFIRMED · SAME-ORIGIN HOP');
-    expect(DEFAULT_PORTAL_ALLOWLIST).toContain('/zone/');
+    expect(DEFAULT_PORTAL_ALLOWLIST).toContain('/#/zone/');
   });
 
   it('exposes NO bare browser-navigation method at module scope', () => {
@@ -86,14 +86,14 @@ describe('portalActivationInput', () => {
 
 describe('sanitizePortalAllowlist', () => {
   it('folds a trivially-permissive ["/"] to the default scoped list (never permit-all)', () => {
-    expect(sanitizePortalAllowlist(['/'])).toEqual(['/zone/']);
+    expect(sanitizePortalAllowlist(['/'])).toEqual(['/#/zone/']);
   });
   it('keeps meaningful scoped prefixes', () => {
     expect(sanitizePortalAllowlist(['/zone/', '/world/'])).toEqual(['/zone/', '/world/']);
   });
   it('falls back to the default for a non-array or all-garbage list', () => {
-    expect(sanitizePortalAllowlist(null)).toEqual(['/zone/']);
-    expect(sanitizePortalAllowlist(['/', 1, 'x'])).toEqual(['/zone/']);
+    expect(sanitizePortalAllowlist(null)).toEqual(['/#/zone/']);
+    expect(sanitizePortalAllowlist(['/', 1, 'x'])).toEqual(['/#/zone/']);
   });
 });
 
@@ -124,9 +124,9 @@ describe('activatePortalHandoff (one-shot)', () => {
     expect(r.status).toBe(ACTIVATION_STATUS.NAVIGATED);
     expect(r.navigated).toBe(true);
     expect(r.zoneId).toBe('plebeian-market-bazaar');
-    expect(r.targetRoute).toBe('/zone/plebeian-market-bazaar/');
+    expect(r.targetRoute).toBe('/#/zone/plebeian-market-bazaar');
     expect(r.transportKind).toBe(TRANSPORT_KIND.HOST);
-    expect(host.calls.pushState).toEqual(['/zone/plebeian-market-bazaar/']);
+    expect(host.calls.pushState).toEqual(['/#/zone/plebeian-market-bazaar']);
   });
 
   it('a confirmed hop over an injected BROWSER window is "live"', () => {
@@ -135,15 +135,15 @@ describe('activatePortalHandoff (one-shot)', () => {
     expect(r.status).toBe(ACTIVATION_STATUS.NAVIGATED);
     expect(r.live).toBe(true);
     expect(r.transportKind).toBe(TRANSPORT_KIND.BROWSER);
-    expect(win.calls.pushState).toEqual(['/zone/plebeian-market-bazaar/']);
+    expect(win.calls.pushState).toEqual(['/#/zone/plebeian-market-bazaar']);
   });
 
-  it('a ["/"] allowlist is folded to ["/zone/"] so the scoped hop STILL navigates', () => {
+  it('a ["/"] allowlist is folded to ["/#/zone/"] so the scoped hop STILL navigates', () => {
     const host = createRecordingHost('/');
     const r = activatePortalHandoff(GATEWAY, CTX, true, { confirmed: true, host, routeAllowlist: ['/'] });
-    expect(r.routeAllowlist).toEqual(['/zone/']);
+    expect(r.routeAllowlist).toEqual(['/#/zone/']);
     expect(r.status).toBe(ACTIVATION_STATUS.NAVIGATED);
-    expect(host.calls.pushState).toEqual(['/zone/plebeian-market-bazaar/']);
+    expect(host.calls.pushState).toEqual(['/#/zone/plebeian-market-bazaar']);
   });
 
   it('a missing grant blocks the hop (consent gate preserved)', () => {
@@ -203,7 +203,7 @@ describe('createGatewayPortalBoundary (arm → confirm)', () => {
     const rep = boundary.confirm(true);
     expect(rep.status).toBe(ACTIVATION_STATUS.NAVIGATED);
     expect(rep.navigated).toBe(true);
-    expect(host.calls.pushState).toEqual(['/zone/plebeian-market-bazaar/']);
+    expect(host.calls.pushState).toEqual(['/#/zone/plebeian-market-bazaar']);
     expect(boundary.state()).toBe(PORTAL_STATE.NAVIGATED);
     expect(boundary.armed()).toBe(false);
   });
@@ -229,7 +229,7 @@ describe('createGatewayPortalBoundary (arm → confirm)', () => {
 
   it('the boundary allowlist is always a meaningful scoped list (["/"] folded)', () => {
     const boundary = createGatewayPortalBoundary({ host: createRecordingHost('/'), routeAllowlist: ['/'] });
-    expect(boundary.routeAllowlist()).toEqual(['/zone/']);
+    expect(boundary.routeAllowlist()).toEqual(['/#/zone/']);
   });
 
   it('arming a non-gateway leaves the boundary idle', () => {
@@ -262,7 +262,7 @@ describe('SDK + debug exposure', () => {
     expect(rep.confirmed).toBe(true);
     expect(rep.live).toBe(false); // recording host, not the real browser
     expect(rep.inMemory).toBe(true);
-    expect(rep.pushStateCalls).toEqual(['/zone/plebeian-market-bazaar/']);
+    expect(rep.pushStateCalls).toEqual(['/#/zone/plebeian-market-bazaar']);
     expect(rep.external).toBe(false);
     expect(rep.network).toBe(false);
   });

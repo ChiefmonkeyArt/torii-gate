@@ -4,7 +4,7 @@
 // and raises a prompt but NEVER navigates; walking OUT cancels + clears the prompt;
 // only an explicit interact() confirms and navigates over the injected same-origin
 // host; out-of-range never arms; reset() disarms; the boundary allowlist stays
-// scoped to ['/zone/'] (never ['/']); an external website URL is never navigated;
+// scoped to ['/#/zone/'] (never ['/']); an external website URL is never navigated;
 // onPrompt fires only on range transitions; interact when not armed is a no-op.
 // Pure module → node-safe (the boundary, which holds any injected window, is
 // injected; this module never reaches a global window).
@@ -33,7 +33,7 @@ const PORTAL_POS = Object.freeze({ x: 20, y: 0, z: 0 });
 // Build a trigger over a fresh recording-host boundary + a prompt-call recorder.
 function makeTrigger(extra = {}) {
   const host = createRecordingHost('/');
-  const boundary = createGatewayPortalBoundary({ host, routeAllowlist: ['/zone/'], ...extra });
+  const boundary = createGatewayPortalBoundary({ host, routeAllowlist: ['/#/zone/'], ...extra });
   const prompts = [];
   const trigger = createPortalTrigger({
     boundary,
@@ -117,8 +117,8 @@ describe('interact() is the ONLY navigating step', () => {
     expect(rep.status).toBe(ACTIVATION_STATUS.NAVIGATED);
     expect(rep.navigated).toBe(true);
     expect(rep.zoneId).toBe('plebeian-market-bazaar');
-    expect(rep.targetRoute).toBe('/zone/plebeian-market-bazaar/');
-    expect(host.calls.pushState).toEqual(['/zone/plebeian-market-bazaar/']);
+    expect(rep.targetRoute).toBe('/#/zone/plebeian-market-bazaar');
+    expect(host.calls.pushState).toEqual(['/#/zone/plebeian-market-bazaar']);
     // The prompt is cleared after a confirmed hop.
     expect(trigger.promptShown()).toBe(false);
     expect(prompts[prompts.length - 1]).toEqual({ show: false, text: '' });
@@ -136,7 +136,7 @@ describe('interact() is the ONLY navigating step', () => {
     trigger.tick({ x: 21, y: 0, z: 0 });
     trigger.interact(true);
     for (const route of host.calls.pushState) {
-      expect(route.startsWith('/zone/')).toBe(true);
+      expect(route.startsWith('/#/zone/')).toBe(true);
       expect(route).not.toMatch(/^https?:|^\/\/|wss:/i);
     }
   });
@@ -156,8 +156,8 @@ describe('allowlist stays scoped to ["/zone/"] (never permit-all)', () => {
     const { host, trigger } = makeTrigger({ routeAllowlist: ['/'] });
     trigger.tick({ x: 21, y: 0, z: 0 });
     const rep = trigger.interact(true);
-    expect(rep.routeAllowlist).toEqual(['/zone/']);
-    expect(host.calls.pushState).toEqual(['/zone/plebeian-market-bazaar/']);
+    expect(rep.routeAllowlist).toEqual(['/#/zone/']);
+    expect(host.calls.pushState).toEqual(['/#/zone/plebeian-market-bazaar']);
   });
 });
 
@@ -218,8 +218,8 @@ describe('SDK + debug exposure', () => {
     expect(rep.navigated).toBe(true);
     expect(rep.live).toBe(false);             // recording host, not a real browser
     expect(rep.inMemory).toBe(true);
-    expect(rep.routeAllowlist).toEqual(['/zone/']);
-    expect(rep.pushStateCalls).toEqual(['/zone/plebeian-market-bazaar/']);
+    expect(rep.routeAllowlist).toEqual(['/#/zone/']);
+    expect(rep.pushStateCalls).toEqual(['/#/zone/plebeian-market-bazaar']);
     expect(rep.external).toBe(false);
     expect(rep.network).toBe(false);
   });
