@@ -175,11 +175,12 @@ export function describeZoneRoute(path) {
 export const DEMO_ZONE_ROUTE = '/zone/plebeian-market-bazaar';
 
 // DEPLOYABLE_ZONE_SLUGS — the single source of truth for which `/zone/<slug>` deep
-// links get a pre-generated static shell at build time (v0.2.241). On an exact-path
-// static host with no SPA rewrite (torii-quest.pplx.app returns a JSON 404 for an
-// unknown path), a hard-refresh / deep-link of `/zone/<slug>` 404s unless a real
-// `dist/zone/<slug>/index.html` shell exists for the host to serve. The build copies
-// index.html to a shell for each slug here; the parser then resolves the slug
-// client-side exactly as it does for an in-app portal hop. Every entry MUST be a
-// valid slug (isValidZoneSlug) — tools/zoneShells.mjs and the build assert this.
+// links get a pre-generated static shell at build time (v0.2.242). On an exact-path
+// static host with no SPA rewrite and no directory-index resolution (torii-quest.pplx.app
+// returns a JSON 404 for an unknown path), a hard-refresh / deep-link of the
+// no-trailing-slash `/zone/<slug>` 404s unless a real file lives at that EXACT path. The
+// build copies index.html to the extensionless file `dist/zone/<slug>` for each slug here;
+// the parser then resolves the slug client-side exactly as it does for an in-app portal
+// hop. Every entry MUST be a valid slug (isValidZoneSlug) — tools/zoneShells.mjs and the
+// build assert this.
 export const DEPLOYABLE_ZONE_SLUGS = Object.freeze(['plebeian-market-bazaar']);

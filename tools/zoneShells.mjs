@@ -1,10 +1,18 @@
 // tools/zoneShells.mjs — PURE, node-safe planner for the static `/zone/<slug>` SHELL
-// files (v0.2.241). On an exact-path static host with no SPA rewrite (torii-quest.pplx.app
-// returns a JSON 404 for an unknown path), a hard-refresh / deep-link of `/zone/<slug>`
-// 404s because no real file lives there. The fix is to publish a byte-identical copy of
-// index.html at `dist/zone/<slug>/index.html` (directory-index convention) for each
-// deployable slug, so the host serves the app shell (text/html) and the v0.2.182 parser
-// then resolves the slug client-side — no backend, no rewrite engine needed.
+// files (v0.2.242). On an exact-path static host with no SPA rewrite AND no directory-index
+// resolution (torii-quest.pplx.app returns a JSON 404 for an unknown path), a hard-refresh
+// / deep-link of `/zone/<slug>` 404s because no real file lives there. v0.2.241 wrote the
+// shell at `dist/zone/<slug>/index.html` (directory-index convention), but the host does
+// NOT map the extensionless `/zone/<slug>` URL onto that nested index.html, so the cold hit
+// still 404'd. v0.2.242 instead writes a byte-identical copy of index.html to the EXACT-PATH
+// file `dist/zone/<slug>` (no extension), the precise path the host's exact-path lookup
+// resolves for the no-trailing-slash URL. index.html uses root-absolute asset URLs
+// (`/assets/…`), so the shell loads the same bundle and the v0.2.182 parser resolves the
+// slug client-side — no backend, no rewrite engine needed.
+//
+// NOTE: a file `dist/zone/<slug>` and a directory `dist/zone/<slug>/` cannot coexist under
+// one name, so the extensionless file REPLACES the v0.2.241 directory-index shell; it does
+// not sit alongside it. The exact no-trailing-slash URL is the one the smoke test requires.
 //
 // This module only PLANS the shell paths from a slug list; the fs writes live in
 // tools/generate-zone-shells.mjs (the impure CLI). Kept pure + deterministic so the path
@@ -15,15 +23,11 @@
 
 import { isValidZoneSlug, ZONE_ROUTE_PREFIX } from '../src/engine/gateway/zoneRoute.js';
 
-// The directory-index file every shell is named, so an exact-path host serving
-// `/zone/<slug>` (or `/zone/<slug>/`) returns the shell with a text/html MIME type.
-export const ZONE_SHELL_INDEX = 'index.html';
-
-// zoneShellPathFor(slug) → the dist-relative shell path `zone/<slug>/index.html` for a
-// valid slug, or null. PURE — builds a string, writes nothing.
+// zoneShellPathFor(slug) → the dist-relative EXACT-PATH shell file `zone/<slug>` (no
+// extension) for a valid slug, or null. PURE — builds a string, writes nothing.
 export function zoneShellPathFor(slug) {
   if (!isValidZoneSlug(slug)) return null;
-  return `zone/${slug}/${ZONE_SHELL_INDEX}`;
+  return `zone/${slug}`;
 }
 
 // zoneShellRouteFor(slug) → the same-origin route a shell answers (`/zone/<slug>`), or

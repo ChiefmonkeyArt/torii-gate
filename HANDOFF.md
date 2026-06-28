@@ -14,7 +14,7 @@
 A browser arena shooter: Three.js (WebGL) render layer, Rapier3D (WASM) physics,
 Nostr identity, Bitcoin/ecash (fake sats in alpha). Vite 8 build. Pure ES modules.
 
-- **Current version:** v0.2.241-alpha (see §3 for every place the version string lives)
+- **Current version:** v0.2.242-alpha (see §3 for every place the version string lives)
 - **Active focus:** 15-hour proof-of-concept route (see `strategy.md` → "15-Hour
   Proof-of-Concept Route" and `todo.md` → "ACTIVE FOCUS"). **Shooter is
   maintenance-only** unless a bug is demo-breaking; the active MVP is the freedom-tech
@@ -525,6 +525,26 @@ Breaking one should fail CI/the check, not ship.
   server; the suggested future commands are TEXT ONLY, each carrying an explicit "do not run without
   user approval"; no gameplay/physics/shooter/Rapier change; no Nostr signing/publishing/live network
   write; `godMode` stays false.
+  **v0.2.242** ZONE DEEP-LINK EXACT-PATH REPAIR (game slice) — fixes the live v0.2.241 smoke failure: a direct
+  open / hard-refresh of `https://torii-quest.pplx.app/zone/plebeian-market-bazaar` STILL returned the host JSON
+  404 (`{"detail":"No static asset at /zone/plebeian-market-bazaar…"}`). ROOT CAUSE: v0.2.241 generated
+  `dist/zone/<slug>/index.html`, but the static host matches files by EXACT path with NO SPA rewrite AND NO
+  directory-index resolution — it never maps the extensionless `/zone/<slug>` URL to a nested `index.html`, so the
+  no-trailing-slash URL 404s. FIX (no backend): the build now writes a real EXTENSIONLESS file at the exact path
+  `dist/zone/<slug>` (byte-identical to `dist/index.html`) for each `DEPLOYABLE_ZONE_SLUGS` entry. NOTE: a regular
+  file `dist/zone/<slug>` and a directory `dist/zone/<slug>/` cannot coexist under one name on a filesystem, so the
+  exact-path file REPLACES the v0.2.241 directory-index form (the task's "keep both" is physically impossible). The
+  planner (`tools/zoneShells.mjs` `zoneShellPathFor` → `zone/<slug>`), generator, readiness guard
+  (`zoneFallbackReadiness`, `npm run zones:check`, regression `[15]`), and `build-continuum.mjs` are all reconciled
+  to the extensionless `/zone/<slug>` shell. Updated `tests/zone-hard-refresh.test.js` + `tests/zone-fallback-readiness.test.js`
+  lock the no-extension/no-trailing-slash path, the built-dist exact-path file (a file, byte-identical to index.html, no
+  directory-index left behind), and the verified-shell allow/deny logic. RESIDUAL RISK: an extensionless file's served
+  MIME is host-dependent and unverifiable locally — needs a parent live re-smoke after publish. Preserves the v0.2.240
+  SW fail-soft precache (zone shells are HTML → network-first, no SW change), the v0.2.238 fail-closed loop, and the
+  v0.2.236 NIP-07 login decoupling; root entry flow + ENTER ARENA + ESC pause unchanged. Gameplay slice — no
+  physics/shooter/Rapier balance change; no Nostr signing/publishing/live network write; no new timers; no new
+  hot-path `Vector3`/`Matrix4`; debug tools ship unconditionally; `godMode` stays false; no deploy/publish/push
+  (parent agent handles those). Latest slice report: `torii-v0.2.242-zone-exact-path-report.md`.
   **v0.2.241** ZONE HARD-REFRESH DEEP-LINK FIX (game slice) — fixes a published-host 404 on a hard-refresh /
   deep-link of an in-app zone route. ROOT CAUSE: the static host (`torii-quest.pplx.app`) matches files by EXACT
   path and has no SPA rewrite, so a cold load of `/zone/plebeian-market-bazaar` returned the host JSON 404

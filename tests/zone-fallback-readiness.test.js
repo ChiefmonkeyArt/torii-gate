@@ -125,25 +125,38 @@ describe('checkDistRoutes', () => {
     expect(r.errors.some((e) => e.includes('/zone/') && e.toUpperCase().includes('SHADOW'))).toBe(true);
   });
 
-  it('ALLOWS a verified /zone/<slug>/index.html shell byte-identical to index.html (v0.2.241)', () => {
+  it('ALLOWS a verified /zone/<slug> exact-path shell byte-identical to index.html (v0.2.242)', () => {
     const shell = '<!doctype html><html><body>torii shell</body></html>';
     const r = checkDistRoutes({
-      paths: ['index.html', 'zone/plebeian-market-bazaar/index.html', 'assets/app.js'],
+      paths: ['index.html', 'zone/plebeian-market-bazaar', 'assets/app.js'],
+      contents: {
+        '/index.html': shell,
+        '/zone/plebeian-market-bazaar': shell,
+      },
+    });
+    expect(r.ok).toBe(true);
+    expect(r.shellPaths).toEqual(['/zone/plebeian-market-bazaar']);
+  });
+
+  it('does NOT allow the v0.2.241 directory-index form as a verified shell', () => {
+    const shell = '<!doctype html><html><body>torii shell</body></html>';
+    const r = checkDistRoutes({
+      paths: ['index.html', 'zone/plebeian-market-bazaar/index.html'],
       contents: {
         '/index.html': shell,
         '/zone/plebeian-market-bazaar/index.html': shell,
       },
     });
-    expect(r.ok).toBe(true);
-    expect(r.shellPaths).toEqual(['/zone/plebeian-market-bazaar/index.html']);
+    expect(r.ok).toBe(false);
+    expect(r.shellPaths).toEqual([]);
   });
 
-  it('still SHADOW-fails a /zone/<slug>/index.html shell that does NOT match index.html', () => {
+  it('still SHADOW-fails a /zone/<slug> shell that does NOT match index.html', () => {
     const r = checkDistRoutes({
-      paths: ['index.html', 'zone/plebeian-market-bazaar/index.html'],
+      paths: ['index.html', 'zone/plebeian-market-bazaar'],
       contents: {
         '/index.html': '<!doctype html>REAL',
-        '/zone/plebeian-market-bazaar/index.html': '<!doctype html>DIFFERENT',
+        '/zone/plebeian-market-bazaar': '<!doctype html>DIFFERENT',
       },
     });
     expect(r.ok).toBe(false);
@@ -151,7 +164,7 @@ describe('checkDistRoutes', () => {
   });
 
   it('still SHADOW-fails a /zone/* shell when no contents are supplied to verify it', () => {
-    const r = checkDistRoutes({ paths: ['index.html', 'zone/plebeian-market-bazaar/index.html'] });
+    const r = checkDistRoutes({ paths: ['index.html', 'zone/plebeian-market-bazaar'] });
     expect(r.ok).toBe(false);
     expect(r.shellPaths).toEqual([]);
   });
@@ -159,11 +172,11 @@ describe('checkDistRoutes', () => {
   it('does NOT treat a bad-slug or nested non-shell /zone/* file as a verified shell', () => {
     const shell = '<html>shell</html>';
     const r = checkDistRoutes({
-      paths: ['index.html', 'zone/Bad_Slug/index.html', 'zone/foo/bar/index.html'],
+      paths: ['index.html', 'zone/Bad_Slug', 'zone/foo/bar'],
       contents: {
         '/index.html': shell,
-        '/zone/Bad_Slug/index.html': shell,
-        '/zone/foo/bar/index.html': shell,
+        '/zone/Bad_Slug': shell,
+        '/zone/foo/bar': shell,
       },
     });
     expect(r.ok).toBe(false);
