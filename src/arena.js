@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene } from './scene.js';
-import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X, TRAVEL_GATE_X } from './config.js';
+import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X, TRAVEL_GATE_X, TRAVEL_GATE_Z } from './config.js';
 import { buildFoliage } from './arena-foliage.js';
 import { buildProofSurfaceMeshes } from './engine/world/proofSurfaceMeshes.js';
 
@@ -223,14 +223,14 @@ function _buildTravelGateway() {
   const rp = lp.clone(); rp.position.set(0, 2.5, 3); fallback.add(rp);
   const cb = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 6.5), mat);
   cb.position.set(0, 5.2, 0); fallback.add(cb);
-  fallback.position.set(TRAVEL_GATE_X, 0, 0);
+  fallback.position.set(TRAVEL_GATE_X, 0, TRAVEL_GATE_Z);
   fallback.rotation.y = Math.PI / 2;
   fallback.name = 'travel-gateway';
   scene.add(fallback);
 
   // Accent light — turquoise, marks the travel portal regardless of GLB.
   const gl = new THREE.PointLight(C_TURQ, 3, 12);
-  gl.position.set(TRAVEL_GATE_X - 1, 4, 0); scene.add(gl);
+  gl.position.set(TRAVEL_GATE_X - 1, 4, TRAVEL_GATE_Z); scene.add(gl);
 
   // nostrich: the travel gateway GLB is DECORATIVE and OPTIONAL. It loads async,
   // long after boot, and must NEVER block arena entry. The turquoise procedural
@@ -268,7 +268,7 @@ function _buildTravelGateway() {
         // Centre on the far-side travel plane, feet on the floor, front facing the
         // approaching player (who walks east from the entrance).
         box.setFromObject(gate);
-        gate.position.set(TRAVEL_GATE_X, -box.min.y, 0);
+        gate.position.set(TRAVEL_GATE_X, -box.min.y, TRAVEL_GATE_Z);
         gate.rotation.y = Math.PI;
 
         gate.traverse(o => {

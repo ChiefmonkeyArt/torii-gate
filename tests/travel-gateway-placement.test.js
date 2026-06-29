@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { NAP_X, NAP_FAR_X, TRAVEL_GATE_X } from '../src/config.js';
+import { NAP_X, NAP_FAR_X, TRAVEL_GATE_X, TRAVEL_GATE_Z, ARENA_HALF } from '../src/config.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ARENA = readFileSync(join(ROOT, 'src/arena.js'), 'utf8');
@@ -91,5 +91,42 @@ describe('v0.2.239 — travel interaction anchored to the far gateway', () => {
     // The portal mesh is built from the trigger's own portalPos(), so the rings,
     // beam and spinning diamond move to the far gateway automatically.
     expect(MAIN).toContain('position: _portalTrigger.portalPos()');
+  });
+});
+
+describe('v0.2.245 — travel gateway moved to the far-right NAP corner', () => {
+  // v0.2.245: the gateway was sitting on top of the leaderboard proof panel
+  // (nap-zone-far-centre, also at x=40, z=0). Moved off-axis into the far-right
+  // corner (player's right, +z) so the portal no longer overlaps the panel.
+  it('exposes a non-zero TRAVEL_GATE_Z corner offset (off the z=0 panel plane)', () => {
+    expect(typeof TRAVEL_GATE_Z).toBe('number');
+    expect(TRAVEL_GATE_Z).not.toBe(0);
+  });
+
+  it('places the corner on the player\'s right (+z), matching the chosen corner B', () => {
+    expect(TRAVEL_GATE_Z).toBeGreaterThan(0);
+  });
+
+  it('keeps the detection ring clear of the z=0 proof panel', () => {
+    // Trigger range is 3; the inner ring edge must not reach back to z=0.
+    expect(TRAVEL_GATE_Z - 3).toBeGreaterThan(0);
+  });
+
+  it('keeps the detection ring inside the NAP floor z-edge (±ARENA_HALF)', () => {
+    // NAP floor spans z∈[-ARENA_HALF, ARENA_HALF]; outer ring must stay inside.
+    expect(TRAVEL_GATE_Z + 3).toBeLessThanOrEqual(ARENA_HALF);
+  });
+
+  it('arena.js anchors every travel-gateway position to TRAVEL_GATE_Z (not z=0)', () => {
+    // fallback, accent light, and GLB gate all use the corner z.
+    expect(ARENA).toContain('fallback.position.set(TRAVEL_GATE_X, 0, TRAVEL_GATE_Z)');
+    expect(ARENA).toContain('gate.position.set(TRAVEL_GATE_X, -box.min.y, TRAVEL_GATE_Z)');
+  });
+
+  it('main.js anchors the portal trigger + gateway component to TRAVEL_GATE_Z', () => {
+    const triggerBlock = MAIN.slice(MAIN.indexOf('createPortalTrigger('));
+    expect(triggerBlock).toContain('portalPos: { x: TRAVEL_GATE_X, y: 0, z: TRAVEL_GATE_Z }');
+    const gwBlock = MAIN.slice(MAIN.indexOf('createToriiGateway('));
+    expect(gwBlock).toContain('position: { x: TRAVEL_GATE_X, y: 0, z: TRAVEL_GATE_Z }');
   });
 });

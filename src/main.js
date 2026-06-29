@@ -24,7 +24,7 @@ import { buildNapNpc, tickNapNpc } from './napNpc.js';
 import { loadFirstPersonBody, tickFirstPersonBody } from './firstPersonBody.js';
 import { initTargetReticle, tickTargetReticle } from './targetReticle.js';
 import { initHUD, tickHUD, flashCross, drawMinimap, setNapMode, showPortalPrompt, hidePortalPrompt, showZoneNotice, hideZoneNotice } from './hud.js';
-import { ARENA_HALF, WALL_H, NAP_X, TRAVEL_GATE_X } from './config.js';
+import { ARENA_HALF, WALL_H, NAP_X, TRAVEL_GATE_X, TRAVEL_GATE_Z } from './config.js';
 import { createGatewayPortalBoundary } from './engine/gateway/gatewayPortalActivation.js';
 import { createPortalTrigger } from './engine/gateway/portalTrigger.js';
 import { buildPortalMesh, tickPortalMesh } from './engine/gateway/portalMesh.js';
@@ -189,7 +189,7 @@ renderGatewayPreview();
 const _portalGateway = createToriiGateway({
   target: 'plebeian-market-bazaar',
   relay: 'wss://relay.example.com',
-  position: { x: TRAVEL_GATE_X, y: 0, z: 0 },
+  position: { x: TRAVEL_GATE_X, y: 0, z: TRAVEL_GATE_Z },
 });
 const _portalBoundary = createGatewayPortalBoundary({
   window,                         // ← the ONLY browser-window injection point
@@ -207,7 +207,7 @@ const _portalTrigger = createPortalTrigger({
   // v0.2.239 — travel portal moved to the FAR side of the NAP zone (the new
   // torii-gateway-experience.glb). The entrance torii-gate.glb at ARENA_HALF is
   // now a pure NAP marker; detection/prompt/KeyF interact arm only out here.
-  portalPos: { x: TRAVEL_GATE_X, y: 0, z: 0 },
+  portalPos: { x: TRAVEL_GATE_X, y: 0, z: TRAVEL_GATE_Z },
   range: 3,
   // v0.2.184 — name the target zone in the in-range prompt so the player sees WHERE
   // KeyF travels (display-only string; still arms-only, never navigates on proximity).
