@@ -203,6 +203,7 @@ const _handshake = createHandshakeController({
 let _worldsCache = [];    // sanitised online worlds (from refreshOnlineWorlds)
 let _worldsScan = 'idle'; // 'idle' | 'scanning' | 'offline'
 let _handshakeFrame = 0;  // frame-throttled tick (no setTimeout in main.js)
+let _presenceFrame = 0;   // frame-throttled presence re-scan (no setTimeout in main.js)
 
 // renderGatewayCard() — the unified painter for the title-screen gateway card.
 // Merges the live presence scan (clickable worlds when logged in) with the
@@ -248,10 +249,11 @@ function renderGatewayCard() {
   headV.className = 'gw-row-value';
   headV.textContent = canTravel ? 'click to travel' : 'online';
   body.append(head, headV);
-  for (const w of _worldsCache.slice(0, 6)) {
+  for (const w of _worldsCache.slice(0, 24)) {
     const label = w.title || w.shortPubkey || w.zoneId || 'world';
     const row = document.createElement('div');
     row.className = canTravel ? 'gw-world-row gw-world-clickable' : 'gw-world-row';
+    if (w.pubkey) row.setAttribute('data-pubkey', w.pubkey);
     row.textContent = (canTravel ? '→ ' : '  ') + label;
     if (canTravel) {
       row.setAttribute('role', 'button');
@@ -871,6 +873,14 @@ function update(dt, frame) {
   if (!isPlaying() && state.nostrPubkey && ++_handshakeFrame >= 120) {
     _handshakeFrame = 0;
     _handshake.tick().then(renderGatewayCard).catch(() => {});
+  }
+  // v0.2.253 (P2): re-scan presence ~every 10s (600 frames @ ~60fps) so newly-online
+  // worlds appear while a traveller idles on the title screen. Read-only: no sign,
+  // no publish, no navigate. Only while NOT playing + logged in. refreshOnlineWorlds
+  // re-renders the card itself when the list changes.
+  if (!isPlaying() && state.nostrPubkey && ++_presenceFrame >= 600) {
+    _presenceFrame = 0;
+    refreshOnlineWorlds().catch(() => {});
   }
   // Wrap render in try/catch — a Three.js crash must not kill the rAF loop
   try {
