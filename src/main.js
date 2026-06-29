@@ -35,13 +35,15 @@ import { playShoot, playFootstep, playJumpLand } from './audio.js';
 import { initPlayerStats } from './playerStats.js';
 import { installToriiDebug } from './engine/debug/toriiDebug.js';
 import { applyPhaseScreens } from './engine/ui/phaseScreens.js';
-import { gatewayPreviewBlock } from './engine/gateway/gatewayPreview.js';
 import { createToriiGateway } from './engine/components/toriiGateway.js';
 import { productPreviewBlock } from './engine/components/productPreview.js';
 import { leaderboardPreviewBlock } from './engine/nostr/leaderboardPreview.js';
 import { updatePreviewBlock } from './engine/update/updatePreview.js';
 import { mvpLoopSummary } from './engine/mvpLoop.js';
 import { VERSION, TUNING } from './config.js';
+// v0.2.251 (P0): live n2n world-presence transport + pure presence layer.
+import { fanoutReq, signEvent, fanoutPublish, RELAYS } from './nostr.js';
+import { fetchOnlineWorlds, buildPresenceEvent, publishOurPresence } from './engine/gateway/worldPresence.js';
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 
@@ -150,31 +152,113 @@ function renderMvpLoop() {
 }
 renderMvpLoop();
 
-// Gateway/NAP-to-NAP PREVIEW (LEAN-2, v0.2.139) — render the inert title-screen
-// preview card ONCE from the pure gatewayPreview block. This is display-only: it
-// shows a demo destination/intent/status so the freedom-tech hop is visible on
-// the title screen, but it NEVER navigates, fetches, signs, or publishes. The
-// armed demo gate (target + relay) makes the preview show a ready/armed view;
-// crossing the gate stays a deferred host decision (see GATEWAY_PROTOCOL.md).
-function renderGatewayPreview() {
-  const body = document.getElementById('gateway-preview-body');
-  if (!body) return;
-  const demoGate = createToriiGateway({
-    target: 'plebeian-market-bazaar',
-    relay: 'wss://relay.example.com',
-  });
-  const block = gatewayPreviewBlock(demoGate, { from: 'torii-quest' });
-  body.replaceChildren(...block.lines.flatMap(({ label, value }) => {
+// Gateway / n2n world-presence LIVE card (v0.2.251, P0). Replaces the inert
+// LEAN-2 demo preview with a REAL read of other Torii worlds advertising
+// presence on shared relays (kind 30078, topic `torii-gateway`). The read path
+// is read-only + safe: fanoutReq over wss relays → fetchOnlineWorlds →
+// readGateways sanitisation. It NEVER navigates and NEVER signs. The write half
+// (advertising OUR world) happens only on explicit NIP-07 login — see
+// publishOurWorldPresence below. All rows are textContent: no HTML, no links,
+// no navigation. A failed/empty scan degrades to a clean offline state.
+const _GATEWAY_BADGE = {
+  scanning: 'LIVE · SCANNING…',
+  online: (n) => `LIVE · ${n} ONLINE`,
+  empty: 'LIVE · NONE ONLINE',
+  offline: 'LIVE · OFFLINE',
+};
+
+function _setGatewayBadge(text) {
+  const el = document.getElementById('gateway-preview-badge');
+  if (el) el.textContent = text;
+}
+
+// _gatewayRows(...[label, value] pairs) → a flat [labelEl, valueEl, ...] list for
+// replaceChildren. textContent only — never innerHTML, never a link.
+function _gatewayRows(...pairs) {
+  const out = [];
+  for (const [label, value] of pairs) {
     const l = document.createElement('div');
     l.className = 'gw-row-label';
     l.textContent = label;
     const v = document.createElement('div');
     v.className = 'gw-row-value';
-    v.textContent = value; // textContent only — no HTML, no link, no navigation
-    return [l, v];
-  }));
+    v.textContent = value;
+    out.push(l, v);
+  }
+  return out;
+}
+
+// refreshOnlineWorlds() — read other worlds' presence from relays and render the
+// live list into the title-screen gateway card. Read-only: no sign, no publish,
+// no navigate. Degrades to a clean offline/empty state on any failure.
+async function refreshOnlineWorlds() {
+  const body = document.getElementById('gateway-preview-body');
+  if (!body) return;
+  _setGatewayBadge(_GATEWAY_BADGE.scanning);
+  body.replaceChildren(..._gatewayRows(['SCAN', 'querying relays…']));
+  const r = await fetchOnlineWorlds({
+    request: fanoutReq,
+    relays: RELAYS,
+    ourPubkey: state.nostrPubkey || '',
+    timeoutMs: 5000,
+  });
+  if (!r.ok) {
+    _setGatewayBadge(_GATEWAY_BADGE.offline);
+    body.replaceChildren(..._gatewayRows(['SCAN', 'relays unreachable']));
+    return;
+  }
+  if (!r.count) {
+    _setGatewayBadge(_GATEWAY_BADGE.empty);
+    body.replaceChildren(..._gatewayRows(['SCAN', 'no other worlds online']));
+    return;
+  }
+  _setGatewayBadge(_GATEWAY_BADGE.online(r.count));
+  const pairs = [['WORLDS', `${r.count} found`]];
+  for (const w of r.worlds.slice(0, 6)) {
+    const label = w.title || w.shortPubkey || w.zoneId || 'world';
+    const value = w.zoneType || 'world';
+    pairs.push([label, value]);
+  }
+  body.replaceChildren(..._gatewayRows(...pairs));
+}
+
+// publishOurWorldPresence() — on NIP-07 login, advertise OUR world on the shared
+// relays so other Torii operators can see us online (the write half of the
+// presence layer). Builds an unsigned kind-30078 record, signs via NIP-07, and
+// fanout-publishes. This is the ONLY sign/publish site for presence; it runs
+// only after an explicit user login. Never navigates.
+async function publishOurWorldPresence() {
+  const pubkey = state.nostrPubkey || '';
+  if (!/^[0-9a-f]{64}$/.test(pubkey)) return;
+  const built = buildPresenceEvent({
+    pubkey,
+    zoneId: 'quest-torii',
+    title: 'Torii Quest',
+    zoneType: 'arena',
+    website: 'https://quest-torii.pplx.app',
+    relays: RELAYS,
+  });
+  if (!built.ok) return;
+  await publishOurPresence({
+    unsigned: built.event,
+    sign: signEvent,
+    publish: fanoutPublish,
+    relays: RELAYS,
+    timeoutMs: 5000,
+  });
+  // Re-scan now that our own pubkey is known (so we filter ourselves out).
+  refreshOnlineWorlds();
+}
+
+function renderGatewayPreview() {
+  // Initial skeleton; the live read-only relay scan fills it in async.
+  refreshOnlineWorlds();
 }
 renderGatewayPreview();
+
+// On explicit NIP-07 login: advertise our world, then re-scan. Login is the only
+// trigger for the presence write path — never auto-publishes.
+on(EV.NOSTR_LOGIN, () => { publishOurWorldPresence(); });
 
 // ── Live in-world GATEWAY PORTAL trigger (v0.2.181) ────────────────────────────
 // THE composition-root boundary: this is the ONE place a REAL browser `window` is

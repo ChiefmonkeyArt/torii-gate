@@ -3,6 +3,7 @@ import { state } from './state.js';
 import { emit, EV } from './events.js';
 
 const RELAYS = ['wss://relay.damus.io','wss://nos.lol','wss://relay.nostr.band'];
+export { RELAYS };
 
 // A nostrich profile's `picture` is attacker-controlled (anyone can sign a
 // kind:0 with any string). Only accept a well-formed https URL before it ever
@@ -70,4 +71,164 @@ function _updateTitleUI() {
     avatarEl.style.display = 'block';
     if (phEl) phEl.style.display = 'none';
   }
+}
+
+
+// ── Live relay transport (v0.2.251 — n2n gateway presence) ────────────────
+// A read-only REQ→EOSE collector + an EVENT publish path + a NIP-07 signEvent
+// wrapper. These are the only live WebSocket sites besides the kind:0 profile
+// fetch above; all setTimeout usage stays in this allowlisted file so the
+// regression check's setTimeout allowlist (nostr.js + hud.js) still holds.
+//
+// Constrained by construction:
+//   - READ: relayReq opens a WebSocket, sends a REQ with the caller's filters,
+//     collects EVENT frames, resolves on EOSE (or timeout / error), then closes.
+//     Never signs, never publishes, never navigates.
+//   - PUBLISH: publishEvent sends a signed EVENT frame and resolves on the relay's
+//     OK(true)/OK(false)/NOTICE. The event MUST already be signed (use signEvent).
+//     No key handling here — signing is delegated to NIP-07.
+//   - SIGN: signEvent wraps window.nostr.signEvent (NIP-07). The extension computes
+//     the id + sig; this module never sees a private key.
+//   - Every function degrades safely: a missing window.nostr / closed socket / bad
+//     relay yields a structured error result, never a throw into the game loop.
+
+// relayReq(url, filters, opts?) → Promise<{ ok, events, relay, error }>
+// One relay, one REQ, collect until EOSE. `filters` is a NIP-01 filter array
+// (a single filter object is also accepted). `opts.timeoutMs` caps the wait
+// (default 4000). Pure of side effects beyond the socket; resolves rather than
+// rejecting on failure so callers can fan out.
+export function relayReq(url, filters, opts = {}) {
+  const o = opts && typeof opts === 'object' && !Array.isArray(opts) ? opts : {};
+  const timeoutMs = Number.isFinite(o.timeoutMs) && o.timeoutMs > 0 ? o.timeoutMs : 4000;
+  const subsId = 'rq' + Math.random().toString(36).slice(2, 9);
+  const flt = Array.isArray(filters) ? filters : (filters && typeof filters === 'object' ? [filters] : []);
+  return new Promise((resolve) => {
+    if (typeof WebSocket === 'undefined') {
+      resolve({ ok: false, events: [], relay: url, error: 'no-websocket' });
+      return;
+    }
+    let ws;
+    try { ws = new WebSocket(url); }
+    catch (e) { resolve({ ok: false, events: [], relay: url, error: 'bad-url' }); return; }
+    const events = [];
+    let done = false;
+    const finish = (ok, error) => {
+      if (done) return; done = true;
+      try { if (ws.readyState === 1) ws.close(); } catch { /* best-effort close */ }
+      resolve({ ok, events, relay: url, error: ok ? null : (error || 'failed') });
+    };
+    const timer = setTimeout(() => finish(events.length ? true : false, 'timeout'), timeoutMs);
+    ws.onopen = () => {
+      try { ws.send(JSON.stringify(['REQ', subsId, ...flt])); }
+      catch (e) { clearTimeout(timer); finish(false, 'send-failed'); }
+    };
+    ws.onmessage = (ev) => {
+      try {
+        const frame = JSON.parse(ev.data);
+        if (!Array.isArray(frame)) return;
+        const [verb, sid, payload] = frame;
+        if (verb === 'EVENT' && sid === subsId && payload) events.push(payload);
+        else if (verb === 'EOSE' && sid === subsId) { clearTimeout(timer); finish(true, null); }
+        else if (verb === 'NOTICE') { clearTimeout(timer); finish(false, 'notice'); }
+      } catch { /* ignore a malformed frame */ }
+    };
+    ws.onerror = () => { clearTimeout(timer); finish(false, 'error'); };
+    ws.onclose = () => { clearTimeout(timer); finish(events.length ? true : false, 'closed'); };
+  });
+}
+
+// fanoutReq(relays, filters, opts) → Promise<{ events, used, failed }>. Queries
+// every relay in parallel, merges collected events (deduped by id), and returns
+// the union. Never rejects; failed relays are listed but don't fail the call.
+export async function fanoutReq(relays, filters, opts = {}) {
+  const list = Array.isArray(relays) ? relays : (relays ? [relays] : []);
+  const results = await Promise.all(list.map((r) => relayReq(r, filters, opts)));
+  const seen = new Set();
+  const events = [];
+  const used = [];
+  const failed = [];
+  for (const r of results) {
+    if (r.ok && r.events.length) {
+      used.push(r.relay);
+      for (const e of r.events) {
+        if (e && typeof e.id === 'string' && !seen.has(e.id)) { seen.add(e.id); events.push(e); }
+      }
+    } else if (!r.ok) {
+      failed.push(r.relay);
+    }
+  }
+  return { events, used, failed };
+}
+
+// signEvent(unsignedEvent) → Promise<{ ok, event, error }>. Wraps NIP-07
+// window.nostr.signEvent; the extension returns a fully-signed event (id + sig).
+export async function signEvent(unsigned) {
+  if (typeof window === 'undefined' || !window.nostr || typeof window.nostr.signEvent !== 'function') {
+    return { ok: false, event: null, error: 'nip-07-unavailable' };
+  }
+  try {
+    const signed = await window.nostr.signEvent(unsigned);
+    if (!signed || typeof signed.id !== 'string' || typeof signed.sig !== 'string') {
+      return { ok: false, event: null, error: 'nip-07-bad-signature' };
+    }
+    return { ok: true, event: signed, error: null };
+  } catch (e) {
+    return { ok: false, event: null, error: 'nip-07-rejected' };
+  }
+}
+
+// publishEvent(url, event, opts?) → Promise<{ ok, relay, accepted, error }>.
+// Sends a signed EVENT frame, resolves on OK(true)/OK(false)/NOTICE or timeout.
+export function publishEvent(url, event, opts = {}) {
+  const o = opts && typeof opts === 'object' && !Array.isArray(opts) ? opts : {};
+  const timeoutMs = Number.isFinite(o.timeoutMs) && o.timeoutMs > 0 ? o.timeoutMs : 5000;
+  return new Promise((resolve) => {
+    if (typeof WebSocket === 'undefined') {
+      resolve({ ok: false, relay: url, accepted: false, error: 'no-websocket' });
+      return;
+    }
+    let ws;
+    try { ws = new WebSocket(url); }
+    catch (e) { resolve({ ok: false, relay: url, accepted: false, error: 'bad-url' }); return; }
+    let done = false;
+    const finish = (ok, accepted, error) => {
+      if (done) return; done = true;
+      try { if (ws.readyState === 1) ws.close(); } catch { /* best-effort close */ }
+      resolve({ ok, relay: url, accepted, error });
+    };
+    const timer = setTimeout(() => finish(false, false, 'timeout'), timeoutMs);
+    ws.onopen = () => {
+      try { ws.send(JSON.stringify(['EVENT', event])); }
+      catch (e) { clearTimeout(timer); finish(false, false, 'send-failed'); }
+    };
+    ws.onmessage = (ev) => {
+      try {
+        const frame = JSON.parse(ev.data);
+        if (!Array.isArray(frame)) return;
+        const verb = frame[0];
+        if (verb === 'OK' && frame[1] === event.id) {
+          clearTimeout(timer); finish(true, frame[2] === true, frame[2] === true ? null : 'rejected');
+        } else if (verb === 'NOTICE') {
+          clearTimeout(timer); finish(false, false, 'notice');
+        }
+      } catch { /* ignore a malformed frame */ }
+    };
+    ws.onerror = () => { clearTimeout(timer); finish(false, false, 'error'); };
+    ws.onclose = () => { clearTimeout(timer); finish(false, false, 'closed'); };
+  });
+}
+
+// fanoutPublish(relays, event, opts) → Promise<{ accepted, used, failed }>.
+// Publishes to every relay in parallel; a relay is "used" only on OK(true).
+export async function fanoutPublish(relays, event, opts = {}) {
+  const list = Array.isArray(relays) ? relays : (relays ? [relays] : []);
+  const results = await Promise.all(list.map((r) => publishEvent(r, event, opts)));
+  const used = [];
+  const failed = [];
+  let accepted = 0;
+  for (const r of results) {
+    if (r.ok && r.accepted) { used.push(r.relay); accepted++; }
+    else failed.push(r.relay);
+  }
+  return { accepted, used, failed };
 }

@@ -203,7 +203,11 @@ describe('login decoupled from the 3D boot — loaded bundle never stuck in fall
 
   it('the old login block is fully removed from main.js (no stale duplicate handler/flag)', () => {
     expect(MAIN).not.toMatch(/_doNostrLogin/);
-    expect(MAIN).not.toMatch(/from '\.\/nostr\.js'/);
+    // Login wiring lives in loginBootstrap.js — main.js must not import/call the
+    // login function itself. (main.js MAY import non-login nostr.js exports —
+    // e.g. the relay transport it injects into the pure worldPresence layer —
+    // since that is dependency injection at the composition root, not login logic.)
+    expect(MAIN).not.toMatch(/\bnostrLogin\b/);
     // The login readiness flag is ASSIGNED only by loginBootstrap.js now (a comment may still
     // reference it); main.js must not re-raise it.
     expect(MAIN).not.toMatch(/window\.__toriiLoginReady\s*=/);

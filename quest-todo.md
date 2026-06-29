@@ -32,7 +32,7 @@ Goal: ship the smallest clean proof-of-concept that demonstrates the Torii Quest
 - Keep the four MVP proof slices visible and coherent as one loop: Gateway, Product, Leaderboard, Update.
 - Keep the title-screen / entry / in-world flow stable so the loop can be demoed end-to-end without silent failure.
 - Keep the current safe gateway path intact: preview, intent, consent copy, dry-run plan, same-origin executor seam, and controlled host transport seam.
-- Complete the move of the Torii jump gate / gateway experience into the far-right corner of the NAP zone and keep only enough in-world gateway mesh work to make that experience legible and usable.
+- Complete the move of the Torii jump gate / gateway experience into the far-right corner of the NAP zone (DONE v0.2.245–v0.2.250) and now **promote the gateway to the live n2n hop**: see `strategy.md` → "15-Hour Proof-of-Concept Route" item 2. Phased — P0 presence/who's-online (live relay read + publish our own world-presence event) → P1 signed travel-request/confirm handshake (NIP-07, SEC-2) → P2 cross-host jump carrying npub (SEC-3) → P3 two-instance interop proof. The placeholder second-zone idea is RETIRED in favour of the real cross-world hop described in `GATEWAY_PROTOCOL.md` §6.
 - Keep BotAgent / separation work only where it sharpens the Torii Quest vs Torii Continuum app boundary or prevents demo-breaking instability.
 - Keep docs / handoff / code-index upkeep only at the minimum needed to stop agent confusion and preserve clean app separation.
 - Stand up a safe assistant-editable .md pipeline for quest-todo.md / continuum-todo.md so todo, handoff, and progress updates can be made on the fly without manual copy-editing.

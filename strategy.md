@@ -174,14 +174,22 @@ balloons stops at a green checkpoint and is logged in `todo.md`; track status in
 1. **Torii.quest live** — get the current green source published and reachable as
    the canonical live instance (separate manual deploy step; not done by task
    agents).
-2. **Gateway / NAP-to-NAP preview** — a spatial handoff between two instances via
-   the Torii Gateway component: cross the gate → arrive in a second zone/node
-   carrying identity. Builds on `world/handoff.js` + `toriiGateway.js` +
-   `gatewayPortal.js` (portal VIEW shell landed v0.2.136); now VISIBLE on the title
-   screen via the inert `gatewayPreview.js` card (v0.2.139 — `gatewayPreviewBlock`,
-   `textContent`-only, never navigates); relay-mediated first (see Nostr Spatial
-   Gateway Protocol). Still needs the in-world portal MESH + `world/handoff.js` to
-   ACT on the intent.
+2. **Gateway / NAP-to-NAP hop (LIVE track — re-pointed v0.2.251)** — the real
+   node-to-node spatial hop, not a placeholder second zone. A player sees **who is
+   online** (live world-presence events read from Nostr relays via the existing
+   `gatewayRead.js` kind-30078 / `torii-gateway` topic read path), picks a hosted
+   world, the two instances run a **signed travel-request/confirm handshake**
+   (NIP-07, SEC-2), and the player **jumps into the destination's hosted game on
+   their VPS carrying their npub** (cross-origin navigation to a handshake-
+   verified URL, SEC-3). This promotes the gateway from inert preview to the live
+   n2n primitive described in `GATEWAY_PROTOCOL.md` §6 (signed spatial event).
+   Phased: **P0** presence/who's-online (live relay read + publish our own) →
+   **P1** signed handshake (SEC-2) → **P2** cross-host jump carrying npub (SEC-3) →
+   **P3** two-instance interop proof. The URL-handoff MVP helpers
+   (`travelIntent.js`, v0.2.134) and the read-proof (`gatewayRead.js`, v0.2.164)
+   are the foundation; the portal mesh + KeyF confirm seam (v0.2.181–v0.2.184)
+   already drives a same-origin `/#/zone/` hop today and becomes the launch
+   surface for the live list.
 3. **Plebeian / Nostr product panel proof** — one real Plebeian.Market
    product-display component (mountable, manifest-described) as the first commerce
    surface in-world, over `productPanelShell.js` (read-only render shell landed
