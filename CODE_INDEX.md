@@ -7,6 +7,8 @@ Current version: `v0.2.244-alpha`
 Live site: [torii-quest.pplx.app](https://torii-quest.pplx.app)  
 **Active focus: 15-hour proof-of-concept route** — shooter is maintenance-only unless demo-breaking; the active MVP is the freedom-tech loop (gateway/NAP-to-NAP preview, Plebeian/Nostr product panel proof, leaderboard preview, torii.quest GitHub update-check). Retrospective polish after PoC validation. See `strategy.md` → "15-Hour Proof-of-Concept Route".
 
+**Task queue split (v0.2.244+):** `quest-todo.md` is the Torii Quest active task source of truth; `continuum-todo.md` is the Torii Continuum active task source of truth; `todo.md` is a legacy pointer (continuity gate + Continuum parser only). Both active task files are safely editable via `npm run md:patch` (`tools/mdPatch.mjs` — whitelist-confined, `.bak` backup, no network, no arbitrary writes).
+
 ---
 
 ## Index Rule

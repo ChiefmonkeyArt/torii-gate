@@ -51,8 +51,8 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // stays a curated capture (running vitest at static-page-build time is out of scope), but it
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
-  passing: 1686,
-  files: 102,
+  passing: 1732,
+  files: 103,
   fastProfile: 5,
   foundationProfile: 25,
 });
@@ -1311,6 +1311,122 @@ export function computeTotals(data = CONTINUUM) {
   };
 }
 
+// CLICKTHROUGH_BADGE (C2) — names the thin read-only MVP-loop click-through mockup
+// section. The freedom-tech loop (Gateway to Product to Leaderboard to Update to Console) is
+// demonstrated as a static, READ-ONLY walkthrough of mockup screens — NOT live surfaces.
+// No navigation, no actions, no live data, no network: every view is a proof/mockup card.
+// Live promotion of any view is gated behind SEC-1/2/3 + manual deploy, so this card stays
+// MOCKUP until a view is explicitly promoted. Reuses .ms/.metric/.pill markup so no new
+// script, no new data-k key, and the CSP/refresh-script hash stay intact. Pure; node-safe.
+export const CLICKTHROUGH_BADGE = 'MVP LOOP · CLICK-THROUGH MOCKUP · READ-ONLY · PROOF ONLY';
+
+// CLICKTHROUGH_VIEWS (C2) — the five MVP-loop mockup screens, in walk-through order. Each is a
+// frozen plain-data view: id, title, the proof it demonstrates, its mock state, and an honest
+// status (proof | mockup). Curated from progress.md / quest-todo.md; frozen so a caller cannot
+// mutate the shared model. PURE data — no fs/network/THREE/DOM.
+export const CLICKTHROUGH_VIEWS = Object.freeze([
+  Object.freeze({
+    id: 'gateway',
+    title: 'Gateway',
+    proofs: 'NAP-to-NAP travel handoff: read, confirm, consent, plan, execute chain (inert, same-origin).',
+    mockState: 'Confirmed hop over an injected window/host (v0.2.178) — needs a real same-origin host router + portal mesh to ACT in 3D.',
+    status: 'proof',
+  }),
+  Object.freeze({
+    id: 'product',
+    title: 'Product',
+    proofs: 'Read-only Plebeian/Nostr listing preview: title, price (sats), seller npub, and Plebeian.Market link as TEXT.',
+    mockState: 'Shells + visible title-screen preview; needs an in-world mesh + a real listing (no checkout/pay/zap).',
+    status: 'proof',
+  }),
+  Object.freeze({
+    id: 'leaderboard',
+    title: 'Leaderboard',
+    proofs: 'Unsigned score-event helpers + publisher adapter + read-only view + relay-read proof (kind 30000).',
+    mockState: 'Needs a real NIP-07 signer (SEC-1 explicit consent first) + relay read. No signing/publishing wired.',
+    status: 'proof',
+  }),
+  Object.freeze({
+    id: 'update',
+    title: 'Update',
+    proofs: 'GitHub update-check helper + view-model + release source/status; read-only, actionable:false, no auto-update.',
+    mockState: 'Needs a read-only releases fetch (CSP-scoped) + in-world update-prompt mesh.',
+    status: 'proof',
+  }),
+  Object.freeze({
+    id: 'console',
+    title: 'Console',
+    proofs: 'Read-only oversight continuation of the dashboard surface — no admin actions, no live writes.',
+    mockState: 'Mockup only — thin read-only console view; admin actions stay explicitly gated and out of scope.',
+    status: 'mockup',
+  }),
+]);
+
+// buildClickThroughModel(input?) — PURE, browser-safe builder for the click-through mockup
+// section (C2). Takes plain data only (an optional `views` array of {id,title,proofs,mockState,status}
+// overrides and an optional `note`); with no input it degrades to an honest LAST-KNOWN curated
+// mockup built from CLICKTHROUGH_VIEWS (never throws). `kind` is 'generated' when a caller
+// supplies view overrides, else 'last-known'. The section is READ-ONLY by construction: it
+// carries no URL, no action, no live data; every view pins performed/signed/published/network =
+// false (documented invariants, not runtime flags). Pill is 'deferred' because live promotion
+// of every view is deferred behind SEC-1/2/3 + manual deploy. Pure; safe on garbled input.
+export function buildClickThroughModel(input = {}) {
+  const i = (input && typeof input === 'object' && !Array.isArray(input)) ? input : {};
+  const baseViews = Array.isArray(CLICKTHROUGH_VIEWS) ? CLICKTHROUGH_VIEWS : [];
+  const overrideViews = Array.isArray(i.views) ? i.views : null;
+  const live = !!overrideViews;
+
+  const views = (overrideViews || baseViews)
+    .filter((v) => v && typeof v === 'object')
+    .slice(0, 12)
+    .map((v) => ({
+      id: typeof v.id === 'string' && v.id.trim() ? v.id.trim() : 'unknown',
+      title: typeof v.title === 'string' && v.title.trim() ? v.title.trim() : 'Unknown',
+      proofs: typeof v.proofs === 'string' ? v.proofs : '',
+      mockState: typeof v.mockState === 'string' ? v.mockState : '',
+      status: v.status === 'proof' ? 'proof' : 'mockup',
+    }));
+
+  const note = (typeof i.note === 'string' && i.note.trim())
+    ? i.note.trim()
+    : 'A thin, read-only click-through mockup of the MVP freedom-tech loop (Gateway to Product to '
+      + 'Leaderboard to Update to Console). Every screen is a PROOF/MOCKUP card — no navigation, no '
+      + 'live data, no actions, no network. Live promotion of any view is gated behind SEC-1/2/3 '
+      + 'and a manual deploy, so this section stays MOCKUP until a view is explicitly promoted. '
+      + 'GENERATED at packaging time from the curated view set; LAST-KNOWN when not regenerated.';
+
+  const proofCount = views.filter((v) => v.status === 'proof').length;
+  const mockupCount = views.filter((v) => v.status === 'mockup').length;
+
+  const metrics = [
+    { label: 'Screens', value: `${views.length} mockup views` },
+    { label: 'Proof state', value: `${proofCount} proof · ${mockupCount} mockup` },
+    { label: 'Live data', value: 'none — read-only mockup, no live surfaces' },
+    { label: 'Actions', value: 'none — no navigation, no writes, no signing' },
+    { label: 'Promotion gate', value: 'SEC-1 / SEC-2 / SEC-3 + manual deploy (deferred)' },
+    { label: 'Next step', value: 'Promote a view to live only behind its SEC gate + explicit approval' },
+  ];
+
+  return {
+    badge: CLICKTHROUGH_BADGE,
+    kind: live ? 'generated' : 'last-known',
+    statusLabel: 'MOCKUP · READ-ONLY · PROOF ONLY',
+    pill: 'deferred',
+    views,
+    metrics,
+    note,
+    // Pinned invariants — this is a mockup; it never acts.
+    performed: false,
+    signed: false,
+    published: false,
+    network: false,
+  };
+}
+
+// The curated fallback click-through model — built at module load so renderContinuumPage() with
+// NO overrides (tests + the no-JS fallback) shows an honest LAST-KNOWN mockup section.
+const CURATED_CLICKTHROUGH = buildClickThroughModel();
+
 // buildContinuumModel(overrides) — curated data MERGED with optional build-time overrides
 // (v0.2.174), plus per-track bar cells + computed totals. Pure (no mutation of CONTINUUM);
 // the single entry point the renderer + tests use. `overrides` may carry derived list
@@ -1339,6 +1455,7 @@ export function buildContinuumModel(overrides = {}) {
     playtestVerdict: base.playtestVerdict || CURATED_PLAYTEST_VERDICT,
     handoffPanel: base.handoffPanel || CURATED_HANDOFF_PANEL,
     readHealth: base.readHealth || CURATED_READHEALTH,
+    clickThrough: base.clickThrough || CURATED_CLICKTHROUGH,
     taskTotals,
     derived,
   };
@@ -1368,6 +1485,7 @@ export function continuumDataJSON(model = buildContinuumModel()) {
     playtestVerdict: model.playtestVerdict || null,
     handoffPanel: model.handoffPanel || null,
     readHealth: model.readHealth || null,
+    clickThrough: model.clickThrough || null,
   };
 }
 
@@ -1836,6 +1954,40 @@ ${note}
     </section>`;
 }
 
+// _clickThroughSection(ct) — the MVP-loop click-through mockup section (C2): a read-only
+// walkthrough of the five mockup screens (Gateway, Product, Leaderboard, Update, Console).
+// An overall band pill + provenance chip + badge, a compact grid of metric cards (screen count /
+// proof state / live data / actions / promotion gate / next step), then one .ms card per view
+// showing what it proofs and its honest mock state. Empty string when absent so an override-free
+// legacy model omits it. Server-rendered + escaped; reuses .ms/.metric/.pill markup so NO new
+// script, NO new data-k key, and the CSP/refresh-script hash stay intact. Pure.
+function _clickThroughSection(ct) {
+  if (!ct || !Array.isArray(ct.metrics) || !ct.metrics.length) return '';
+  const allowed = new Set(['no-blocker', 'gated', 'manual', 'deferred', 'open-edge']);
+  const pillState = allowed.has(ct.pill) ? ct.pill : 'manual';
+  const note = ct.note ? `      <div class="focus">${escapeHtml(ct.note)}</div>` : '';
+  const views = Array.isArray(ct.views) ? ct.views : [];
+  const viewCards = views.map((v, idx) => {
+    const step = `${idx + 1}/${views.length}`;
+    const stPill = v.status === 'proof' ? '<span class="pill pill-deferred">proof</span>' : '<span class="pill pill-manual">mockup</span>';
+    return `      <div class="ms">
+        <div class="ms-head"><span class="ms-name">${escapeHtml(step)} · ${escapeHtml(v.title)}</span>${stPill}</div>
+        <div class="ms-blurb">${escapeHtml(v.proofs)}</div>
+        <div class="ms-meta"><span class="ms-sub">${escapeHtml(v.mockState)}</span></div>
+      </div>`;
+  }).join('\n');
+  return `
+    <section>
+      <div class="h2row"><h2>MVP loop click-through</h2> <span class="pill pill-${pillState}">${escapeHtml(ct.statusLabel)}</span> ${_healthChip(ct.kind)} <span class="badge">${escapeHtml(ct.badge)}</span></div>
+      <div class="lead">A thin, read-only mockup of the freedom-tech loop (Gateway → Product → Leaderboard → Update → Console). Every screen is a PROOF/MOCKUP card — no navigation, no live data, no actions. Live promotion is gated behind SEC-1/2/3 + manual deploy.</div>
+      <div class="grid">
+${_metricRows(ct.metrics)}
+      </div>
+${viewCards}
+${note}
+    </section>`;
+}
+
 // renderContinuumPage(model) — full self-contained static HTML document string.
 // Dark Torii/nostrich/cyberpunk feel via inline CSS only; CSS bars + SVG rings.
 // The page renders fully WITHOUT JavaScript. A tiny, optional, same-origin-only
@@ -1999,6 +2151,7 @@ ${_playtestVerdictSection(m.playtestVerdict)}
 ${_manualValidationSection(m.manualValidation)}
 ${_noBlockerQueueSection(m.noBlockerQueue)}
 ${_milestonesSection(m.milestones)}
+${_clickThroughSection(m.clickThrough)}
 
     <section>
       ${_h2('At a glance', m.metrics.length)}

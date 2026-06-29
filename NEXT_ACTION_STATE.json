@@ -1,19 +1,17 @@
 {
   "schema": "torii.next-action-state",
   "schemaVersion": 1,
-  "generatedAt": "2026-06-28T08:53:45.202Z",
+  "generatedAt": "2026-06-29T18:04:16.150Z",
   "badge": "NEXT-ACTION STATE · LOCAL · READ-ONLY",
   "version": "v0.2.244-alpha",
   "packageVersion": "0.2.244-alpha",
-  "gitCommit": "680dedd",
+  "gitCommit": "9d6732f",
   "liveUrl": "https://torii-quest.pplx.app",
   "release": {
-    "ready": false,
-    "gateStatus": "NOT READY",
+    "ready": true,
+    "gateStatus": "READY",
     "gateCommand": "npm run test:release",
-    "blockers": [
-      "docs"
-    ],
+    "blockers": [],
     "regression": {
       "count": 15,
       "expected": 15
@@ -24,12 +22,12 @@
     "status": "READY"
   },
   "tests": {
-    "passing": 1686,
-    "files": 102
+    "passing": 1732,
+    "files": 103
   },
   "manualBlocker": {
     "pending": true,
-    "statusLabel": "MANUAL VALIDATION OUTSTANDING",
+    "statusLabel": "LOCAL GATES GREEN · MANUAL PLAYTEST + APPROVAL PENDING",
     "pill": "manual"
   },
   "mvpApproval": {
@@ -126,11 +124,11 @@
     "impliesPlaytestComplete": false
   },
   "mvpGate": {
-    "verdict": "signals-incomplete",
+    "verdict": "awaiting-approval",
     "approved": false,
-    "confidenceGreen": false,
+    "confidenceGreen": true,
     "confidenceSignals": {
-      "releaseReady": false,
+      "releaseReady": true,
       "entrySmokePass": true,
       "dashboardSmokePass": true,
       "suiteGreen": true
@@ -173,10 +171,10 @@
     "HANDOFF.generated.md"
   ],
   "reports": [
-    "torii-v0.2.243-zone-renderable-route-report.md",
-    "torii-v0.2.242-zone-exact-path-report.md",
-    "torii-v0.2.241-zone-hard-refresh-report.md",
-    "torii-v0.2.240-travel-gateway-entry-repair-report.md"
+    "torii-v0.2.225-playtest-capture-path-hardening-report.md",
+    "torii-v0.2.226-entry-flow-button-fix-report.md",
+    "torii-v0.2.227-entry-flow-smoke-harness-report.md",
+    "torii-v0.2.228-enter-arena-noop-fix-report.md"
   ],
   "safety": {
     "deploy": false,

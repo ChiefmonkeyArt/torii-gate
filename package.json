@@ -28,6 +28,7 @@
     "zones:check": "node tools/zone-fallback-check.mjs",
     "vps:dry-run": "node tools/vps-dry-run.mjs",
     "docs:stale": "node tools/stale-docs.mjs",
+    "md:patch": "node tools/mdPatch.mjs",
     "release:meta": "node tools/release-meta.mjs",
     "approval:state": "node tools/mvp-approval-state.mjs",
     "smoke:state": "node tools/live-smoke-state.mjs",

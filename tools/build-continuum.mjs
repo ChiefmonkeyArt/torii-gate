@@ -20,6 +20,7 @@ import {
   buildNoBlockerQueueModel,
   buildMvpApprovalModel,
   buildPlaytestResultsCardModel,
+  buildClickThroughModel,
   SHIP_NEXT_SAFE_TASK,
   CURRENT_TEST_STATUS,
   testCountLabel,
@@ -364,10 +365,16 @@ try {
   console.log(`[continuum] playtest verdict: live gather unavailable (${e.message}) — using last-known`);
 }
 
+// MVP loop click-through mockup (C2) — a thin, read-only walkthrough of the five mockup screens
+// (Gateway / Product / Leaderboard / Update / Console). Curated-only for now (no live surface to
+// gather from), built from the pure buildClickThroughModel so the section ships an honest
+// LAST-KNOWN mockup. Read-only by construction: no navigation, no live data, no actions.
+const clickThrough = buildClickThroughModel();
+
 // Stamp the packaged build time so the page can show when the data was packaged.
 const generatedAt = new Date().toISOString();
 const model = {
-  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, mvpApproval, mvpGate, playtestResults, playtestVerdict, handoffPanel, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
+  ...buildContinuumModel({ ...overrides, health, readiness, ship, rcStatus, manualValidation, noBlockerQueue, mvpApproval, mvpGate, playtestResults, playtestVerdict, handoffPanel, clickThrough, taskTotals, derived: { parsed, gaps, sources: SOURCES } }),
   generatedAt,
 };
 
@@ -392,3 +399,4 @@ console.log(`[continuum] handoff panel: ${model.handoffPanel.statusLabel} (${mod
 console.log(`[continuum] mvp approval gate: ${model.mvpGate.statusLabel} (${model.mvpGate.kind}) · verdict ${model.mvpGate.verdict} · approved ${model.mvpGate.approved} · pill ${model.mvpGate.pill}`);
 console.log(`[continuum] playtest results: ${playtestResults.statusLabel} (${playtestResults.kind}) · status ${playtestResults.status} · recorded ${playtestResults.ran} · ${playtestResults.counts.pass}/${playtestResults.counts.fail}/${playtestResults.counts.blank} p/f/b of ${playtestResults.total} · implies approval ${playtestResults.approvalImplied}`);
 console.log(`[continuum] playtest verdict: ${model.playtestVerdict.statusLabel} (${model.playtestVerdict.kind}) · verdict ${model.playtestVerdict.verdict} · ${model.playtestVerdict.blockerCount} blocker(s) · pill ${model.playtestVerdict.pill}`);
+console.log(`[continuum] click-through: ${model.clickThrough.statusLabel} (${model.clickThrough.kind}) · ${model.clickThrough.views.length} views · pill ${model.clickThrough.pill}`);

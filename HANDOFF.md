@@ -79,8 +79,16 @@ Breaking one should fail CI/the check, not ship.
 - **`src/main.js`** — wiring only, no game logic.
 - **`CODE_INDEX.md`** — file-by-file map of the codebase. Update it when you add
   or move a module.
+- **Task queue split (v0.2.244+):** the active task queue is now split. **`quest-todo.md`**
+  is the Torii Quest (game app) active task source of truth; **`continuum-todo.md`** is
+  the Torii Continuum (oversight dashboard app) active task source of truth. **`todo.md`**
+  is now a LEGACY POINTER (retained only because the continuity gate + Continuum parser
+  read it for the version marker + historical struck completed-task markers). `NOSTR_ARENA_MASTER_TODO.md`
+  is archival history only. Both active task files are safely editable via **`npm run md:patch`**
+  (`tools/mdPatch.mjs`): whitelist-confined, `.bak` backup before every edit, no network,
+  no arbitrary file writes.
 - **`strategy.md`** — vision + decision rules. **`progress.md`** — execution
-  dashboard. **`todo.md`** — active task queue.
+  dashboard. **`todo.md`** — legacy pointer (see Task queue split above).
 - **`engine/`** — extracted, mostly-pure SDK seams (debug, physics, combat,
   entities, ui, weapons). Prefer adding pure logic here so it is node-testable.
 - **`src/sdk/index.js`** — public SDK entrypoint (ARS-5). Curated node-safe

@@ -1,6 +1,6 @@
 {
-  "version": "v0.2.231-alpha",
-  "generatedAt": "2026-06-26T18:05:36.939Z",
+  "version": "v0.2.244-alpha",
+  "generatedAt": "2026-06-29T18:04:16.453Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
@@ -48,17 +48,17 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.231-alpha"
+        "value": "v0.2.244-alpha"
       },
       {
         "label": "Test files / profiles",
         "kind": "generated",
-        "value": "fast 5 · foundation 25 · full 93"
+        "value": "fast 5 · foundation 25 · full 103"
       },
       {
         "label": "Total tests",
         "kind": "last-known",
-        "value": "1531 passing / 93 files"
+        "value": "1732 passing / 103 files"
       },
       {
         "label": "Profile timings",
@@ -78,7 +78,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.231-alpha"
+        "value": "15 / 15 regression checks GREEN · last green v0.2.244-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -98,9 +98,9 @@
         "sub": "15 / 15"
       },
       {
-        "pct": 27,
+        "pct": 24,
         "label": "Foundation coverage",
-        "sub": "25/93 files"
+        "sub": "25/103 files"
       }
     ]
   },
@@ -155,8 +155,8 @@
   },
   "readiness": {
     "badge": "DEPLOY READINESS · STATIC HOST · READ-ONLY",
-    "status": "ready",
-    "statusLabel": "READY",
+    "status": "docs-ready",
+    "statusLabel": "DOCS READY · BUILD CHECK PENDING",
     "checks": [
       {
         "item": "SPA /zone/* fallback documented",
@@ -165,8 +165,8 @@
       },
       {
         "item": "Built dist route shape",
-        "state": "no-blocker",
-        "note": "dist/index.html present; no static file under /zone/* shadows the fallback"
+        "state": "deferred",
+        "note": "no dist/ this build — run npm run build then npm run zones:check"
       },
       {
         "item": "Host SPA fallback configured",
@@ -191,15 +191,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.231-alpha",
-    "gitCommit": "a86d7d7",
+    "version": "v0.2.244-alpha",
+    "gitCommit": "9d6732f",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.231-alpha / pkg 0.2.231-alpha"
+        "detail": "config v0.2.244-alpha / pkg 0.2.244-alpha"
       },
       {
         "key": "tests",
@@ -218,16 +218,16 @@
       {
         "key": "bundle",
         "label": "Bundle baseline",
-        "state": "advisory",
-        "pill": "manual",
-        "detail": "advisory — over limit: rapier-DE6a0vmv.js"
+        "state": "skipped",
+        "pill": "deferred",
+        "detail": "no dist/ — build then bundle:report"
       },
       {
         "key": "zoneFallback",
         "label": "/zone/* fallback",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "docs + dist ok"
+        "detail": "docs ok · dist check pending"
       },
       {
         "key": "docs",
@@ -252,7 +252,7 @@
     "band": "gates-green",
     "statusLabel": "LOCAL GATES GREEN · MANUAL VALIDATION + APPROVAL PENDING",
     "pill": "manual",
-    "version": "v0.2.231-alpha",
+    "version": "v0.2.244-alpha",
     "manifestStatus": "COMPLETE",
     "manifestRequiredPresent": 6,
     "manifestRequired": 6,
@@ -260,14 +260,14 @@
     "manifestOptional": 6,
     "rcDocsPresent": 7,
     "rcDocsTotal": 7,
-    "testLabel": "1531 passing / 93 files",
+    "testLabel": "1732 passing / 103 files",
     "profileSummary": "fast ~5 · foundation ~25 · full",
     "manualValidationRemaining": 7,
     "gateStatusLabel": "READY",
     "metrics": [
       {
         "label": "Source version",
-        "value": "v0.2.231-alpha"
+        "value": "v0.2.244-alpha"
       },
       {
         "label": "Release manifest",
@@ -279,7 +279,7 @@
       },
       {
         "label": "Tests",
-        "value": "1531 passing / 93 files"
+        "value": "1732 passing / 103 files"
       },
       {
         "label": "Test profiles",
@@ -399,7 +399,7 @@
     "pill": "manual",
     "status": "pending",
     "approved": false,
-    "version": "v0.2.231-alpha",
+    "version": "v0.2.244-alpha",
     "approvedBy": null,
     "approvedAt": null,
     "metrics": [
@@ -409,7 +409,7 @@
       },
       {
         "label": "Version",
-        "value": "v0.2.231-alpha"
+        "value": "v0.2.244-alpha"
       },
       {
         "label": "Approved by",
@@ -425,6 +425,50 @@
       }
     ],
     "note": "MVP approval state — the single auditable record (MVP_APPROVAL_STATE.json) of whether a human has EXPLICITLY approved the live-browser MVP. Local automated gates are green, but approval is a manual step: the user must run the playtest and say \"MVP approved\" (which also records approved_by + approved_at). Status stays PENDING until then and can never silently flip — there is no --approve path in the read-only CLI (npm run approval:state). GENERATED at packaging time from the on-disk record; LAST-KNOWN when not regenerated this build. It approves/releases/tags/publishes/deploys NOTHING."
+  },
+  "mvpGate": {
+    "badge": "MVP APPROVAL GATE · LOCAL · READ-ONLY · GREEN CHECKS ≠ HUMAN APPROVAL",
+    "kind": "generated",
+    "band": "awaiting",
+    "statusLabel": "CONFIDENCE GREEN · AWAITING EXPLICIT USER PLAYTEST + OK",
+    "pill": "manual",
+    "approved": false,
+    "verdict": "awaiting-approval",
+    "metrics": [
+      {
+        "label": "Gate verdict",
+        "value": "awaiting-approval"
+      },
+      {
+        "label": "Release gate",
+        "value": "green (confidence only, not approval)"
+      },
+      {
+        "label": "Entry smoke",
+        "value": "green (confidence only, not approval)"
+      },
+      {
+        "label": "Dashboard smoke",
+        "value": "green (confidence only, not approval)"
+      },
+      {
+        "label": "Test suite",
+        "value": "green — 1732 passing / 103 files"
+      },
+      {
+        "label": "Explicit approval",
+        "value": "PENDING — a human must run the live playtest and explicitly say \"MVP approved\""
+      },
+      {
+        "label": "How approval works",
+        "value": "Automated tests and cloud smokes are CONFIDENCE signals: green means the code and the deployed surfaces look healthy — it is NOT approval. · MVP approval still requires an EXPLICIT human OK: a person (Chiefmonkey / the user) runs the live-browser playtest and says \"MVP approved\". · A smoke pass is not MVP approval and a dashboard pass is not a completed human playtest — the gate stays PENDING until the explicit sign-off is recorded."
+      },
+      {
+        "label": "Manual playtest focus",
+        "value": "Entry flow: title screen loads, ENTER ARENA and LOGIN WITH NOSTR give visible feedback, pointer-lock engages. · Shooter feel: the core shoot → hit → respawn loop feels responsive and fair. · Hit registration / headshots: connecting shots register, and headshots vs body shots resolve as expected. · Bot behaviour: bots move, react, take damage, die, and respawn without freezing or stalling. · Movement / footsteps: WASD + jump are smooth, walls hold, and footstep feedback tracks motion. · Reload feel: reload triggers, feels snappy, and refills ammo to the magazine size. · Mirror / reflection: the mirror is coherent (no garble / recursion meltdown) and not a framerate sink. · Crates: crates are solid under movement and fire and do not jitter, launch, or sink through the floor. · NAP monkey: crossing the torii gate into the Non-Aggression zone disables the weapon and bots do not follow. · Dashboard clarity: continuum.html renders the version, test status, and active slice clearly and matches the build. · Subjective fun / feel: any game-feel blocker that makes the proof unconvincing, even if every automated check is green."
+      }
+    ],
+    "note": "MVP approval gate — the rubric that keeps automated green from being mistaken for human game-feel approval. The automated tests, the release gate, and the two cloud smokes are CONFIDENCE signals: green means the code and the deployed surfaces look healthy, NOT that the MVP is approved. Approval is a separate, explicit step: a human (Chiefmonkey / the user) runs the live-browser playtest — judging entry flow, shooter feel, hit registration / headshots, bot behaviour, movement, reload, mirror, crates, the NAP monkey, dashboard clarity, and overall fun / feel — and then says \"MVP approved\", which records the approver and timestamp in MVP_APPROVAL_STATE.json. A smoke pass is not approval and a dashboard pass is not a completed playtest. This card approves/releases/deploys/publishes NOTHING."
   },
   "playtestResults": {
     "badge": "MVP PLAYTEST RESULTS · LOCAL · READ-ONLY · NOT RUN UNTIL TESTER RECORDS · NOT AN APPROVAL",
@@ -469,6 +513,102 @@
       }
     ],
     "note": "MVP playtest results state — read from the source-controlled MVP_PLAYTEST_RESULTS.md, the one place a tester records the actual manual live-browser playtest outcomes. It ships BLANK, so a fresh build reads NOT RUN. A recorded result is NECESSARY but NOT SUFFICIENT for MVP approval: even an all-PASS playtest still needs the explicit user \"MVP approved\" (the separate MVP-approval gate above). This card can never imply approval — approvalImplied is pinned false. GENERATED at packaging time from the on-disk file; LAST-KNOWN when not regenerated this build. It approves/releases/tags/publishes/deploys NOTHING."
+  },
+  "playtestVerdict": {
+    "badge": "MVP PLAYTEST VERDICT · LOCAL · READ-ONLY · TESTER VERDICT ≠ MVP APPROVAL",
+    "kind": "last-known",
+    "band": "pending",
+    "statusLabel": "NO VERDICT RECORDED YET",
+    "pill": "manual",
+    "verdict": "pending",
+    "blockers": [],
+    "blockerCount": 0,
+    "metrics": [
+      {
+        "label": "Verdict",
+        "value": "pending (not reported)"
+      },
+      {
+        "label": "Blockers",
+        "value": "none reported"
+      },
+      {
+        "label": "Reported by",
+        "value": "(not recorded)"
+      },
+      {
+        "label": "How to report",
+        "value": "Report MVP OK (no blockers found): write a line `Verdict: MVP OK`. · Report blockers: write a line `Verdict: blockers: <comma- or semicolon-separated list>`. · Reporting a verdict NEVER approves the MVP — approval is the separate explicit step recorded in MVP_APPROVAL_STATE.json."
+      },
+      {
+        "label": "Focus to judge",
+        "value": "Entry flow: title screen loads, ENTER ARENA and LOGIN WITH NOSTR give visible feedback, pointer-lock engages. · Shooter feel: the core shoot → hit → respawn loop feels responsive and fair. · Hit registration / headshots: connecting shots register, and headshots vs body shots resolve as expected. · Bot behaviour: bots move, react, take damage, die, and respawn without freezing or stalling. · Movement / footsteps: WASD + jump are smooth, walls hold, and footstep feedback tracks motion. · Reload feel: reload triggers, feels snappy, and refills ammo to the magazine size. · Mirror / reflection: the mirror is coherent (no garble / recursion meltdown) and not a framerate sink. · Crates: crates are solid under movement and fire and do not jitter, launch, or sink through the floor. · NAP monkey: crossing the torii gate into the Non-Aggression zone disables the weapon and bots do not follow. · Dashboard clarity: continuum.html renders the version, test status, and active slice clearly and matches the build. · Subjective fun / feel: any game-feel blocker that makes the proof unconvincing, even if every automated check is green."
+      },
+      {
+        "label": "Implies approval",
+        "value": "NO — a tester verdict is a confidence signal; approval is the separate explicit user OK in MVP_APPROVAL_STATE.json"
+      }
+    ],
+    "note": "MVP playtest verdict — the one-line capture for the live-browser playtest. Chiefmonkey (or the user) edits MVP_PLAYTEST_VERDICT.md to report ONE of \"Verdict: MVP OK\" or \"Verdict: blockers: <list>\". Every reported blocker stays visible here and in NEXT_ACTION_STATE.json so it can be fed back into todo/progress. A verdict of MVP OK means the tester found no blockers — it is NOT MVP approval: approval is the separate explicit user step (approved + approver + timestamp in MVP_APPROVAL_STATE.json). This card approves/releases/deploys/publishes NOTHING."
+  },
+  "handoffPanel": {
+    "badge": "HANDOFF / RELEASE CONTROL PANEL · LOCAL · READ-ONLY · ONE-GLANCE PICKUP",
+    "kind": "generated",
+    "band": "ready-pending",
+    "statusLabel": "HANDOFF READY · MVP BLOCKER PENDING (USER PLAYTEST + OK)",
+    "pill": "manual",
+    "green": true,
+    "metrics": [
+      {
+        "label": "Version",
+        "value": "v0.2.244-alpha"
+      },
+      {
+        "label": "Live game",
+        "value": "https://torii-quest.pplx.app"
+      },
+      {
+        "label": "Live dashboard",
+        "value": "https://torii-quest.pplx.app/continuum.html"
+      },
+      {
+        "label": "Entry smoke",
+        "value": "PASS @ v0.2.230-alpha (3/3 checks; implies approval: no)"
+      },
+      {
+        "label": "Dashboard smoke",
+        "value": "PASS @ v0.2.231-alpha (4/4 checks; implies approval: no)"
+      },
+      {
+        "label": "Manual blocker",
+        "value": "PENDING — LOCAL GATES GREEN · MANUAL PLAYTEST + APPROVAL PENDING"
+      },
+      {
+        "label": "MVP approval",
+        "value": "PENDING (explicit user OK required)"
+      },
+      {
+        "label": "Next safe task",
+        "value": "Continue the read-only oversight loop — next safe infra/dashboard slice"
+      },
+      {
+        "label": "Do NOT (without user OK)",
+        "value": "Do NOT deploy, publish, or push — the maintainer performs the manual deploy. · Do NOT create a git tag, GitHub release, or announcement. · Do NOT perform any live Nostr write (no signing, no relay publish) beyond the existing read-only NIP-07 reads. · Do NOT make a payment or move real value — alpha sats are fake. · Do NOT mark the MVP approved — only the user can, after running the live-browser playtest. · Do NOT enable godMode or any debug capability in shipped runtime — godMode stays false. · Do NOT add network calls, auto-update, or external redirects to the oversight surfaces."
+      },
+      {
+        "label": "Workflow invariants",
+        "value": "Do NOT cancel a useful in-progress job halfway through — finish it first, THEN process the user's next request. Cancelling useful work wastes compute time and money. · Exception — explicit cancel: the user explicitly asks to cancel or abandon the job. · Exception — immediate conflict: the running job conflicts with an immediate user request (e.g. it would clash with edits the new request needs now). · Exception — safely resumable: the work can be safely resumed later from where it left off, so stopping loses nothing. · Exception — stale/hung & already shipped: the job is stale or hung AND its output has already been committed, shipped, pushed, synced, and smoke-tested — stopping it only avoids further waste."
+      },
+      {
+        "label": "Operating principles",
+        "value": "Self-sovereignty: the user owns their identity (their npub) and their data; the project never holds the keys to a user. · Consent first: nothing signs, publishes, pays, or navigates on the user's behalf without an explicit, informed action. · Privacy by default: collect nothing by default; no surveillance, no tracking, no telemetry phoned home. · Open protocols: build on Nostr, Bitcoin, and ecash so the user can leave and take their identity and value with them. · Free and open source: the code is FOSS so anyone can read, fork, verify, and self-host it — no black boxes. · No vendor lock-in: interoperable by design; data and identity stay portable across clients and relays. · Local circular economics: favour voluntary, peer-to-peer value exchange over extractive, ad-funded, or rent-seeking models. · No dark patterns: no manipulation, no coercive monetization, no engagement traps — the user stays in control. · Reversible, user-controlled actions: prefer actions the user can undo and explicitly trigger over irreversible automatic ones. · Community agency: tools should grow the community's capability to act for itself, not centralise control. · Truthful status reporting: dashboards and handoffs report the real posture — a pass is never claimed without the evidence behind it."
+      },
+      {
+        "label": "Ethics",
+        "value": "These are practical operating principles, not dogma: Torii Quest exists to give people self-sovereign, consent-driven freedom tech on open protocols (Nostr, Bitcoin, ecash) with no surveillance, no dark patterns, and no lock-in. When a decision is ambiguous, choose the option that keeps the user in control of their identity, data, and value, and that reports status truthfully."
+      }
+    ],
+    "note": "Handoff / release control panel — the single read-only surface a fresh agent or human reads first to pick up the project safely: current version + live URLs, the latest app-entry and oversight-dashboard cloud smokes, the one manual blocker (the human must run the live-browser MVP playtest and explicitly approve), the next safe no-blocker task, the exact actions NOT to take without user input, the standing workflow invariants (e.g. finish a useful in-progress job rather than cancelling it), and the project's practical non-religious operating principles. GREEN means this surface is COMPLETE + trustworthy, NOT that the MVP is approved: a smoke pass is not approval, a dashboard pass is not a completed human playtest, and no live Nostr write is ever implied. It approves/releases/deploys/publishes NOTHING."
   },
   "readHealth": {
     "badge": "NOSTR READ-PATH · READ-ONLY",
@@ -521,5 +661,79 @@
     "published": false,
     "readOnly": true,
     "note": "Nostr surface is read-only at the MVP stage; the live-write path (NIP-07 signer + relay publish, SEC-1) stays consent-gated and deferred."
+  },
+  "clickThrough": {
+    "badge": "MVP LOOP · CLICK-THROUGH MOCKUP · READ-ONLY · PROOF ONLY",
+    "kind": "last-known",
+    "statusLabel": "MOCKUP · READ-ONLY · PROOF ONLY",
+    "pill": "deferred",
+    "views": [
+      {
+        "id": "gateway",
+        "title": "Gateway",
+        "proofs": "NAP-to-NAP travel handoff: read, confirm, consent, plan, execute chain (inert, same-origin).",
+        "mockState": "Confirmed hop over an injected window/host (v0.2.178) — needs a real same-origin host router + portal mesh to ACT in 3D.",
+        "status": "proof"
+      },
+      {
+        "id": "product",
+        "title": "Product",
+        "proofs": "Read-only Plebeian/Nostr listing preview: title, price (sats), seller npub, and Plebeian.Market link as TEXT.",
+        "mockState": "Shells + visible title-screen preview; needs an in-world mesh + a real listing (no checkout/pay/zap).",
+        "status": "proof"
+      },
+      {
+        "id": "leaderboard",
+        "title": "Leaderboard",
+        "proofs": "Unsigned score-event helpers + publisher adapter + read-only view + relay-read proof (kind 30000).",
+        "mockState": "Needs a real NIP-07 signer (SEC-1 explicit consent first) + relay read. No signing/publishing wired.",
+        "status": "proof"
+      },
+      {
+        "id": "update",
+        "title": "Update",
+        "proofs": "GitHub update-check helper + view-model + release source/status; read-only, actionable:false, no auto-update.",
+        "mockState": "Needs a read-only releases fetch (CSP-scoped) + in-world update-prompt mesh.",
+        "status": "proof"
+      },
+      {
+        "id": "console",
+        "title": "Console",
+        "proofs": "Read-only oversight continuation of the dashboard surface — no admin actions, no live writes.",
+        "mockState": "Mockup only — thin read-only console view; admin actions stay explicitly gated and out of scope.",
+        "status": "mockup"
+      }
+    ],
+    "metrics": [
+      {
+        "label": "Screens",
+        "value": "5 mockup views"
+      },
+      {
+        "label": "Proof state",
+        "value": "4 proof · 1 mockup"
+      },
+      {
+        "label": "Live data",
+        "value": "none — read-only mockup, no live surfaces"
+      },
+      {
+        "label": "Actions",
+        "value": "none — no navigation, no writes, no signing"
+      },
+      {
+        "label": "Promotion gate",
+        "value": "SEC-1 / SEC-2 / SEC-3 + manual deploy (deferred)"
+      },
+      {
+        "label": "Next step",
+        "value": "Promote a view to live only behind its SEC gate + explicit approval"
+      }
+    ],
+    "note": "A thin, read-only click-through mockup of the MVP freedom-tech loop (Gateway to Product to Leaderboard to Update to Console). Every screen is a PROOF/MOCKUP card — no navigation, no live data, no actions, no network. Live promotion of any view is gated behind SEC-1/2/3 and a manual deploy, so this section stays MOCKUP until a view is explicitly promoted. GENERATED at packaging time from the curated view set; LAST-KNOWN when not regenerated.",
+    "performed": false,
+    "signed": false,
+    "published": false,
+    "network": false
   }
 }
