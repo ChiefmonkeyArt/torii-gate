@@ -4,90 +4,281 @@
 // Exported: initAtmosphere(), tickAtmosphere(dt)
 import * as THREE from 'three';
 import { scene } from './scene.js';
-import { ARENA_HALF } from './config.js';
+import { ARENA_HALF, NAP_FAR_X } from './config.js';
 
-// ── Scratch / shared ──────────────────────────────────────────────────────────
+// ── Scratch / shared ─────────────────────────────────────────────────────────────────
 const _dummy = new THREE.Object3D();
+const _mtnN1 = new THREE.Vector3();
+const _mtnN2 = new THREE.Vector3();
+const _mtnNr = new THREE.Vector3();
 
-// ── 1. Distant mountain range ─────────────────────────────────────────────────
-// Low-poly silhouette: two rings of peaks behind each wall.
-// Uses BufferGeometry triangle fan — one draw call, no texture, vertex colours.
-function _buildMountains() {
-  const RANGES = [
-    { axis: 'z', sign:  1, baseX:  0, baseZ:  80, spread: 180 }, // north
-    { axis: 'z', sign: -1, baseX:  0, baseZ: -80, spread: 180 }, // south
-    { axis: 'x', sign:  1, baseX:  80, baseZ:  0, spread: 180 }, // east (behind torii)
-    { axis: 'x', sign: -1, baseX: -80, baseZ:  0, spread: 180 }, // west
-  ];
+// ── 1. Distant mountain range (v0.2.250) ───────────────────────────────────
+// Layered 3D range: rounded dawn foothills in the near ring, jagged snow-capped
+// alpine peaks in the far ring, fading into warm dawn haze. Real pyramidal geometry
+// (not flat billboards) with face-based shading so lit slopes read as solid form.
+// One BufferGeometry per ring = 3 draw calls total, zero textures, zero downloads.
+//
+// Dawn alpine palette: sun-low warm light on east-facing slopes, cool shadow on
+// west faces, peach haze aloft, gold kiss on the highest snow. Matches the
+// Bitcoin/nostrich gold accent without importing any asset.
+const _MTN_DAWN = Object.freeze({
+  // 3 rings: near (rounded foothills), mid (transitional), far (jagged alpine).
+  // snowCaps = exact number of snow-capped peaks in that ring (user: "just a few, ~3").
+  rings: [
+    { dist:  78, count: 22, hMin: 10, hMax: 20, jag: 0.25, snowCaps: 0, haze: 0.07 }, // near foothills (clear of NAP zone)
+    { dist:  96, count: 18, hMin: 20, hMax: 34, jag: 0.55, snowCaps: 0, haze: 0.17 }, // mid
+    { dist: 116, count: 14, hMin: 32, hMax: 58, jag: 0.90, snowCaps: 3, haze: 0.30 }, // far alpine (3 snow caps)
+  ],
+  // Dawn light comes from the east (+x), low on the horizon. Lit slopes warm,
+  // shadowed slopes cool. Colours blend by elevation + which way a face points.
+  sunDir:   Object.freeze({ x: 0.82, y: 0.33, z: 0.46 }), // low eastern dawn sun
+  base:     Object.freeze({ r: 0.30, g: 0.27, b: 0.34 }), // shadowed rock (cool plum-grey)
+  lit:      Object.freeze({ r: 0.86, g: 0.66, b: 0.52 }), // dawn-lit warm rock
+  foothill: Object.freeze({ r: 0.55, g: 0.60, b: 0.50 }), // soft sage-green for low foothills
+  valleyFloor: Object.freeze({ r: 0.40, g: 0.44, b: 0.36 }), // muted lowland green-grey for valley dips
+  snow:     Object.freeze({ r: 0.96, g: 0.94, b: 0.90 }), // snow
+  snowLit:  Object.freeze({ r: 1.00, g: 0.90, b: 0.74 }), // gold-kissed dawn snow
+  crevice:  Object.freeze({ r: 0.08, g: 0.07, b: 0.10 }), // near-black fissure
+  water:    Object.freeze({ r: 0.74, g: 0.93, b: 1.00 }), // bright meltwater cyan-white
+  river:    Object.freeze({ r: 0.43, g: 0.72, b: 0.86 }), // glacial runoff blue
+  haze:     Object.freeze({ r: 0.92, g: 0.80, b: 0.72 }), // warm peach haze aloft
+});
 
-  const colFar  = new THREE.Color(0x7ab8d4); // hazy blue-grey distant
-  const colMid  = new THREE.Color(0x5a9e88); // forested mid-green
-  const colSnow = new THREE.Color(0xeef5f7); // snow cap
+// _mtnLerp(a,b,t) — linear blend between two {r,g,b} colour stops.
+function _mtnLerp(a, b, t) {
+  return { r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t, b: a.b + (b.b - a.b) * t };
+}
+// _mtnFaceShade(baseCol, nxAvg) — tint a base colour warm/cool by which way the
+// face points relative to the dawn sun. East-facing (+x) → lit/warm; west → shadow.
+function _mtnFaceShade(base, nxAvg) {
+  const d = _MTN_DAWN.sunDir.x;       // dawn sun eastward component
+  const facing = nxAvg * d;           // -1..1: lit when +, shadowed when -
+  if (facing >= 0) return _mtnLerp(base, _MTN_DAWN.lit, facing * 0.7);
+  return _mtnLerp(base, _MTN_DAWN.base, -facing * 0.5);
+}
 
-  RANGES.forEach(({ baseX, baseZ, spread }) => {
-    const PEAKS = 9;
-    const verts = [];
-    const colors = [];
+// State for animated water features (pulsed in tickAtmosphere).
+let _waterfallMesh = null;
+const _riverMeshes = [];
 
-    for (let i = 0; i < PEAKS; i++) {
-      const t = (i / (PEAKS - 1)) - 0.5; // -0.5 to 0.5
-      const px = baseX + (baseZ === 0 ? 0 : t * spread);
-      const pz = baseZ + (baseX === 0 ? 0 : t * spread);
-      // vary height and depth slightly per peak
-      const h  = 35 + Math.sin(i * 2.3) * 18 + Math.cos(i * 1.1) * 10;
-      const nudgeX = baseZ !== 0 ? (Math.sin(i * 1.7) * 12) : 0;
-      const nudgeZ = baseX !== 0 ? (Math.sin(i * 1.7) * 12) : 0;
-      const bx = px + nudgeX;
-      const bz = pz + nudgeZ;
+// _buildMtnPeak(i, count, ring, opts) — generate a SUBDIVIDED 3D mountain (v0.2.250).
+// Concentric rings of vertices from base to apex, each displaced by fractal noise,
+// so ridgelines read craggy and faces catch real per-face dawn shading. Adds
+// valleys (low dips), crevices (dark vertical fissures) and selective snow caps.
+// opts: { isSnow, valley, crevices:[{angle,halfWidth}], waterfall }.
+// Returns { verts, colors, meta } where meta carries position/size for waterfalls.
+function _buildMtnPeak(i, count, ring, opts) {
+  const { isSnow, valley, crevices } = opts;
+  // Deterministic pseudo-random per peak (stable across reloads, no texture).
+  const seed = i * 12.9898 + ring.dist * 0.1;
+  const rnd = (o) => {
+    const s = Math.sin(seed + o * 78.233) * 43758.5453;
+    return s - Math.floor(s);
+  };
+  // Angular position around the arena (full ring of mountains).
+  const ang = (i / count) * Math.PI * 2 + ring.dist * 0.03;
+  const cx = Math.cos(ang) * ring.dist;
+  const cz = Math.sin(ang) * ring.dist;
 
-      // Each peak: base-left, apex, base-right triangle
-      const halfW = 24 + Math.cos(i * 0.9) * 8;
+  const hVar = ring.hMin + rnd(1) * (ring.hMax - ring.hMin);
+  let h = hVar * (1 + (rnd(2) - 0.5) * ring.jag);
+  // Valleys: short, broad, gentle dips in the silhouette.
+  if (valley) h *= 0.28 + rnd(7) * 0.12; // ~28-40% height = a low pass between peaks
 
-      if (i > 0) {
-        // share base verts with neighbours for connected silhouette
-        const prevPx = baseX + (baseZ === 0 ? 0 : ((i-1)/(PEAKS-1)-0.5) * spread);
-        const prevPz = baseZ + (baseX === 0 ? 0 : ((i-1)/(PEAKS-1)-0.5) * spread);
-        const ph = 35 + Math.sin((i-1)*2.3)*18 + Math.cos((i-1)*1.1)*10;
-        // fill valley between peaks
-        verts.push(
-          prevPx, 0, prevPz,
-          bx,     0, bz,
-          prevPx, ph*0.4, prevPz,
-          bx,     0, bz,
-          bx,     ph*0.4, bz,
-          prevPx, ph*0.4, prevPz,
-        );
-        for (let v = 0; v < 6; v++) {
-          colors.push(colMid.r, colMid.g, colMid.b);
+  // Steeper for alpine (reads as more detail + drama), broader for foothills/valleys.
+  let rad;
+  if (valley)               rad = h * (1.8 + rnd(3) * 0.6);          // broad low dome
+  else if (ring.jag < 0.4)  rad = h * (1.00 + rnd(3) * 0.50) * 1.30; // broad rounded foothills
+  else if (ring.jag < 0.7)  rad = h * (0.65 + rnd(3) * 0.35);         // mid transitional
+  else                      rad = h * (0.45 + rnd(3) * 0.35);         // steep jagged alpine
+  // HARD safety clamp: base foot never enters the NAP zone (extends to NAP_FAR_X
+  // on the east side) — keeps mountains clear of the playfield + travel gateway.
+  rad = Math.min(rad, ring.dist - NAP_FAR_X - 6);
+
+  // More facets + vertical subdivisions than a flat fan = craggier silhouettes.
+  const segs   = valley ? 9 : (ring.jag < 0.4 ? 10 : (ring.jag < 0.7 ? 11 : 12));
+  const levels = valley ? 3 : (ring.jag < 0.4 ? 4  : (ring.jag < 0.7 ? 5  : 6));
+
+  const hasSnow  = isSnow;
+  const snowLine = hasSnow ? h * (0.50 + rnd(4) * 0.18) : Infinity;
+
+  // Asymmetric apex offset so ridgelines aren't perfectly centred.
+  const apexDX = (rnd(5) - 0.5) * rad * 0.30 * ring.jag;
+  const apexDZ = (rnd(6) - 0.5) * rad * 0.30 * ring.jag;
+
+  // Build concentric vertex rings from base (L=0) up to just below the apex.
+  const rings = [];
+  for (let L = 0; L < levels; L++) {
+    const t = L / levels;                                  // 0 base -> ~1 near apex
+    const y = t * h;
+    // Foothills/valleys round off (cosine); alpine taper sharper near the top.
+    const shrink = (valley || ring.jag < 0.4)
+      ? Math.cos(t * Math.PI * 0.5)
+      : Math.pow(1 - t, 0.85);
+    const rBase = rad * shrink;
+    const row = [];
+    for (let s = 0; s < segs; s++) {
+      const a = (s / segs) * Math.PI * 2;
+      // Per-vertex fractal cragginess — radial noise, stronger aloft on alpine.
+      const ns = Math.sin(seed + L * 3.137 + s * 7.777) * 43758.5453;
+      const nv = ns - Math.floor(ns);
+      const crag = 1 + (nv - 0.5) * ring.jag * 0.55 * (0.35 + t * 0.65);
+      const rr = rBase * crag;
+      row.push([
+        cx + Math.cos(a) * rr + apexDX * t,
+        y,
+        cz + Math.sin(a) * rr + apexDZ * t,
+      ]);
+    }
+    rings.push(row);
+  }
+  const apex = [cx + apexDX, h, cz + apexDZ];
+
+  const verts = [];
+  const colors = [];
+  const sun = _MTN_DAWN.sunDir;
+
+  // creviceFactor(segAngle, levelT) — 0..1 depth of a vertical fissure at this
+  // angular position. Crevices are angular bands darkening all levels below the
+  // apex, so they read as dark vertical cracks running down the face.
+  function creviceFactor(a, t) {
+    let f = 0;
+    if (crevices) {
+      for (const c of crevices) {
+        let d = Math.abs(((a - c.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+        if (d < c.halfWidth) {
+          const band = 1 - d / c.halfWidth;
+          const heightFade = Math.max(0, 1 - t * 1.4); // fissures fade out near the apex
+          f = Math.max(f, band * heightFade);
         }
       }
-
-      // Main peak triangle
-      verts.push(
-        bx - halfW, 0,   bz,
-        bx,         h,   bz,
-        bx + halfW, 0,   bz,
-      );
-      colors.push(colFar.r, colFar.g, colFar.b);
-      colors.push(colFar.r, colFar.g, colFar.b);
-      colors.push(colFar.r, colFar.g, colFar.b);
-
-      // Snow cap (top 25% of peak)
-      const snowY = h * 0.72;
-      const snowW = halfW * 0.28;
-      verts.push(
-        bx - snowW, snowY, bz,
-        bx,         h,     bz,
-        bx + snowW, snowY, bz,
-      );
-      colors.push(colSnow.r, colSnow.g, colSnow.b);
-      colors.push(colSnow.r, colSnow.g, colSnow.b);
-      colors.push(colSnow.r, colSnow.g, colSnow.b);
     }
+    return f;
+  }
 
+  // pushTri — emit one triangle, shaded by its REAL face normal vs the dawn sun,
+  // with snow applied by elevation and crevices cut dark. Reuses module-scratch
+  // vectors (no allocs).
+  function pushTri(p0, p1, p2, crv) {
+    _mtnN1.set(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]);
+    _mtnN2.set(p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]);
+    _mtnNr.crossVectors(_mtnN1, _mtnN2).normalize();
+    const facing = _mtnNr.x * sun.x + _mtnNr.y * sun.y + _mtnNr.z * sun.z; // -1..1
+    const yAvg = (p0[1] + p1[1] + p2[1]) / 3;
+    // Noisy snow boundary so the line isn't a perfect horizontal ring.
+    const snowEdge = snowLine * (0.88 + 0.12 * ((Math.sin(seed + yAvg * 1.7) * 43758.5453) % 1 + 1) * 0.5);
+    const aboveSnow = hasSnow && yAvg > snowEdge;
+
+    let baseCol;
+    if (aboveSnow) {
+      baseCol = _MTN_DAWN.snow;
+    } else if (valley) {
+      baseCol = _MTN_DAWN.valleyFloor;
+    } else if (ring.jag < 0.4) {
+      baseCol = _MTN_DAWN.foothill;
+    } else {
+      // Rock: cool plum near the base, blends slightly warmer higher up.
+      baseCol = yAvg > h * 0.5
+        ? _mtnLerp(_MTN_DAWN.base, _MTN_DAWN.foothill, 0.25)
+        : _MTN_DAWN.base;
+    }
+    let col;
+    if (facing >= 0) {
+      // Dawn-lit slope. Snow gets the gold kiss; rock gets warm dawn light.
+      col = aboveSnow
+        ? _mtnLerp(baseCol, _MTN_DAWN.snowLit, facing * 0.7)
+        : _mtnLerp(baseCol, _MTN_DAWN.lit,     facing * 0.7);
+    } else {
+      // Shadowed slope — pulled toward cool shadowed rock.
+      col = _mtnLerp(baseCol, _MTN_DAWN.base, -facing * 0.5);
+    }
+    // Crevices cut dark vertical fissures down the face.
+    if (crv > 0) col = _mtnLerp(col, _MTN_DAWN.crevice, crv * 0.85);
+    verts.push(p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+    for (let v = 0; v < 3; v++) colors.push(col.r, col.g, col.b);
+  }
+
+  // Side faces between consecutive rings (two tris per quad).
+  for (let L = 0; L < rings.length - 1; L++) {
+    const a = rings[L], b = rings[L + 1];
+    const tMid = (L + 0.5) / levels;
+    for (let s = 0; s < segs; s++) {
+      const s2 = (s + 1) % segs;
+      const angMid = ((s + 0.5) / segs) * Math.PI * 2;
+      const crv = creviceFactor(angMid, tMid);
+      pushTri(a[s], a[s2], b[s], crv);
+      pushTri(a[s2], b[s2], b[s], crv);
+    }
+  }
+  // Top ring -> apex fan (closes the peak). Crevices taper off here.
+  const top = rings[rings.length - 1];
+  for (let s = 0; s < segs; s++) {
+    const s2 = (s + 1) % segs;
+    const angMid = ((s + 0.5) / segs) * Math.PI * 2;
+    pushTri(top[s], top[s2], apex, creviceFactor(angMid, 1));
+  }
+  return { verts, colors, meta: { cx, cz, h, ang, rad, waterfall: opts.waterfall } };
+}
+
+function _buildMountains() {
+  const wfMetas = []; // peaks flagged for a waterfall
+  for (const ring of _MTN_DAWN.rings) {
+    const allV = [];
+    const allC = [];
+    // Designate snow-cap peaks: spread `snowCaps` indices around the ring.
+    const snowIdx = new Set();
+    for (let k = 0; k < ring.snowCaps; k++) {
+      snowIdx.add(Math.floor(((k + 0.5) / ring.snowCaps) * ring.count));
+    }
+    // Designate waterfall peaks: 2 on the far ring, 1 on the mid ring.
+    const wfTargets = ring.jag > 0.8 ? [0.30, 0.72] : (ring.jag > 0.5 ? [0.35] : []);
+    const wfIdx = new Set();
+    for (const f of wfTargets) {
+      let idx = Math.floor(f * ring.count);
+      while (snowIdx.has(idx)) idx = (idx + 1) % ring.count; // nudge off snow peaks
+      wfIdx.add(idx);
+    }
+    for (let i = 0; i < ring.count; i++) {
+      const seed = i * 12.9898 + ring.dist * 0.1;
+      const prnd = (o) => { const s = Math.sin(seed + o * 78.233) * 43758.5453; return s - Math.floor(s); };
+      // ~22% of non-snow peaks become valleys (low dips in the silhouette).
+      const valley = !snowIdx.has(i) && prnd(30) < 0.22;
+      // 1-2 crevice bands per peak (deterministic) — vertical fissures down faces.
+      const nCrev = ring.jag < 0.4 ? 1 : 2;
+      const crevices = [];
+      for (let c = 0; c < nCrev; c++) {
+        crevices.push({ angle: prnd(40 + c) * Math.PI * 2, halfWidth: 0.10 + prnd(50 + c) * 0.10 });
+      }
+      const p = _buildMtnPeak(i, ring.count, ring, {
+        isSnow: snowIdx.has(i),
+        valley,
+        crevices,
+        waterfall: wfIdx.has(i),
+      });
+      allV.push(...p.verts);
+      allC.push(...p.colors);
+      if (p.meta.waterfall) wfMetas.push(p.meta);
+    }
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(verts,  3));
-    geo.setAttribute('color',    new THREE.Float32BufferAttribute(colors, 3));
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(allV, 3));
+    geo.setAttribute('color',    new THREE.Float32BufferAttribute(allC, 3));
+    // Per-vertex haze blend toward warm dawn colour by elevation: peaks catch more
+    // haze aloft, bases stay grounded. Done via vertex colour (zero shader cost).
+    const haze = _MTN_DAWN.haze;
+    const colAttr = geo.getAttribute('color');
+    const posAttr = geo.getAttribute('position');
+    const ringHMax = ring.hMax;
+    for (let k = 0; k < colAttr.count; k++) {
+      const y = posAttr.getY(k);
+      const ht = Math.min(1, y / ringHMax);          // 0 at base → 1 at peak
+      const hazeMix = ring.haze * (0.4 + ht * 0.6);  // more haze aloft
+      colAttr.setXYZ(k,
+        colAttr.getX(k) + (haze.r - colAttr.getX(k)) * hazeMix,
+        colAttr.getY(k) + (haze.g - colAttr.getY(k)) * hazeMix,
+        colAttr.getZ(k) + (haze.b - colAttr.getZ(k)) * hazeMix);
+    }
+    colAttr.needsUpdate = true;
+    geo.computeVertexNormals();
     const mat = new THREE.MeshBasicMaterial({
       vertexColors: true,
       fog: true,
@@ -96,7 +287,119 @@ function _buildMountains() {
     const mesh = new THREE.Mesh(geo, mat);
     mesh.frustumCulled = false;
     scene.add(mesh);
+  }
+  _buildWaterfalls(wfMetas);
+  _buildRivers(wfMetas);
+}
+
+// ── Waterfalls (v0.2.250) ────────────────────────────────────────────────────
+// Thin bright vertical strips cascading down the arena-facing flank of a few
+// tall peaks. Built into ONE BufferGeometry (one draw call), additive-blended so
+// the meltwater glows against the rock. Pulse-animated in tickAtmosphere.
+function _buildWaterfalls(metas) {
+  if (!metas.length) return;
+  const verts = [];
+  const colors = [];
+  const W = 1.2; // strip width
+  for (const m of metas) {
+    const arenaDir = Math.atan2(-m.cz, -m.cx);       // angle from peak toward origin
+    const ca = Math.cos(arenaDir), sa = Math.sin(arenaDir);
+    // Sit the fall on the arena-facing flank (near the foot) so it's visible.
+    const offset = m.rad * 0.85;
+    const bx = m.cx + ca * offset;
+    const bz = m.cz + sa * offset;
+    const yTop = m.h * 0.60;
+    const yBot = 0;
+    // Width axis perpendicular to arenaDir in XZ; quad built in world space.
+    const px = -sa, pz = ca;
+    const hw = W / 2;
+    const p = [
+      [bx + px * -hw, yTop, bz + pz * -hw], // top-left
+      [bx + px *  hw, yTop, bz + pz *  hw], // top-right
+      [bx + px *  hw, yBot, bz + pz *  hw], // bot-right
+      [bx + px * -hw, yBot, bz + pz * -hw], // bot-left
+    ];
+    const cTop = _MTN_DAWN.water;
+    const cBot = { r: cTop.r * 0.65, g: cTop.g * 0.82, b: cTop.b };
+    const colOf = (y) => _mtnLerp(cBot, cTop, (y - yBot) / (yTop - yBot));
+    const tris = [[0, 1, 2], [0, 2, 3]];
+    for (const [ia, ib, ic] of tris) {
+      verts.push(p[ia][0], p[ia][1], p[ia][2], p[ib][0], p[ib][1], p[ib][2], p[ic][0], p[ic][1], p[ic][2]);
+      const col = colOf((p[ia][1] + p[ib][1] + p[ic][1]) / 3);
+      for (let v = 0; v < 3; v++) colors.push(col.r, col.g, col.b);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geo.setAttribute('color',    new THREE.Float32BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+  const mat = new THREE.MeshBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.82,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: true,
   });
+  _waterfallMesh = new THREE.Mesh(geo, mat);
+  _waterfallMesh.frustumCulled = false;
+  scene.add(_waterfallMesh);
+}
+
+// ── Rivers (v0.2.250) ─────────────────────────────────────────────────────────
+// Winding ground ribbons flowing from waterfall bases toward the arena edge
+// (stopping clear of the NAP zone). Flat triangle strips at y≈0.12, semi-
+// transparent glacial blue. Up to 2 rivers, each its own small mesh.
+function _buildGroundRibbon(path, width, colorHex, opacity, y) {
+  const verts = [];
+  const cols = [];
+  const c = new THREE.Color(colorHex);
+  const hw = width / 2;
+  for (let k = 0; k < path.length - 1; k++) {
+    const [x0, z0] = path[k], [x1, z1] = path[k + 1];
+    const dx = x1 - x0, dz = z1 - z0;
+    const len = Math.hypot(dx, dz) || 1;
+    const nx = -dz / len * hw, nz = dx / len * hw; // perpendicular in XZ
+    const p0 = [x0 + nx, y, z0 + nz], p1 = [x0 - nx, y, z0 - nz];
+    const p2 = [x1 - nx, y, z1 - nz], p3 = [x1 + nx, y, z1 + nz];
+    verts.push(...p0, ...p1, ...p2,  ...p0, ...p2, ...p3);
+    for (let v = 0; v < 6; v++) cols.push(c.r, c.g, c.b);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geo.setAttribute('color',    new THREE.Float32BufferAttribute(cols, 3));
+  geo.computeVertexNormals();
+  const mat = new THREE.MeshBasicMaterial({
+    vertexColors: true, transparent: true, opacity, depthWrite: false,
+    side: THREE.DoubleSide, fog: true,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.frustumCulled = false;
+  scene.add(mesh);
+  return mesh;
+}
+
+function _buildRivers(metas) {
+  // One winding ground ribbon from up to 2 waterfall bases toward the arena edge.
+  const sources = metas.slice(0, 2);
+  let idx = 0;
+  for (const m of sources) {
+    const arenaDir = Math.atan2(-m.cz, -m.cx);
+    const ca = Math.cos(arenaDir), sa = Math.sin(arenaDir);
+    const offset = m.rad * 0.85;                       // start at the fall's base
+    const startX = m.cx + ca * offset, startZ = m.cz + sa * offset;
+    const endDist = NAP_FAR_X + 6;                       // stop clear of NAP zone
+    const endX = ca * endDist, endZ = sa * endDist;
+    const perpX = -sa, perpZ = ca;
+    const N = 10;
+    const pts = [];
+    for (let k = 0; k <= N; k++) {
+      const t = k / N;
+      const bx = startX + (endX - startX) * t;
+      const bz = startZ + (endZ - startZ) * t;
+      // Wiggle perpendicular to the flow; gentler near the arena edge.
+      const wig = Math.sin(t * Math.PI * 3 + idx * 1.7) * (1.6 * (1 - t * 0.6));
+      pts.push([bx + perpX * wig, bz + perpZ * wig]);
+    }
+    _riverMeshes.push(_buildGroundRibbon(pts, 1.7, 0x6fb8d6, 0.5, 0.12 + idx * 0.01));
+    idx++;
+  }
 }
 
 // ── 2. Instanced tree billboards ──────────────────────────────────────────────
@@ -184,8 +487,8 @@ function _buildTrees() {
 // 24 large semi-transparent planes at y≈0, slow drift driven by uTime.
 // Plus an arena-only swirl layer of smaller turquoise-tinted planes that
 // hug the arena floor for the underlit-fog effect.
-const _MIST_COUNT = 24;
-const _ARENA_SWIRL_COUNT = 36;
+const _MIST_COUNT = 18;
+const _ARENA_SWIRL_COUNT = 24;
 const _mistMeshes = [];
 const _arenaSwirls = []; // { sprite, baseX, baseZ, baseY, phase, ampX, ampZ, life, lifeMax, baseScale, ... }
 let   _mistUTime  = 0;
@@ -201,10 +504,10 @@ function _buildPuffTexture() {
   cvs.width = SIZE; cvs.height = SIZE;
   const ctx = cvs.getContext('2d');
   const grad = ctx.createRadialGradient(SIZE/2, SIZE/2, 0, SIZE/2, SIZE/2, SIZE/2);
-  grad.addColorStop(0.00, 'rgba(220, 250, 245, 0.95)');
-  grad.addColorStop(0.25, 'rgba(160, 235, 220, 0.55)');
-  grad.addColorStop(0.55, 'rgba(110, 220, 200, 0.22)');
-  grad.addColorStop(1.00, 'rgba(110, 220, 200, 0.00)');
+  grad.addColorStop(0.00, 'rgba(190, 240, 230, 0.70)');
+  grad.addColorStop(0.25, 'rgba(140, 220, 205, 0.40)');
+  grad.addColorStop(0.55, 'rgba(100, 210, 190, 0.15)');
+  grad.addColorStop(1.00, 'rgba(100, 210, 190, 0.00)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, SIZE, SIZE);
   _puffTexture = new THREE.CanvasTexture(cvs);
@@ -223,7 +526,7 @@ function _buildArenaSwirls() {
   for (let i = 0; i < _ARENA_SWIRL_COUNT; i++) {
     const mat = new THREE.SpriteMaterial({
       map: tex,
-      color: 0x9ff0e0,
+      color: 0x7fd9c8,
       transparent: true,
       opacity: 0,
       depthWrite: false,
@@ -250,7 +553,7 @@ function _buildArenaSwirls() {
       ampX:      0.4 + Math.random() * 0.9,
       ampZ:      0.4 + Math.random() * 0.9,
       rise:      0.18 + Math.random() * 0.22,
-      maxOpacity:0.32 + Math.random() * 0.28,
+      maxOpacity:0.20 + Math.random() * 0.18,
       baseScale,
       lifeMax,
       life:      Math.random() * lifeMax,
@@ -262,7 +565,7 @@ function _buildMist() {
   const mat = new THREE.MeshBasicMaterial({
     color: 0xd4eaf5,
     transparent: true,
-    opacity: 0.07,
+    opacity: 0.045,
     depthWrite: false,
     side: THREE.DoubleSide,
     fog: false,
@@ -327,6 +630,11 @@ function _buildBirds() {
 // ── Tick — call every frame with dt ──────────────────────────────────────────
 export function tickAtmosphere(dt) {
   _mistUTime += dt;
+
+  // Waterfall shimmer — gentle brightness pulse so the meltwater reads alive.
+  if (_waterfallMesh) {
+    _waterfallMesh.material.opacity = 0.70 + Math.sin(_mistUTime * 2.4) * 0.10;
+  }
 
   // Drift mist planes
   for (const m of _mistMeshes) {

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene } from './scene.js';
-import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X, TRAVEL_GATE_X, TRAVEL_GATE_Z } from './config.js';
+import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X, TRAVEL_GATE_X, TRAVEL_GATE_Z, TRAVEL_GATE_YAW_DELTA } from './config.js';
 import { buildFoliage } from './arena-foliage.js';
 import { buildProofSurfaceMeshes } from './engine/world/proofSurfaceMeshes.js';
 
@@ -224,7 +224,7 @@ function _buildTravelGateway() {
   const cb = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 6.5), mat);
   cb.position.set(0, 5.2, 0); fallback.add(cb);
   fallback.position.set(TRAVEL_GATE_X, 0, TRAVEL_GATE_Z);
-  fallback.rotation.y = Math.PI / 2;
+  fallback.rotation.y = Math.PI / 2 + TRAVEL_GATE_YAW_DELTA;
   fallback.name = 'travel-gateway';
   scene.add(fallback);
 
@@ -269,7 +269,7 @@ function _buildTravelGateway() {
         // approaching player (who walks east from the entrance).
         box.setFromObject(gate);
         gate.position.set(TRAVEL_GATE_X, -box.min.y, TRAVEL_GATE_Z);
-        gate.rotation.y = Math.PI;
+        gate.rotation.y = Math.PI + TRAVEL_GATE_YAW_DELTA;
 
         gate.traverse(o => {
           if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }

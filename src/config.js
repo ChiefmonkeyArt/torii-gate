@@ -1,5 +1,5 @@
 // config.js — ALL constants. Never scatter magic numbers.
-export const VERSION   = 'v0.2.245-alpha';
+export const VERSION   = 'v0.2.250-alpha';
 export const GAME_NAME = 'Torii Quest';
 export const ARENA_HALF     = 20;
 export const WALL_H         = 2.6;  // was 8 → 5.5 → 4.4 → 3.52 → 2.6 (reduced again, user request v0.2.57)
@@ -15,14 +15,20 @@ export const NAP_X          = ARENA_HALF; // 20 — east wall plane
 export const NAP_FAR_X      = ARENA_HALF + 25; // outer edge of NAP zone floor
 // Travel gateway — the metaverse PORTAL (torii-gateway-experience.glb), distinct
 // from the entrance torii-gate.glb at NAP_X. Sits on the FAR side of the NAP zone
-// so the player walks the full peace-zone to reach it. x=40 leaves the portal's
-// outer ring (radius = trigger range 3 → x∈[37,43]) clear of the floor edge at 45.
-export const TRAVEL_GATE_X  = ARENA_HALF + 20; // 40 — far-side travel portal plane
-// v0.2.245 — gateway moved off the leaderboard proof panel (nap-zone-far-centre,
-// also at x=40) into the far-right corner of the NAP zone. z=+11 keeps the outer
-// detection ring (radius 3 → z∈[8,14]) clear of the z=0 panel and inside the
-// floor edge (z∈[-20,20]). Entrance torii-gate at NAP_X stays untouched.
-export const TRAVEL_GATE_Z  = 11; // far-right NAP corner (player's right, +z)
+// so the player walks the full peace-zone to reach it. x=42 leaves the portal's
+// outer ring (radius = trigger range 3 → x∈[39,45]) at the far floor edge.
+export const TRAVEL_GATE_X  = ARENA_HALF + 22; // 42 — far-side travel portal plane (pushed into the corner)
+// v0.2.246 — gateway pushed deeper into the far-right NAP corner and turned 45°
+// clockwise (top-down). x=42 + z=16 places it in the corner with the outer
+// detection ring (radius 3 → x∈[39,45], z∈[13,19]) clear of the z=0 proof panel
+// and inside the floor edges (x≤45, z≤20). Entrance torii-gate at NAP_X untouched.
+export const TRAVEL_GATE_Z  = 16; // far-right NAP corner (player's right, +z)
+// Clockwise (top-down) yaw delta applied to BOTH the procedural fallback and the
+// GLB gate so they stay in sync. Three.js +Y rotation is CCW from above, so
+// clockwise is negative. The two base yaws differ (fallback π/2, GLB π) because
+// each model was calibrated to face the approaching player; this delta is added
+// on top of both, so a single tweak turns the whole gateway.
+export const TRAVEL_GATE_YAW_DELTA = -Math.PI / 4; // 45° clockwise (top-down)
 export const PLAYER_HP      = 100;
 export const PLAYER_SPEED   = 8;
 export const PLAYER_RADIUS  = 0.35;
