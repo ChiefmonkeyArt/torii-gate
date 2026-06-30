@@ -28,7 +28,7 @@ describe('versionDelta', () => {
     expect(versionDelta('v0.2.280-alpha', 'v0.2.280-alpha')).toEqual({ direction: 'same', count: 0 });
   });
   it('counts the patch gap when behind (shared major.minor)', () => {
-    expect(versionDelta('v0.2.279-alpha', 'v0.2.283-alpha')).toEqual({ direction: 'behind', count: 4 });
+    expect(versionDelta('v0.2.279-alpha', 'v0.2.284-alpha')).toEqual({ direction: 'behind', count: 5 });
   });
   it('reports ahead when the runtime is newer', () => {
     const d = versionDelta('v0.3.0-alpha', 'v0.2.999-alpha');

@@ -1,4 +1,4 @@
-import { writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { defineConfig } from 'vite';
@@ -10,13 +10,25 @@ import { CSP_VALUE, headersFileBody, headersFileBodyForSha, cspValueForSha } fro
 // <script> tag — letting `strict-dynamic` cover the whole module graph; (2) writes
 // dist/_headers for the static host; (3) serves the same header from `vite preview`.
 //
-// v0.2.283: the entry import now carries a per-build cache-bust query (?v=<stamp>) so
+// v0.2.284: the entry import now carries a per-build cache-bust query (?v=<stamp>) so
 // Cloudflare's 4h edge cache can never serve a stale entry that points at a dead/old
 // chunk hash after a publish. Because that changes the inline-script text, the CSP sha is
 // recomputed from the EMITTED inline script at writeBundle time and written into
 // dist/_headers — so the policy always matches the shipped bootstrap.
+//
+// v0.2.284: the versioned query MUST also be injected into every chunk's back-reference
+// import of the entry (`from"./torii-entry.js"`). Without this the browser sees two
+// different module URLs for the same entry — `torii-entry.js?v=<stamp>` (from the inline
+// bootstrap, fresh) and `torii-entry.js` (from the chunk, CDN-stale) — fetches the stale
+// one, and throws "does not provide an export named 'Lt'" (or any symbol added since).
+// Rewriting both to the same versioned URL makes the browser dedupe to the fresh fetch.
 const BUILD_STAMP = Date.now().toString(36);
 const VERSIONED_IMPORT_LINE = `  import('/assets/torii-entry.js?v=${BUILD_STAMP}');`;
+const ENTRY_BASE = 'torii-entry.js';
+// Matches import specifiers pointing at the pinned entry, e.g. from"./torii-entry.js"
+// or from'./torii-entry.js' or from"/assets/torii-entry.js". Avoids touching the
+// entry file itself or unrelated strings.
+const ENTRY_IMPORT_RE = /(from\s*["'])([.\w/-]*\/assets\/torii-entry\.js|[.]+\/torii-entry\.js)(["'])/g;
 
 // Recompute the sha256 of the single attribute-less inline <script> in dist/index.html.
 // Must match the extraction regex used by tools/regression-check.mjs (check 16c).
@@ -49,6 +61,22 @@ function cspHeaderPlugin() {
     },
     writeBundle(options) {
       const dir = options.dir || join(process.cwd(), 'dist');
+      const assetsDir = join(dir, 'assets');
+      // v0.2.284: rewrite every chunk's back-reference import of the pinned entry to the
+      // SAME versioned URL the inline bootstrap uses, so the browser dedupes to one fresh
+      // module fetch instead of hitting the CDN-stale un-versioned URL.
+      if (existsSync(assetsDir)) {
+        for (const f of readdirSync(assetsDir)) {
+          if (!f.endsWith('.js') || f === ENTRY_BASE) continue; // skip the entry itself
+          const p = join(assetsDir, f);
+          const src = readFileSync(p, 'utf8');
+          // Skip if this chunk doesn't import the entry at all (cheap guard).
+          if (!src.includes(ENTRY_BASE)) continue;
+          const rewritten = src.replace(ENTRY_IMPORT_RE, (_m, pre, _spec, post) =>
+            `${pre}/assets/torii-entry.js?v=${BUILD_STAMP}${post}`);
+          if (rewritten !== src) writeFileSync(p, rewritten);
+        }
+      }
       // Recompute the inline-bootstrap sha from the EMITTED dist/index.html (which now
       // carries the versioned import line) and write _headers with the matching policy.
       const htmlPath = join(dir, 'index.html');
