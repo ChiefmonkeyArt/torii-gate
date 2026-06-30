@@ -1,6 +1,6 @@
 {
-  "version": "v0.2.275-alpha",
-  "generatedAt": "2026-06-30T17:38:45.330Z",
+  "version": "v0.2.276-alpha",
+  "generatedAt": "2026-06-30T17:44:56.461Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
@@ -48,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.275-alpha"
+        "value": "v0.2.276-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -78,12 +78,12 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "16 / 16 regression checks GREEN · last green v0.2.275-alpha"
+        "value": "16 / 16 regression checks GREEN · last green v0.2.276-alpha"
       },
       {
         "label": "Source-of-truth docs",
         "kind": "generated",
-        "value": "progress.md · todo.md · strategy.md carry this version"
+        "value": "doc/version drift — check the continuity docs"
       }
     ],
     "rings": [
@@ -155,8 +155,8 @@
   },
   "readiness": {
     "badge": "DEPLOY READINESS · STATIC HOST · READ-ONLY",
-    "status": "docs-ready",
-    "statusLabel": "DOCS READY · BUILD CHECK PENDING",
+    "status": "ready",
+    "statusLabel": "READY",
     "checks": [
       {
         "item": "SPA /zone/* fallback documented",
@@ -165,8 +165,8 @@
       },
       {
         "item": "Built dist route shape",
-        "state": "deferred",
-        "note": "no dist/ this build — run npm run build then npm run zones:check"
+        "state": "no-blocker",
+        "note": "dist/index.html present; no static file under /zone/* shadows the fallback"
       },
       {
         "item": "Host SPA fallback configured",
@@ -188,18 +188,18 @@
     "statusCommand": "npm run release:status",
     "gateCommand": "npm run test:release",
     "kind": "generated",
-    "status": "ready",
-    "statusLabel": "READY",
-    "ready": true,
-    "version": "v0.2.275-alpha",
-    "gitCommit": "d9a8a5a",
+    "status": "not-ready",
+    "statusLabel": "NOT READY",
+    "ready": false,
+    "version": "v0.2.276-alpha",
+    "gitCommit": "4b6e98c",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.275-alpha / pkg 0.2.275-alpha"
+        "detail": "config v0.2.276-alpha / pkg 0.2.276-alpha"
       },
       {
         "key": "tests",
@@ -218,26 +218,28 @@
       {
         "key": "bundle",
         "label": "Bundle baseline",
-        "state": "skipped",
-        "pill": "deferred",
-        "detail": "no dist/ — build then bundle:report"
+        "state": "advisory",
+        "pill": "manual",
+        "detail": "advisory — over limit: rapier-DE6a0vmv.js"
       },
       {
         "key": "zoneFallback",
         "label": "/zone/* fallback",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "docs ok · dist check pending"
+        "detail": "docs + dist ok"
       },
       {
         "key": "docs",
         "label": "Docs consistency",
-        "state": "ok",
-        "pill": "no-blocker",
-        "detail": "continuity docs carry current version"
+        "state": "blocked",
+        "pill": "gated",
+        "detail": "todo.md does not reference current version v0.2.276-alpha (doc drift); progress.md does not reference current version v0.2.276-alpha (doc drift); HANDOFF.md does not reference current version v0.2.276-alpha (doc drift)"
       }
     ],
-    "blockers": [],
+    "blockers": [
+      "docs"
+    ],
     "unknowns": [],
     "nextTask": {
       "title": "Continue the read-only oversight loop — next safe infra/dashboard slice",
@@ -249,10 +251,10 @@
   "rcStatus": {
     "badge": "RC / RELEASE MANIFEST · LOCAL · READ-ONLY",
     "kind": "generated",
-    "band": "gates-green",
-    "statusLabel": "LOCAL GATES GREEN · MANUAL VALIDATION + APPROVAL PENDING",
+    "band": "near",
+    "statusLabel": "NEAR · LOCAL GATES",
     "pill": "manual",
-    "version": "v0.2.275-alpha",
+    "version": "v0.2.276-alpha",
     "manifestStatus": "COMPLETE",
     "manifestRequiredPresent": 6,
     "manifestRequired": 6,
@@ -263,11 +265,11 @@
     "testLabel": "1858 passing / 124 files",
     "profileSummary": "fast ~5 · foundation ~25 · full",
     "manualValidationRemaining": 7,
-    "gateStatusLabel": "READY",
+    "gateStatusLabel": "NOT READY",
     "metrics": [
       {
         "label": "Source version",
-        "value": "v0.2.275-alpha"
+        "value": "v0.2.276-alpha"
       },
       {
         "label": "Release manifest",
@@ -291,7 +293,7 @@
       },
       {
         "label": "Last release gate",
-        "value": "READY"
+        "value": "NOT READY"
       }
     ],
     "note": "Release-candidate artifact posture — the release-artifact MANIFEST (required/optional present) and RC package-doc coverage, the curated test count, the manual validation still outstanding, and the last local release-gate verdict, folded into one read-only band. GENERATED at packaging time from on-disk artifact presence; LAST-KNOWN when not regenerated this build. It releases/tags/publishes/deploys NOTHING — manual live-browser validation and explicit user approval stay required (run: npm run rc:snapshot / npm run release:manifest)."
@@ -299,8 +301,8 @@
   "manualValidation": {
     "badge": "MANUAL VALIDATION · MVP PLAYTEST · READ-ONLY",
     "kind": "generated",
-    "band": "gates-green",
-    "statusLabel": "LOCAL GATES GREEN · MANUAL PLAYTEST + APPROVAL PENDING",
+    "band": "manual-outstanding",
+    "statusLabel": "MANUAL VALIDATION OUTSTANDING",
     "pill": "manual",
     "sections": 13,
     "items": 17,
@@ -310,7 +312,7 @@
     "validationAreas": 7,
     "checklistDocPresent": true,
     "resultsTemplatePresent": true,
-    "gateStatusLabel": "READY",
+    "gateStatusLabel": "NOT READY",
     "areas": [
       "Launch / title screen",
       "Shooter loop",
@@ -323,7 +325,7 @@
     "metrics": [
       {
         "label": "Local automated gates",
-        "value": "READY · 15/15 local checks green"
+        "value": "NOT READY"
       },
       {
         "label": "Manual playtest",
@@ -399,7 +401,7 @@
     "pill": "manual",
     "status": "pending",
     "approved": false,
-    "version": "v0.2.275-alpha",
+    "version": "v0.2.276-alpha",
     "approvedBy": null,
     "approvedAt": null,
     "metrics": [
@@ -409,7 +411,7 @@
       },
       {
         "label": "Version",
-        "value": "v0.2.275-alpha"
+        "value": "v0.2.276-alpha"
       },
       {
         "label": "Approved by",
@@ -429,19 +431,19 @@
   "mvpGate": {
     "badge": "MVP APPROVAL GATE · LOCAL · READ-ONLY · GREEN CHECKS ≠ HUMAN APPROVAL",
     "kind": "generated",
-    "band": "awaiting",
-    "statusLabel": "CONFIDENCE GREEN · AWAITING EXPLICIT USER PLAYTEST + OK",
+    "band": "signals-incomplete",
+    "statusLabel": "AUTOMATED CONFIDENCE SIGNALS INCOMPLETE",
     "pill": "manual",
     "approved": false,
-    "verdict": "awaiting-approval",
+    "verdict": "signals-incomplete",
     "metrics": [
       {
         "label": "Gate verdict",
-        "value": "awaiting-approval"
+        "value": "signals-incomplete"
       },
       {
         "label": "Release gate",
-        "value": "green (confidence only, not approval)"
+        "value": "not yet (confidence only, not approval)"
       },
       {
         "label": "Entry smoke",
@@ -561,7 +563,7 @@
     "metrics": [
       {
         "label": "Version",
-        "value": "v0.2.275-alpha"
+        "value": "v0.2.276-alpha"
       },
       {
         "label": "Live game",
@@ -581,7 +583,7 @@
       },
       {
         "label": "Manual blocker",
-        "value": "PENDING — LOCAL GATES GREEN · MANUAL PLAYTEST + APPROVAL PENDING"
+        "value": "PENDING — MANUAL VALIDATION OUTSTANDING"
       },
       {
         "label": "MVP approval",
