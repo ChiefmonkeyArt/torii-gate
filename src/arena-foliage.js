@@ -297,6 +297,15 @@ function _buildGrass() {
   scene.add(mesh);
   _grassMat = mat;
   window._grassMat = mat; // DEPRECATED debug alias (v0.2.118) — internal code uses tickFoliage()/getGrassMat()
+
+  // v0.2.274: diagnostic stamp. Open the browser console (F12) and look for
+  // the line starting with [grass-build] — it prints the EXACT params the
+  // browser is actually running, so you can confirm whether you're seeing a
+  // cached old build or the live one. If this line is missing entirely, the
+  // grass code never ran (stale bundle). flare 5.6 + count 500000 = live v0.2.274.
+  const stamp = `[grass-build] v0.2.274 blades=${count} bladeW=${BLADE_W} bladeH=${BLADE_H} flare=5.6 lean=0.22 windGust=0.34`;
+  console.info(stamp);
+  window.__GRASS_BUILD = stamp;
 }
 
 // ── Instanced wildflowers ─────────────────────────────────────────────────────
