@@ -165,7 +165,7 @@ function _buildToriiGate() {
 
   // Load GLB asynchronously — replaces fallback when ready
   const draco = new DRACOLoader();
-  draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+  draco.setDecoderPath('/draco/');
   const loader = new GLTFLoader();
   loader.setDRACOLoader(draco);
   loader.load('/torii-gate.glb', gltf => {
@@ -248,7 +248,7 @@ function _buildTravelGateway() {
   let draco;
   try {
     draco = new DRACOLoader();
-    draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    draco.setDecoderPath('/draco/');
     const loader = new GLTFLoader();
     loader.setDRACOLoader(draco);
     loader.load('/torii-gateway-experience.glb', gltf => {

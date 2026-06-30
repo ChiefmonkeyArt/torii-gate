@@ -132,6 +132,13 @@ torii.quest, www.torii.quest {
     @wasm path *.wasm
     header @wasm Content-Type application/wasm
 
+    # Content-Security-Policy via HTTP header (S3, v0.2.266). MUST match
+    # tools/csp.mjs / the built dist/_headers. nonce-free strict-dynamic + the
+    # sha256 of the inline bootstrap script; Draco is vendored at /draco/ so no
+    # third-party origin (no gstatic). Update the sha256 only if the inline
+    # bootstrap script in index.html changes (regression-check enforces this).
+    header Content-Security-Policy "object-src 'none'; base-uri 'self'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' blob: 'strict-dynamic' 'sha256-BeP+mq9EN42J9N+ZM7SI41v6rTl8B5JYeekVlSXx2qg='; worker-src 'self' blob:; connect-src 'self' blob: wss://relay.damus.io wss://nos.lol wss://relay.nostr.band wss://relay.primal.net"
+
     # static asset caching (hashed Vite filenames are safe to cache hard)
     @assets path /assets/*
     header @assets Cache-Control "public, max-age=31536000, immutable"
@@ -178,6 +185,13 @@ server {
     location = /index.html {
         add_header Cache-Control "no-cache";
     }
+
+    # Content-Security-Policy via HTTP header (S3, v0.2.266). MUST match
+    # tools/csp.mjs / the built dist/_headers (nonce-free strict-dynamic + the
+    # sha256 of the inline bootstrap; Draco vendored at /draco/, no gstatic).
+    # `always` so it's sent on error responses too. Update the sha256 only if the
+    # inline bootstrap in index.html changes (regression-check enforces this).
+    add_header Content-Security-Policy "object-src 'none'; base-uri 'self'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' blob: 'strict-dynamic' 'sha256-BeP+mq9EN42J9N+ZM7SI41v6rTl8B5JYeekVlSXx2qg='; worker-src 'self' blob:; connect-src 'self' blob: wss://relay.damus.io wss://nos.lol wss://relay.nostr.band wss://relay.primal.net" always;
 }
 ```
 

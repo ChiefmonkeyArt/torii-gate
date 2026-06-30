@@ -1,6 +1,6 @@
 {
-  "version": "v0.2.265-alpha",
-  "generatedAt": "2026-06-30T15:59:42.346Z",
+  "version": "v0.2.266-alpha",
+  "generatedAt": "2026-06-30T16:09:30.628Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
@@ -48,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.265-alpha"
+        "value": "v0.2.266-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -78,7 +78,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "15 / 15 regression checks GREEN · last green v0.2.265-alpha"
+        "value": "16 / 16 regression checks GREEN · last green v0.2.266-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -95,7 +95,7 @@
       {
         "pct": 100,
         "label": "Regression checks",
-        "sub": "15 / 15"
+        "sub": "16 / 16"
       },
       {
         "pct": 23,
@@ -191,15 +191,15 @@
     "status": "ready",
     "statusLabel": "READY",
     "ready": true,
-    "version": "v0.2.265-alpha",
-    "gitCommit": "b9945c8",
+    "version": "v0.2.266-alpha",
+    "gitCommit": "8868cad",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.265-alpha / pkg 0.2.265-alpha"
+        "detail": "config v0.2.266-alpha / pkg 0.2.266-alpha"
       },
       {
         "key": "tests",
@@ -213,7 +213,7 @@
         "label": "Regression gate",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "15 / 15 checks"
+        "detail": "16 / 15 checks"
       },
       {
         "key": "bundle",
@@ -252,7 +252,7 @@
     "band": "gates-green",
     "statusLabel": "LOCAL GATES GREEN · MANUAL VALIDATION + APPROVAL PENDING",
     "pill": "manual",
-    "version": "v0.2.265-alpha",
+    "version": "v0.2.266-alpha",
     "manifestStatus": "COMPLETE",
     "manifestRequiredPresent": 6,
     "manifestRequired": 6,
@@ -267,7 +267,7 @@
     "metrics": [
       {
         "label": "Source version",
-        "value": "v0.2.265-alpha"
+        "value": "v0.2.266-alpha"
       },
       {
         "label": "Release manifest",
@@ -399,7 +399,7 @@
     "pill": "manual",
     "status": "pending",
     "approved": false,
-    "version": "v0.2.265-alpha",
+    "version": "v0.2.266-alpha",
     "approvedBy": null,
     "approvedAt": null,
     "metrics": [
@@ -409,7 +409,7 @@
       },
       {
         "label": "Version",
-        "value": "v0.2.265-alpha"
+        "value": "v0.2.266-alpha"
       },
       {
         "label": "Approved by",
@@ -561,7 +561,7 @@
     "metrics": [
       {
         "label": "Version",
-        "value": "v0.2.265-alpha"
+        "value": "v0.2.266-alpha"
       },
       {
         "label": "Live game",

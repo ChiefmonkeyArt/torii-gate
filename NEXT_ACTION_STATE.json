@@ -1,19 +1,21 @@
 {
   "schema": "torii.next-action-state",
   "schemaVersion": 1,
-  "generatedAt": "2026-06-30T15:40:58.879Z",
+  "generatedAt": "2026-06-30T16:03:49.222Z",
   "badge": "NEXT-ACTION STATE · LOCAL · READ-ONLY",
-  "version": "v0.2.265-alpha",
-  "packageVersion": "0.2.265-alpha",
-  "gitCommit": "f3399b6",
+  "version": "v0.2.266-alpha",
+  "packageVersion": "0.2.266-alpha",
+  "gitCommit": "e541495",
   "liveUrl": "https://torii-quest.pplx.app",
   "release": {
-    "ready": true,
-    "gateStatus": "READY",
+    "ready": false,
+    "gateStatus": "NOT READY",
     "gateCommand": "npm run test:release",
-    "blockers": [],
+    "blockers": [
+      "docs"
+    ],
     "regression": {
-      "count": 15,
+      "count": 16,
       "expected": 15
     }
   },
@@ -27,7 +29,7 @@
   },
   "manualBlocker": {
     "pending": true,
-    "statusLabel": "LOCAL GATES GREEN · MANUAL PLAYTEST + APPROVAL PENDING",
+    "statusLabel": "MANUAL VALIDATION OUTSTANDING",
     "pill": "manual"
   },
   "mvpApproval": {
@@ -102,7 +104,7 @@
   },
   "controlPanel": {
     "green": true,
-    "version": "v0.2.265-alpha",
+    "version": "v0.2.266-alpha",
     "liveUrl": "https://torii-quest.pplx.app",
     "dashboardUrl": "https://torii-quest.pplx.app/dashboard.html",
     "entrySmoke": {
@@ -124,11 +126,11 @@
     "impliesPlaytestComplete": false
   },
   "mvpGate": {
-    "verdict": "awaiting-approval",
+    "verdict": "signals-incomplete",
     "approved": false,
-    "confidenceGreen": true,
+    "confidenceGreen": false,
     "confidenceSignals": {
-      "releaseReady": true,
+      "releaseReady": false,
       "entrySmokePass": true,
       "dashboardSmokePass": true,
       "suiteGreen": true
@@ -171,10 +173,10 @@
     "HANDOFF.generated.md"
   ],
   "reports": [
-    "torii-v0.2.213-shellless-release-tooling-report.md",
-    "torii-v0.2.214-continuum-rc-status-report.md",
-    "torii-v0.2.215-manual-validation-dashboard-report.md",
-    "torii-v0.2.216-no-blocker-queue-dashboard-report.md"
+    "torii-v0.2.206-mvp-release-package-report.md",
+    "torii-v0.2.207-github-release-dry-run-report.md",
+    "torii-v0.2.208-progress-parser-cleanup-report.md",
+    "torii-v0.2.209-generated-commit-stamp-clarity-report.md"
   ],
   "safety": {
     "deploy": false,

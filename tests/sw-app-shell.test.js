@@ -13,13 +13,16 @@
 //   - HTML/JS must be served network-first (only binary assets are cache-first);
 //   - index.html must register the SW with a loop-guarded controllerchange→reload so an
 //     already-stranded client auto-heals when the fresh version-named SW claims the page;
-//   - the CSP sha256 must still match the inline registration script (else it won't run).
+//   - the CSP sha256 (in tools/csp.mjs, shipped as an HTTP header) must still match the
+//     BUILT inline registration script — i.e. the source inline script + the entry import()
+//     line the build plugin appends — else strict-dynamic blocks the bootstrap.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { VERSION } from '../src/config.js';
+import { INLINE_SCRIPT_SHA256, ENTRY_IMPORT_LINE } from '../tools/csp.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SW = readFileSync(join(ROOT, 'public/sw.js'), 'utf8');
@@ -89,9 +92,13 @@ describe('index.html — service-worker registration self-heal', () => {
     expect(s).toMatch(/if\s*\(\s*reloading\s*\)\s*return/);
   });
 
-  it('CSP sha256 still matches the inline registration script', () => {
+  it('CSP sha256 (tools/csp.mjs) matches the BUILT inline registration script', () => {
+    // The CSP no longer lives in index.html (S3, v0.2.266) — it ships as an HTTP header
+    // derived from tools/csp.mjs. The hashed script is the BUILT bootstrap: the source
+    // inline script with the entry import() line the vite plugin appends before </script>.
     const s = inlineRegistrationScript();
-    const hash = 'sha256-' + createHash('sha256').update(s, 'utf8').digest('base64');
-    expect(HTML).toContain(hash);
+    const built = s + ENTRY_IMPORT_LINE + '\n';
+    const hash = 'sha256-' + createHash('sha256').update(built, 'utf8').digest('base64');
+    expect(hash).toBe(INLINE_SCRIPT_SHA256);
   });
 });

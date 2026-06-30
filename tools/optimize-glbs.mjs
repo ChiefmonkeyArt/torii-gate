@@ -16,7 +16,7 @@
 //
 // Loader requirements (audit responsibility — already documented in
 // src/arena.js / src/weapons.js / src/firstPersonBody.js as of v0.2.260):
-//   - GLTFLoader.setDRACOLoader(new DRACOLoader().setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/'))
+//   - GLTFLoader.setDRACOLoader(new DRACOLoader().setDecoderPath('/draco/'))  // decoder vendored locally (S4, v0.2.266); no third-party CDN
 //   - Three.js r152+ understands EXT_texture_webp natively (no extra loader needed).
 //
 // What this is NOT:

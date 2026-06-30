@@ -416,7 +416,7 @@ function _buildGun() {
   gunScene.add(_gunPlaceholder);
 
   const draco = new DRACOLoader();
-  draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+  draco.setDecoderPath('/draco/');
   const loader = new GLTFLoader(); loader.setDRACOLoader(draco);
   loader.load('/gun-steampunk.glb', gltf => {
     _gunMesh = gltf.scene;

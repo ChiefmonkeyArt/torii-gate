@@ -1,7 +1,7 @@
 # Torii Quest — Progress Dashboard
 
 > Visual execution dashboard. `strategy.md` = vision/decision rules · `todo.md` = active task queue.
-> Current version: **v0.2.265-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
+> Current version: **v0.2.266-alpha** | Live: [torii-quest.pplx.app](https://torii-quest.pplx.app)
 > **ACTIVE FOCUS — 15-hour proof-of-concept route.** Shooter is maintenance-only unless demo-breaking; the active MVP is the freedom-tech loop (gateway/NAP-to-NAP preview → Plebeian/Nostr product panel → leaderboard preview → torii.quest update-check). Polish comes after PoC validation.
 
 ---
@@ -10,9 +10,9 @@
 
 | Metric | Value |
 |---|---|
-| Source version | **v0.2.265-alpha** (build truth; live trails — manual maintainer deploy) |
+| Source version | **v0.2.266-alpha** (build truth; live trails — manual maintainer deploy) |
 | Tests | **1686 passing / 102 files** (profiles: `test:fast` ~5 files, `test:foundation` ~25 files) |
-| Regression check | **15 / 15 GREEN** |
+| Regression check | **16 / 16 GREEN** |
 | Bundle (advisory) | 2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected) |
 | Gates | SEC-1 / SEC-2 / SEC-3 intact · godMode `false` · continuum CSP enforced |
 | Active slice | v0.2.244 HOST-SAFE CANONICAL ZONE ROUTE (game slice) — fixes the v0.2.243 follow-up: the live rendered screenshot of `/zone/plebeian-market-bazaar/` STILL showed the JSON 404 (`{"detail":"No static asset at /zone/plebeian-market-bazaar"}`). ROOT CAUSE: the published exact-path static host (torii-quest.pplx.app) has NO SPA rewrite and NO directory index and normalises BOTH `/zone/<slug>` AND `/zone/<slug>/` to an exact static-asset lookup → 404, so EVERY `/zone/*` PATH strategy fails (v0.2.242 extensionless → octet-stream download; v0.2.243 directory-index shell → 404). Only the root `/` reliably serves `index.html` as `text/html`. FIX (no backend): the canonical zone route is now the URL FRAGMENT `/#/zone/<slug>` — the fragment is never sent to the server, so the request path is always `/` and the root shell ALWAYS renders on hard refresh; the client parser reads the fragment. `zoneRouteFor` + `handoffRouteFor` build `/#/zone/<slug>`; the portal allowlists are `/#/zone/`; `main._applyZoneRoute` reads the URL hash fragment (+ a `hashchange` listener) and falls back to the path for a LEGACY `/zone/<slug>` link, which the parser still resolves client-side (NON-CANONICAL: a cold `/zone/*` deep-link 404s before the bundle loads, so it is never generated/shared). No per-slug static shell is generated any more (the build step + `tools/zoneShells.mjs` + `tools/generate-zone-shells.mjs` were removed); the dist ships NO `/zone/*` file. Preserves the v0.2.240 service-worker fail-soft precache, the v0.2.238 fail-closed loop, and v0.2.236 NIP-07 login decoupling; root entry flow + ENTER ARENA + ESC pause unchanged. |

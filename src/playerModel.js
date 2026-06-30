@@ -81,7 +81,7 @@ export function loadPlayerModel(parentObj) {
   _anims = char.anims;
 
   const _draco = new DRACOLoader();
-  _draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+  _draco.setDecoderPath('/draco/');
   const _loader = new GLTFLoader();
   _loader.setDRACOLoader(_draco);
   _loader.load(char.file, gltf => {

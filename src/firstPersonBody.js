@@ -32,7 +32,7 @@ export function loadFirstPersonBody(parentObj) {
   if (_root) { parentObj.remove(_root); _root = null; _mixer = null; _actions = {}; _current = null; }
 
   const draco = new DRACOLoader();
-  draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+  draco.setDecoderPath('/draco/');
   const loader = new GLTFLoader();
   loader.setDRACOLoader(draco);
   loader.load('/chiefmonkey-headless.glb', gltf => {

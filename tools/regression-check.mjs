@@ -37,14 +37,21 @@
 //      /zone/* deep-links, or (when dist/ exists) if the built route shape can't rely on
 //      it (no index.html, or a static file published under /zone/* that would shadow it).
 //      Pure helpers in tools/zoneFallbackReadiness.mjs (unit-tested); this block reads files.
+//  16. CSP-as-HTTP-header + vendored Draco (S3+S4, v0.2.266) — FAILS if index.html still
+//      ships a <meta> CSP, if gstatic.com appears in src/ or index.html, if the Draco
+//      decoder isn't vendored under public/draco/ (setDecoderPath → /draco/), or if
+//      tools/csp.mjs's policy lacks strict-dynamic / the inline sha / required directives.
+//      When dist/ exists it also re-derives the built inline-bootstrap sha256 and FAILS on
+//      any drift from CSP_VALUE, and asserts dist/_headers + the import()-loaded entry.
 //
 // Exit code 0 = all green; non-zero = at least one FAIL.
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.265-alpha';
+const EXPECTED_VERSION = 'v0.2.266-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -395,6 +402,105 @@ console.log('[15] SPA /zone/* fallback readiness (zoneFallbackReadiness)');
     }
   } catch (e) {
     fail(`zone-fallback guard threw: ${e.message}`);
+  }
+}
+
+// 16. CSP-as-HTTP-header + vendored Draco guard (S3+S4, v0.2.266). The Content-
+// Security-Policy must NOT ship as a <meta> tag in the app shell anymore: it is an HTTP
+// response header sourced from tools/csp.mjs (→ dist/_headers, the Vite preview server,
+// and the Caddy/Nginx blocks in VPS_INSTALL.md). script-src uses strict-dynamic + a
+// sha256 of the single inline bootstrap script (no per-request nonce on a static host).
+// Draco is vendored at /draco/ so no third-party origin (gstatic) appears anywhere.
+//   (a) index.html (source + built) carries NO meta CSP.
+//   (b) tools/csp.mjs CSP_VALUE has the required directives, strict-dynamic, the inline
+//       sha, and NO gstatic; no src/ file or index.html references gstatic; the Draco
+//       decoder files are vendored under public/draco/ and src points setDecoderPath at /draco/.
+//   (c) when dist/ exists: dist/_headers carries the exact CSP_VALUE; the built inline
+//       bootstrap script's recomputed sha256 matches INLINE_SCRIPT_SHA256 (so a changed
+//       inline script fails the check); the static entry <script> tag is gone and the
+//       import('/assets/torii-entry.js') line is present; the entry chunk + vendored
+//       Draco files are emitted into dist/.
+console.log('[16] CSP via HTTP header + vendored Draco (S3+S4)');
+{
+  const META_CSP_RE = /<meta[^>]+http-equiv=["']Content-Security-Policy["']/i;
+  const indexHtml = readFileSync(join(ROOT, 'index.html'), 'utf8');
+  if (META_CSP_RE.test(indexHtml)) fail('index.html still ships a <meta> CSP (must be an HTTP header — see tools/csp.mjs)');
+  else pass('index.html has no <meta> CSP (delivered as HTTP header)');
+
+  // No third-party Draco CDN anywhere in shipped source.
+  let gstatic = false;
+  for (const f of [...srcFiles, 'index.html']) {
+    if (/gstatic\.com/.test(readFileSync(join(ROOT, f), 'utf8'))) { fail(`gstatic.com reference in ${f} (Draco is vendored at /draco/)`); gstatic = true; }
+  }
+  if (!gstatic) pass('no gstatic.com reference in src/ or index.html');
+
+  // Vendored Draco decoder present + wired to the local path.
+  const dracoFiles = ['draco_wasm_wrapper.js', 'draco_decoder.wasm', 'draco_decoder.js'];
+  let dracoOk = true;
+  for (const d of dracoFiles) {
+    if (!existsSync(join(ROOT, 'public/draco', d))) { fail(`vendored Draco file missing: public/draco/${d}`); dracoOk = false; }
+  }
+  for (const f of srcFiles) {
+    const txt = readFileSync(join(ROOT, f), 'utf8');
+    for (const m of txt.matchAll(/setDecoderPath\(\s*['"]([^'"]+)['"]/g)) {
+      if (m[1] !== '/draco/') { fail(`${f}: setDecoderPath('${m[1]}') is not the vendored '/draco/'`); dracoOk = false; }
+    }
+  }
+  if (dracoOk) pass('Draco decoder vendored at public/draco/ and setDecoderPath uses /draco/');
+
+  // CSP single-source sanity (tools/csp.mjs).
+  let CSP_VALUE, INLINE_SHA, HEADERS_BODY;
+  try {
+    const csp = await import('./csp.mjs');
+    CSP_VALUE = csp.CSP_VALUE; INLINE_SHA = csp.INLINE_SCRIPT_SHA256; HEADERS_BODY = csp.headersFileBody();
+    const need = ["object-src 'none'", "base-uri 'self'", "form-action 'self'", "'strict-dynamic'", "'wasm-unsafe-eval'", 'worker-src', 'connect-src', INLINE_SHA];
+    const missing = need.filter((d) => !CSP_VALUE.includes(d));
+    if (missing.length) fail(`tools/csp.mjs CSP_VALUE missing: ${missing.join(', ')}`);
+    else if (/gstatic/.test(CSP_VALUE)) fail('tools/csp.mjs CSP_VALUE still references gstatic');
+    else if (!/^sha256-[A-Za-z0-9+/]+=*$/.test(INLINE_SHA)) fail(`tools/csp.mjs INLINE_SCRIPT_SHA256 malformed: ${INLINE_SHA}`);
+    else pass('tools/csp.mjs CSP has strict-dynamic + inline sha + required directives, no gstatic');
+  } catch (e) {
+    fail(`tools/csp.mjs failed to load: ${e.message}`);
+  }
+
+  // Built-artifact checks (only when dist/ exists).
+  const distHtmlP = join(ROOT, 'dist/index.html');
+  if (!existsSync(distHtmlP)) {
+    console.log('  · no dist/ — built-CSP checks skipped (run npm run build)');
+  } else if (CSP_VALUE) {
+    const distHtml = readFileSync(distHtmlP, 'utf8');
+    if (META_CSP_RE.test(distHtml)) fail('dist/index.html ships a <meta> CSP');
+    else pass('dist/index.html has no <meta> CSP');
+
+    const headersP = join(ROOT, 'dist/_headers');
+    if (!existsSync(headersP)) fail('dist/_headers missing (vite CSP plugin did not run)');
+    else {
+      const body = readFileSync(headersP, 'utf8');
+      if (body !== HEADERS_BODY) fail('dist/_headers does not match tools/csp.mjs headersFileBody()');
+      else if (!body.includes(CSP_VALUE)) fail('dist/_headers does not carry CSP_VALUE');
+      else pass('dist/_headers carries the CSP header matching tools/csp.mjs');
+    }
+
+    // Recompute the inline bootstrap sha from the BUILT html.
+    const inlineScripts = [...distHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    if (inlineScripts.length !== 1) fail(`expected exactly 1 attribute-less inline <script> in dist/index.html, found ${inlineScripts.length}`);
+    else {
+      const sha = 'sha256-' + createHash('sha256').update(inlineScripts[0], 'utf8').digest('base64');
+      if (sha !== INLINE_SHA) fail(`inline-script sha mismatch: built ${sha} != tools/csp.mjs ${INLINE_SHA} (update INLINE_SCRIPT_SHA256 + VPS_INSTALL.md)`);
+      else pass(`inline-script sha matches CSP (${sha.slice(0, 24)}…)`);
+    }
+
+    if (/<script\b[^>]*\bsrc=["']\/assets\/torii-entry\.js["']/.test(distHtml)) fail('dist/index.html still has a static entry <script> tag (strict-dynamic needs it loaded by the trusted inline script)');
+    else if (!distHtml.includes("import('/assets/torii-entry.js')")) fail("dist/index.html missing import('/assets/torii-entry.js') in the inline bootstrap");
+    else pass('entry loaded via import() from the trusted inline bootstrap (strict-dynamic propagates)');
+
+    if (!existsSync(join(ROOT, 'dist/assets/torii-entry.js'))) fail('dist/assets/torii-entry.js (pinned entry) missing');
+    else pass('pinned entry chunk dist/assets/torii-entry.js present');
+
+    const distDraco = ['draco_wasm_wrapper.js', 'draco_decoder.wasm'];
+    const missingDraco = distDraco.filter((d) => !existsSync(join(ROOT, 'dist/draco', d)));
+    if (missingDraco.length) fail(`vendored Draco not emitted to dist/draco/: ${missingDraco.join(', ')}`);
+    else pass('vendored Draco decoder served from dist/draco/');
   }
 }
 
