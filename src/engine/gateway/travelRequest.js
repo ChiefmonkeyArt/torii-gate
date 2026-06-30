@@ -164,12 +164,26 @@ export function extractTravelRequest(event) {
   const spawn = _safeHttps(content.spawn);
   const stateRef = _safeText(content.state, 128);
 
+  // P2 (v0.2.274): carry the raw signed-event fields so the DESTINATION host can
+  // recompute the NIP-01 id and run the BIP-340 schnorr check on the traveller's
+  // request before seating the arriving npub (handoffArrival.verifyArrival). The
+  // traveller signs the request, so verifying its signature authenticates the
+  // arriving identity (travellerPubkey) and the addressed host (hostPubkey).
   return {
     ok: true,
     request: {
       requestId, eventId: typeof event.id === 'string' ? event.id : null,
       travellerPubkey, hostPubkey, toZone, fromZone, playerNpub, relays, spawn, stateRef,
       created_at: Number.isInteger(event.created_at) ? event.created_at : null,
+      id: typeof event.id === 'string' ? event.id : null,
+      sig: typeof event.sig === 'string' ? event.sig : null,
+      signed: {
+        pubkey: event.pubkey,
+        created_at: event.created_at,
+        kind: event.kind,
+        tags: Array.isArray(event.tags) ? event.tags : [],
+        content: typeof event.content === 'string' ? event.content : '',
+      },
     },
   };
 }

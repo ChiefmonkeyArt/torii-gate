@@ -28,6 +28,10 @@ import { fetchOnlineWorlds, buildPresenceEvent, publishOurPresence } from './eng
 import { createHandshakeController } from './engine/gateway/handshakeController.js';
 // v0.2.253 (P2): SEC-3 product URL hardening — the gate before any armed spawn URL becomes navigable.
 import { hardenSpawnUrl, appendTraveller } from './engine/gateway/urlHarden.js';
+// v0.2.274 (P2 cross-host hop): read + crypto-verify an arriving traveller's npub and seat them.
+import { readArrivingTraveller } from './engine/gateway/handoffArrival.js';
+import { buildGatewayFilter } from './engine/gateway/gatewayRead.js';
+import { readTravelRequests } from './engine/gateway/travelRequest.js';
 
 // ── Top-level screen visibility (three-free) ───────────────────────────────────
 const elTitle = document.getElementById('screen-title');
@@ -200,6 +204,64 @@ function _executeJump() {
   _handshake.clearArmed();
   try { window.location.href = target; } catch (e) { renderGatewayCard(); }
 }
+
+// ── P2 cross-host arrival: seat a crypto-verified inbound traveller ──────────────
+// When a traveller jumps HERE from another host, their browser lands on our spawn
+// URL carrying `?torii-traveller=<npub>` (urlHarden.appendTraveller). We seat the
+// local session as that npub ONLY after re-reading their SIGNED travel request from
+// relays and crypto-verifying it (handoffArrival.verifyArrival via the controller).
+// Fails CLOSED: no host identity, no signed request, a tampered sig, or an already
+// logged-in operator session → we do NOT seat (the visitor stays anon / unchanged).
+const HEX64 = /^[0-9a-f]{64}$/;
+let _inboundTraveller = (() => {
+  const href = (typeof window !== 'undefined' && window.location && window.location.href) || '';
+  const r = readArrivingTraveller(href);
+  return r.ok ? r.pubkey : null;
+})();
+
+// _hostIdentity() — the deployed world's pubkey, used as `expectedHostPubkey` when
+// verifying that an arriving request was addressed to US. A deployment sets it via
+// `window.__toriiHostPubkey` (or a `<meta name="torii-host-pubkey">`). Absent → we
+// cannot prove "addressed to us" and the arrival stays anon (fail closed).
+function _hostIdentity() {
+  if (typeof window !== 'undefined' && HEX64.test(window.__toriiHostPubkey || '')) return window.__toriiHostPubkey;
+  const meta = typeof document !== 'undefined' ? document.querySelector('meta[name="torii-host-pubkey"]') : null;
+  const v = meta && meta.getAttribute('content');
+  return HEX64.test(v || '') ? v : '';
+}
+
+async function _admitInboundTraveller() {
+  if (!_inboundTraveller) return;
+  // Do not hijack a logged-in operator's session — only an anonymous arrival seats.
+  if (HEX64.test(state.nostrPubkey || '')) { _inboundTraveller = null; return; }
+  const hostPubkey = _hostIdentity();
+  if (!hostPubkey || hostPubkey === _inboundTraveller) { _inboundTraveller = null; return; }
+  // Re-read the traveller's signed request addressed to us (cold-load: the
+  // controller has no in-session record, so we fetch the proof from relays).
+  const filter = buildGatewayFilter({ limit: 100 });
+  filter['#p'] = [hostPubkey];
+  filter.authors = [_inboundTraveller];
+  let request = null;
+  try {
+    const raw = await fanoutReq(RELAYS, [filter], { timeoutMs: 5000, graceMs: 250, retries: 1 });
+    const events = raw && Array.isArray(raw.events) ? raw.events : [];
+    for (const rq of readTravelRequests(events).requests) {
+      if (rq.travellerPubkey === _inboundTraveller) { request = rq; break; }
+    }
+  } catch { /* relay best-effort; no request → stay anon */ }
+  const href = (window.location && window.location.href) || '';
+  _handshake.setOurPubkey(hostPubkey);
+  const admit = _handshake.admitArrival(href, request ? { request } : {});
+  if (admit.seated && HEX64.test(admit.npub || '')) {
+    state.nostrPubkey = admit.npub;
+    state.nostrName = admit.npub.slice(0, 8).toUpperCase();
+    _handshake.setOurPubkey(admit.npub);
+    emit(EV.NOSTR_LOGIN, { pubkey: admit.npub });
+    renderGatewayCard();
+  }
+  _inboundTraveller = null;
+}
+_admitInboundTraveller();
 
 async function refreshOnlineWorlds() {
   _worldsScan = 'scanning';

@@ -22,6 +22,7 @@ import {
   readTravelRequests, readTravelResponses,
 } from './travelRequest.js';
 import { verifyHandoff } from './handoffVerify.js';
+import { verifyArrival, readArrivingTraveller, seatArrivalDecision } from './handoffArrival.js';
 import { buildGatewayFilter } from './gatewayRead.js';
 
 const HEX64 = /^[0-9a-f]{64}$/;
@@ -44,6 +45,10 @@ export function createHandshakeController(opts = {}) {
   let _incoming = null; // sanitised request model
   // A verified armed accept — the hop may proceed (Phase 2 executes the jump).
   let _armed = null; // { toZone, spawn, hostPubkey, title }
+  // P2 host side: travellers we ACCEPTED whose signed request crypto-verified,
+  // keyed by traveller pubkey. On arrival (admitArrival) we re-run verifyArrival
+  // against the stored signed request before seating the arriving npub.
+  const _acceptedTravellers = new Map(); // travellerPubkey → sanitised signed request
   let _lastError = null;
   let _busy = false; // guards against re-entrant ticks
 
@@ -60,7 +65,7 @@ export function createHandshakeController(opts = {}) {
 
   function setOurPubkey(pk) {
     _ourPubkey = typeof pk === 'string' ? pk : '';
-    if (!_ourPubkey) { _pending = null; _incoming = null; _armed = null; }
+    if (!_ourPubkey) { _pending = null; _incoming = null; _armed = null; _acceptedTravellers.clear(); }
   }
 
   // requestTravel(world) — traveller: build + sign + publish a travel request to
@@ -104,6 +109,18 @@ export function createHandshakeController(opts = {}) {
     _lastError = null;
     if (!_ready()) { _lastError = 'not-logged-in'; return { ok: false, error: _lastError }; }
     if (!_incoming) { _lastError = 'no-incoming'; return { ok: false, error: _lastError }; }
+    // P2: an ACCEPT crypto-gates the later seating. Verify the traveller's signed
+    // request is genuinely from them and addressed to US before we commit to admit
+    // them on arrival. A request that fails the schnorr check can still be DENIED,
+    // but it can never be accepted into the seatable set (fail closed).
+    if (accepted === true) {
+      const v = verifyArrival({
+        arrivingPubkey: _incoming.travellerPubkey,
+        request: _incoming,
+        expectedHostPubkey: _ourPubkey,
+      });
+      if (!v.seated) { _lastError = 'request-unverified'; return { ok: false, error: _lastError }; }
+    }
     const built = buildTravelResponse({
       hostPubkey: _ourPubkey,
       request: _incoming,
@@ -118,8 +135,47 @@ export function createHandshakeController(opts = {}) {
     }
     const pub = await _publish(_relays, signed.event, { timeoutMs: 5000 });
     if (!pub.accepted) { _lastError = 'publish-rejected'; return { ok: false, error: _lastError }; }
+    // Record the crypto-verified accepted traveller so admitArrival can re-verify
+    // and seat them when their browser lands on our spawn URL.
+    if (accepted === true) _acceptedTravellers.set(_incoming.travellerPubkey, _incoming);
     _incoming = null;
     return { ok: true, error: null };
+  }
+
+  // admitArrival(url, opts?) → the P2 host-side seating decision for an inbound hop.
+  //   { ok, seated, npub, trust, anon, error }. Never throws.
+  // Reads the arriving npub from the spawn URL (`?torii-traveller=`), then re-runs
+  // the BIP-340 schnorr verify (handoffArrival.verifyArrival) against the traveller's
+  // signed request — taken from `opts.request` if injected (e.g. a fresh relay re-read
+  // on a cold page load), else from the in-session accepted-traveller record. Seats
+  // ONLY on a crypto-verified match; every other outcome fails CLOSED to anon.
+  function admitArrival(url, opts = {}) {
+    const arriving = readArrivingTraveller(url);
+    if (!arriving.ok) {
+      return { ok: false, seated: false, npub: null, trust: 'unverified', anon: true, error: arriving.error };
+    }
+    if (!HEX64.test(_ourPubkey)) {
+      return { ok: false, seated: false, npub: null, trust: 'unverified', anon: true, error: 'no-host-identity' };
+    }
+    const injected = opts && typeof opts === 'object' ? opts.request : null;
+    const request = (injected && typeof injected === 'object') ? injected : _acceptedTravellers.get(arriving.pubkey);
+    if (!request) {
+      return { ok: true, seated: false, npub: null, trust: 'unverified', anon: true, error: 'no-verified-request' };
+    }
+    const verdict = verifyArrival({
+      arrivingPubkey: arriving.pubkey,
+      request,
+      expectedHostPubkey: _ourPubkey,
+    });
+    const decision = seatArrivalDecision(verdict);
+    return {
+      ok: true,
+      seated: verdict.seated === true,
+      npub: decision.identity,
+      trust: verdict.trust,
+      anon: decision.anon,
+      error: verdict.seated ? null : (verdict.errors[0] || 'unverified'),
+    };
   }
 
   function clearArmed() { _armed = null; }
@@ -231,6 +287,6 @@ export function createHandshakeController(opts = {}) {
 
   return {
     setTransports, setOurPubkey, requestTravel, respondIncoming, clearArmed,
-    tick, view, snapshot,
+    admitArrival, tick, view, snapshot,
   };
 }
