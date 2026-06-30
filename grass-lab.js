@@ -11,8 +11,8 @@ const BLADE_H    = 0.46;
 const BLADE_W    = 0.014;
 const KEEL       = 0.008;
 const FIELD      = 14;          // field is FIELD × FIELD units
-const DENSITY    = 60;          // blades per unit²  → ~11.7k blades (dense mass, not discrete triangles)
-const BLADES     = Math.floor(FIELD * FIELD * DENSITY);
+const SPACING    = 0.16;        // v0.2.265: tight uniform grid for full even ground coverage (matches arena)
+const BLADES     = Math.floor(FIELD * FIELD / (SPACING * SPACING));
 
 // ── Renderer / scene / camera ────────────────────────────────────────────────
 const canvas = document.getElementById('app');
@@ -172,17 +172,21 @@ mesh.instanceColor = new THREE.BufferAttribute(new Float32Array(BLADES * 3), 3);
 const _pos = new THREE.Vector3(), _quat = new THREE.Quaternion(), _scl = new THREE.Vector3(), _m4 = new THREE.Matrix4();
 const _up = new THREE.Vector3(0, 1, 0);
 const HALF = FIELD / 2;
-for (let i = 0; i < BLADES; i++) {
-  // poisson-ish jitter on a grid for even but natural coverage
-  const gx = (i % 128) / 128, gz = Math.floor(i / 128) / 128;
-  const x = (gx - 0.5) * FIELD + (Math.random() - 0.5) * 0.45;
-  const z = (gz - 0.5) * FIELD + (Math.random() - 0.5) * 0.45;
-  _pos.set(x, 0, z);
-  _quat.setFromAxisAngle(_up, Math.random() * Math.PI * 2);
-  _scl.setScalar(0.8 + Math.random() * 0.55);
-  _m4.compose(_pos, _quat, _scl);
-  mesh.setMatrixAt(i, _m4);
-  mesh.instanceColor.setXYZ(i, Math.random(), Math.random(), Math.random());
+let i = 0;
+// uniform grid + jitter scaled to spacing — even ground coverage, no clumps
+for (let x = -HALF; x <= HALF; x += SPACING) {
+  for (let z = -HALF; z <= HALF; z += SPACING) {
+    if (i >= BLADES) break;
+    const jx = x + (Math.random() - 0.5) * SPACING * 0.7;
+    const jz = z + (Math.random() - 0.5) * SPACING * 0.7;
+    _pos.set(jx, 0, jz);
+    _quat.setFromAxisAngle(_up, Math.random() * Math.PI * 2);
+    _scl.setScalar(0.85 + Math.random() * 0.35);
+    _m4.compose(_pos, _quat, _scl);
+    mesh.setMatrixAt(i, _m4);
+    mesh.instanceColor.setXYZ(i, Math.random(), Math.random(), Math.random());
+    i++;
+  }
 }
 mesh.instanceMatrix.needsUpdate = true;
 mesh.instanceColor.needsUpdate = true;

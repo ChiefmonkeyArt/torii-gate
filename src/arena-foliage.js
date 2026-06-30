@@ -62,9 +62,10 @@ function _buildGrass() {
   const BLADE_H      = 0.46; // v0.2.265: tuned — thinner blades read as a denser field.
   const BLADE_W      = 0.014;// v0.2.265: much thinner (was 0.052) — the core fix for "square-like" blades.
   const KEEL         = 0.008;// v0.2.265: V-channel fold depth (forward +Z). Gives the blade a crease + volume.
-  const BLADES_PATCH = 40;   // v0.2.265: more blades per patch to compensate for thinner width.
+  const BLADES_PATCH = 1;    // v0.2.265: single blade per instance — instances are scattered uniformly
+                             // across the NAP zone so the field covers the ground evenly instead of in clumps.
   const PATCH_RADIUS = 0.78;
-  const SPACING      = 0.95; // v0.2.265: slightly tighter grid for density.
+  const SPACING      = 0.16; // v0.2.265: tight uniform grid (~39 blades/m²) for full even ground coverage.
 
   // 3 verts per row (left, keel, right) + one tip vertex. Rows use t = row/SEGS
   // (never reaching 1) so the top row keeps a non-zero width — this avoids the
@@ -209,15 +210,16 @@ function _buildGrass() {
   const patches = [];
   for (let x = NAP_GRASS_X0; x <= NAP_GRASS_X1; x += SPACING) {
     for (let z = NAP_GRASS_Z0; z <= NAP_GRASS_Z1; z += SPACING) {
-      const jx = x + (Math.random() - 0.5) * 0.5;
-      const jz = z + (Math.random() - 0.5) * 0.5;
+      // jitter scaled to spacing so blades stay evenly distributed (no re-clumping)
+      const jx = x + (Math.random() - 0.5) * SPACING * 0.7;
+      const jz = z + (Math.random() - 0.5) * SPACING * 0.7;
       const dx = jx - TREE_X, dz = jz - TREE_Z;
       if (dx * dx + dz * dz < TREE_CLEAR_SQ) continue;
       patches.push({
         x: jx,
         z: jz,
         ry: Math.random() * Math.PI * 2,
-        s:  0.65 + Math.random() * 0.75,  // v0.2.262: wider height/scale variance
+        s:  0.85 + Math.random() * 0.35,  // v0.2.265: tighter scale variance for even coverage
         phase: Math.random(),
         speed: Math.random(),
         tint:  Math.random(),            // per-blade colour tint (cool→warm green)
