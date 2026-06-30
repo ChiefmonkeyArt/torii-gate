@@ -10,7 +10,7 @@ import {
   buildPortalMeshPlan, describePortalMeshPlan, DEMO_PORTAL_MESH_OPTS,
 } from '../src/engine/gateway/portalMeshPlan.js';
 import {
-  portalMeshRenderState, buildPortalMesh, tickPortalMesh, disposePortalMesh,
+  portalMeshRenderState, buildPortalMesh, tickPortalMesh, setPortalApproach, disposePortalMesh,
 } from '../src/engine/gateway/portalMesh.js';
 import { portalMeshPlanReport } from '../src/engine/debug/shellReport.js';
 import * as SDK from '../src/sdk/index.js';
@@ -19,7 +19,7 @@ const INERT_KEYS = ['navigated', 'performed', 'external', 'signed', 'published']
 
 describe('module shape', () => {
   it('pins version, badge, group, and demo opts', () => {
-    expect(PORTAL_MESH_PLAN_VERSION).toBe(1);
+    expect(PORTAL_MESH_PLAN_VERSION).toBe(2);
     expect(PORTAL_MESH_BADGE).toBe('PORTAL MESH · DISPLAY-ONLY · INERT');
     expect(PORTAL_MESH_GROUP).toBe('gateway-portal');
     expect(DEMO_PORTAL_MESH_OPTS).toEqual({ position: { x: 20, y: 0, z: 0 }, range: 3, title: 'Plebeian Market Bazaar' });
@@ -27,11 +27,11 @@ describe('module shape', () => {
 });
 
 describe('buildPortalMeshPlan — happy path', () => {
-  it('builds four parts, ok, anchored at the trigger position', () => {
+  it('builds the full torii-gate marker (8 parts), ok, anchored at the trigger position', () => {
     const p = buildPortalMeshPlan({ position: { x: 20, y: 0, z: 0 }, range: 3, title: 'Bazaar' });
     expect(p.ok).toBe(true);
-    expect(p.count).toBe(4);
-    expect(p.parts).toHaveLength(4);
+    expect(p.count).toBe(8);
+    expect(p.parts).toHaveLength(8);
     expect(p.anchor).toEqual({ x: 20, y: 0, z: 0 });
     expect(p.title).toBe('Bazaar');
     expect(p.reasons).toEqual([]);
@@ -48,10 +48,37 @@ describe('buildPortalMeshPlan — happy path', () => {
 
   it('has the expected part ids/kinds and spin/pulse assignment', () => {
     const p = buildPortalMeshPlan({ position: { x: 0, y: 0, z: 0 }, range: 3 });
-    expect(p.parts.map((x) => x.id)).toEqual(['outer-ring', 'inner-ring', 'beam', 'core']);
+    expect(p.parts.map((x) => x.id)).toEqual(
+      ['outer-ring', 'inner-ring', 'pillar-left', 'pillar-right', 'kasagi', 'nuki', 'beam', 'core'],
+    );
     expect(p.parts.find((x) => x.id === 'outer-ring').pulse).toBe(true);
     expect(p.parts.find((x) => x.id === 'core').spin).toBe(true);
     expect(p.parts.find((x) => x.id === 'beam').transparent).toBe(true);
+  });
+
+  it('frames the portal with a torii gate: two pillars on ±z + a top kasagi + a lower nuki', () => {
+    const p = buildPortalMeshPlan({ position: { x: 0, y: 0, z: 0 }, range: 3 });
+    const left = p.parts.find((x) => x.id === 'pillar-left');
+    const right = p.parts.find((x) => x.id === 'pillar-right');
+    const kasagi = p.parts.find((x) => x.id === 'kasagi');
+    const nuki = p.parts.find((x) => x.id === 'nuki');
+    expect(left.geometry.type).toBe('cylinder');
+    expect(right.geometry.type).toBe('cylinder');
+    // The gate opening faces ±x, so the posts are mirrored on z.
+    expect(left.position.z).toBe(-right.position.z);
+    expect(left.position.z).toBeLessThan(0);
+    // Top + crossbar are box lintels mounted above the posts (kasagi over nuki).
+    expect(kasagi.geometry.type).toBe('box');
+    expect(nuki.geometry.type).toBe('box');
+    expect(kasagi.position.y).toBeGreaterThan(nuki.position.y);
+  });
+
+  it('flags the torii frame + core for the host-driven approach glow (rings/beam are not)', () => {
+    const p = buildPortalMeshPlan({ position: { x: 0, y: 0, z: 0 }, range: 3 });
+    const approachIds = p.parts.filter((x) => x.approach === true).map((x) => x.id).sort();
+    expect(approachIds).toEqual(['core', 'kasagi', 'nuki', 'pillar-left', 'pillar-right'].sort());
+    expect(p.parts.find((x) => x.id === 'outer-ring').approach).toBe(false);
+    expect(p.parts.find((x) => x.id === 'beam').approach).toBe(false);
   });
 });
 
@@ -132,7 +159,7 @@ describe('portalMesh adapter — build/tick/dispose', () => {
     const s = buildPortalMesh(scene, { position: { x: 20, y: 0, z: 0 }, range: 3 });
     expect(s.rendered).toBe(true);
     expect(s.ok).toBe(true);
-    expect(s.count).toBe(4);
+    expect(s.count).toBe(8);
     expect(s.anchor).toEqual({ x: 20, y: 0, z: 0 });
     expect(s.ringRadius).toBe(3);
     expect(added).toBeTruthy();
@@ -145,6 +172,13 @@ describe('portalMesh adapter — build/tick/dispose', () => {
   it('tick is a safe no-op shape (does not throw, mutates only scalars)', () => {
     buildPortalMesh({ add() {}, remove() {} }, DEMO_PORTAL_MESH_OPTS);
     expect(() => { tickPortalMesh(0.016); tickPortalMesh(); tickPortalMesh(NaN); }).not.toThrow();
+  });
+
+  it('setPortalApproach drives the frame glow (scalar only) and ignores bad input', () => {
+    // Safe before any build.
+    expect(() => setPortalApproach(1)).not.toThrow();
+    buildPortalMesh({ add() {}, remove() {} }, DEMO_PORTAL_MESH_OPTS);
+    expect(() => { setPortalApproach(0); setPortalApproach(1.05); setPortalApproach(NaN); setPortalApproach('x'); }).not.toThrow();
   });
 
   it('dispose resets to a clean teardown state', () => {

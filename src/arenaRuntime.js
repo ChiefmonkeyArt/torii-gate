@@ -35,7 +35,8 @@ import { openGatewayScreen, closeGatewayScreen, isGatewayScreenOpen } from './en
 import { ARENA_HALF, WALL_H, NAP_X, TRAVEL_GATE_X, TRAVEL_GATE_Z, VERSION, TUNING } from './config.js';
 import { createGatewayPortalBoundary } from './engine/gateway/gatewayPortalActivation.js';
 import { createPortalTrigger } from './engine/gateway/portalTrigger.js';
-import { buildPortalMesh, tickPortalMesh } from './engine/gateway/portalMesh.js';
+import { buildPortalMesh, tickPortalMesh, setPortalApproach } from './engine/gateway/portalMesh.js';
+import { portalApproachState } from './engine/gateway/portalApproach.js';
 import { portalPromptLabel } from './engine/gateway/zoneLabel.js';
 import { playShoot, playFootstep, playJumpLand } from './audio.js';
 import { initPlayerStats } from './playerStats.js';
@@ -90,6 +91,10 @@ export function createArenaRuntime(hooks = {}) {
     promptText: portalPromptLabel({ slug: 'plebeian-market-bazaar' }),
     onPrompt: (show, text) => { if (show) showPortalPrompt(text); else hidePortalPrompt(); },
   });
+  // Stable portal geometry reused each frame to drive the approach glow without
+  // allocating (portalTrigger.portalPos() returns a fresh copy, so cache one here).
+  const _portalPos = { x: TRAVEL_GATE_X, y: 0, z: TRAVEL_GATE_Z };
+  const _portalRange = 3;
 
   // ── In-world gateway screen (KeyF) ───────────────────────────────────────────
   function _openGatewayScreen() {
@@ -170,8 +175,16 @@ export function createArenaRuntime(hooks = {}) {
     tickNapNpc(dt);
     _isShooting = false;
     setNapMode(playerObj.position.x > NAP_X);
-    if (isPlaying()) _portalTrigger.tick(playerObj.position);
-    else _portalTrigger.reset();
+    if (isPlaying()) {
+      _portalTrigger.tick(playerObj.position);
+      // Drive the torii-frame glow from the graded approach affordance (pure scalar).
+      const ap = portalApproachState({
+        playerPos: playerObj.position, portalPos: _portalPos, range: _portalRange,
+      });
+      setPortalApproach(ap.intensity);
+    } else {
+      _portalTrigger.reset();
+    }
     tickPortalMesh(dt);
     tickHUD(dt);
     tickAtmosphere(dt);

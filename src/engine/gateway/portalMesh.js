@@ -24,6 +24,8 @@ let _group = null;
 let _scene = null;
 let _spinMeshes = [];   // meshes whose rotation.y advances each tick
 let _pulseMats = [];     // materials whose emissiveIntensity breathes each tick
+let _approachMats = [];  // torii-frame materials the host brightens on approach
+let _approachBase = [];  // each approach material's plan emissiveIntensity (baseline)
 let _geometries = [];    // every geometry created, for dispose
 let _materials = [];     // every material created, for dispose
 let _t = 0;              // accumulator for the pulse phase (seconds)
@@ -45,6 +47,8 @@ function _geometryFor(g) {
       return new THREE.CylinderGeometry(g.radiusTop, g.radiusBottom, g.height, g.radialSegments);
     case 'octahedron':
       return new THREE.OctahedronGeometry(g.radius, g.detail || 0);
+    case 'box':
+      return new THREE.BoxGeometry(g.width, g.height, g.depth);
     default:
       return new THREE.BoxGeometry(0.2, 0.2, 0.2);
   }
@@ -95,6 +99,7 @@ export function buildPortalMesh(scene, opts = {}) {
     _materials.push(mat);
     if (part.spin) _spinMeshes.push(mesh);
     if (part.pulse) _pulseMats.push(mat);
+    if (part.approach) { _approachMats.push(mat); _approachBase.push(mat.emissiveIntensity); }
   }
 
   scene.add(group);
@@ -125,6 +130,23 @@ export function tickPortalMesh(dt) {
   }
 }
 
+// setPortalApproach(intensity) → drive the torii-frame glow as the player approaches.
+// `intensity` is a host-computed scalar (typically from the PURE `portalApproach.js`
+// view-model). Allocation-free: it scales each approach material's emissiveIntensity
+// around its plan baseline, so a near player makes the gate visibly "wake". A no-op
+// until the marker is built or when given a non-finite value. Adds NO capability —
+// the frame stays inert; only a display scalar changes.
+export function setPortalApproach(intensity) {
+  if (!_built || !_approachMats.length) return;
+  if (typeof intensity !== 'number' || !Number.isFinite(intensity)) return;
+  const k = intensity < 0 ? 0 : intensity > 1.5 ? 1.5 : intensity;
+  for (let i = 0; i < _approachMats.length; i++) {
+    // Blend the baseline with the approach scalar so each part keeps its relative
+    // brightness while the whole frame lifts as one. Pure scalar write, no allocation.
+    _approachMats[i].emissiveIntensity = _approachBase[i] * 0.5 + k;
+  }
+}
+
 // disposePortalMesh() → detach the group and free every geometry + material. Resets
 // the build guard so a later build can re-create the marker. For a clean teardown
 // (e.g. a future scene reset); the live app builds once and never disposes.
@@ -136,6 +158,8 @@ export function disposePortalMesh() {
   _scene = null;
   _spinMeshes = [];
   _pulseMats = [];
+  _approachMats = [];
+  _approachBase = [];
   _geometries = [];
   _materials = [];
   _t = 0;

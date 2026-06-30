@@ -64,6 +64,7 @@ export * as gatewayPortalActivation from '../engine/gateway/gatewayPortalActivat
 export * as portalTrigger from '../engine/gateway/portalTrigger.js';
 export * as zoneRoute from '../engine/gateway/zoneRoute.js';
 export * as portalMeshPlan from '../engine/gateway/portalMeshPlan.js';
+export * as portalApproach from '../engine/gateway/portalApproach.js';
 export * as zoneLabel from '../engine/gateway/zoneLabel.js';
 export * as travelSmoke from '../engine/gateway/travelSmoke.js';
 export * as updateCheck from '../engine/update/updateCheck.js';
@@ -242,6 +243,10 @@ export const SDK_SURFACE = Object.freeze({
   // ring radius === trigger range); NO THREE/DOM/render/nav. The browser-only
   // adapter (portalMesh.js) consumes it and builds inert meshes ONCE.
   portalMeshPlan:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/portalMeshPlan.js' },
+  // PURE approach-affordance view-model (v0.2.288) — grades player proximity into
+  // idle/approaching/ready + a glow scalar the portal mesh adapter applies. INERT:
+  // `ready` mirrors the trigger arm range; it never arms/confirms a hop itself.
+  portalApproach:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/portalApproach.js' },
   // PURE display-label helpers for the portal prompt + zone notice (LEAN-2,
   // v0.2.184) — turn a same-origin zone slug/route/title into the short inert HUD
   // strings (prompt names the target; entered-notice names the zone). Safe alnum
