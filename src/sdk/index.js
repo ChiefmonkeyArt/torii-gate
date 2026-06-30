@@ -51,6 +51,7 @@ export * as nostrReadHealth from '../engine/nostr/readHealth.js';
 export * as consentGate from '../engine/consent/consentGate.js';
 export * as consentView from '../engine/consent/consentView.js';
 export * as submitIntent from '../engine/leaderboard/submitIntent.js';
+export * as leaderboardLivePublish from '../engine/leaderboard/livePublish.js';
 export * as gatewayRead from '../engine/gateway/gatewayRead.js';
 export * as travelConfirm from '../engine/gateway/travelConfirm.js';
 export * as handoffPlan from '../engine/gateway/handoffPlan.js';
@@ -169,6 +170,11 @@ export const SDK_SURFACE = Object.freeze({
   // (`leaderboard:submit`). INERT: blocked without a matching grant; never
   // signs/publishes/sends/connects — performed:false on every report.
   submitIntent:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/leaderboard/submitIntent.js' },
+  // LIVE leaderboard publish wiring (M2, v0.2.279) — promotes the relay write to a
+  // real NIP-07 sign + relay fan-out, but ONLY behind explicit consent AND the
+  // SEC-1 publishGate verdict `crypto-verified`. Reuses nostr.js signEvent +
+  // fanoutPublish as injected seams; the write goes THROUGH the gate, never around.
+  leaderboardLivePublish: { tier: STABILITY.EXPERIMENTAL, module: '../engine/leaderboard/livePublish.js' },
   // READ-ONLY gateway destination relay-read PROOF (GATEWAY / NAP-zone handoff, v0.2.164) —
   // builds the kind-30078 + torii-gateway topic filter, extracts + sanitises destination
   // records (https-only URLs, ws/wss relays, control/markup-stripped text) into a safe

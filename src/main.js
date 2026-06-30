@@ -19,6 +19,10 @@ import { parseZoneRoute, ZONE_ROUTE_KIND } from './engine/gateway/zoneRoute.js';
 import { applyPhaseScreens } from './engine/ui/phaseScreens.js';
 import { productPreviewBlock } from './engine/components/productPreview.js';
 import { leaderboardPreviewBlock } from './engine/nostr/leaderboardPreview.js';
+// v0.2.279 (M2): LIVE leaderboard publish — real NIP-07 sign + relay fan-out,
+// gated by explicit consent AND the SEC-1 crypto-verified publishGate verdict.
+import { createLiveLeaderboardPublisher, buildFinalRunScore } from './engine/leaderboard/livePublish.js';
+import { summariseConsent } from './engine/consent/consentGate.js';
 import { updatePreviewBlock } from './engine/update/updatePreview.js';
 import { mvpLoopSummary } from './engine/mvpLoop.js';
 // v0.2.251 (P0): live n2n world-presence transport + pure presence layer.
@@ -389,6 +393,79 @@ function renderLeaderboardPreview() {
   }));
 }
 renderLeaderboardPreview();
+
+// ── LIVE leaderboard publish (M2, v0.2.279) ────────────────────────────────────
+// The promoted relay write. A consented, crypto-verified finalised score is signed
+// via NIP-07 and fanned out to the configured RELAYS — reusing nostr.js seams
+// through the SEC-1 publishGate (no ungated path). The button arms ONLY when the
+// player is logged in; the click is the explicit consent, confirmed once more so
+// the sign+publish stakes are never hidden. Status: idle → publishing → published
+// / failed.
+const _livePublisher = createLiveLeaderboardPublisher({
+  sign: signEvent, publish: fanoutPublish, relays: RELAYS,
+});
+let _publishInFlight = false;
+
+function _setLbPublishStatus(msg, tone) {
+  const el = document.getElementById('leaderboard-publish-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+  el.dataset.tone = tone || '';
+}
+
+function _refreshLbPublishButton() {
+  const btn = document.getElementById('leaderboard-publish-btn');
+  if (!btn) return;
+  const loggedIn = /^[0-9a-f]{64}$/.test(state.nostrPubkey || '');
+  btn.disabled = !loggedIn || _publishInFlight;
+  btn.textContent = _publishInFlight ? 'PUBLISHING…' : 'PUBLISH MY SCORE';
+  if (!loggedIn) _setLbPublishStatus('login with Nostr to publish your score', 'muted');
+  else if (!_publishInFlight && !document.getElementById('leaderboard-publish-status')?.textContent) {
+    _setLbPublishStatus('', '');
+  }
+}
+
+async function _publishMyScore() {
+  if (_publishInFlight) return;
+  const pubkey = state.nostrPubkey || '';
+  if (!/^[0-9a-f]{64}$/.test(pubkey)) { _setLbPublishStatus('login with Nostr first', 'muted'); return; }
+
+  // The finalised score snapshot for THIS run, from live state.
+  const stats = buildFinalRunScore({ kills: state.kills | 0, hits: state.hits | 0 });
+
+  // Explicit consent: the click plus a confirm that names the stakes (sign+publish).
+  const consentLine = summariseConsent('leaderboard:submit');
+  const consent = typeof window.confirm === 'function'
+    ? window.confirm(`Publish to the leaderboard?\n\n${consentLine}\n\nScore ${stats.score} · ${stats.kills} kills`)
+    : true;
+  if (!consent) { _setLbPublishStatus('publish cancelled — consent not granted', 'muted'); _refreshLbPublishButton(); return; }
+
+  _publishInFlight = true;
+  _refreshLbPublishButton();
+  _setLbPublishStatus('publishing to relays…', 'pending');
+  let res;
+  try {
+    res = await _livePublisher.publishFinalScore(stats, { signerPubkey: pubkey, consent: true });
+  } catch (e) {
+    res = { ok: false, published: false, errors: ['unexpected error: ' + (e?.message || String(e))] };
+  }
+  _publishInFlight = false;
+  _refreshLbPublishButton();
+  if (res && res.published) {
+    const relays = res.relay && Array.isArray(res.relay.used) ? res.relay.used.length : 0;
+    _setLbPublishStatus(`✓ published to ${relays} relay${relays === 1 ? '' : 's'}`, 'ok');
+  } else {
+    _setLbPublishStatus('✗ ' + ((res && res.errors && res.errors.join('; ')) || 'publish failed'), 'fail');
+  }
+}
+
+(function wireLeaderboardPublish() {
+  const btn = document.getElementById('leaderboard-publish-btn');
+  if (btn) btn.addEventListener('click', _publishMyScore);
+  _refreshLbPublishButton();
+  on(EV.NOSTR_LOGIN, _refreshLbPublishButton);
+})();
 
 function renderUpdatePreview() {
   const body = document.getElementById('update-preview-body');
