@@ -67,8 +67,12 @@ function _buildGrass() {
   // are ported from the demo.
   const BLADE_SEGS = 8;     // demo default: 8 height divisions (9 rows) — smooth, cheap.
   const BLADE_H    = 0.30;  // shorter + more upright (matches v0.2.266 scale).
-  const BLADE_W    = 0.018; // thin but visible; per-blade taper widens the base.
-  const SPACING    = 0.060; // v0.2.271: 2x denser again (~280 blades/m²) — user still saw ground.
+  const BLADE_W    = 0.038; // v0.2.272: WIDER blade. Thin upright blades never occlude the
+                             // floor regardless of count — width + forward lean + wind-bend
+                             // are what actually hide the ground between blades.
+  const TARGET_BLADES = 121121; // v0.2.272: user-requested EXACT count, uniformly distributed.
+  const CAND_SPACING  = 0.084;  // candidate grid (yields >121k over the NAP zone); a partial
+                                // Fisher–Yates then selects exactly TARGET_BLADES.
 
   // PlaneGeometry(width, height, 1, 8): 2 columns × 9 rows. Translate so the
   // base sits at y=0 and the blade grows upward to y=BLADE_H.
@@ -92,7 +96,8 @@ function _buildGrass() {
     else               taper = 0.4 - (hr - 0.7) * 1.3;   // sharp tip
     taper = Math.max(0.05, taper);
     arr[ix] = x * taper;
-    arr[ix + 2] += hr * hr * 0.08;    // slight forward curve along +Z
+    arr[ix + 2] += hr * hr * 0.22;   // v0.2.272: stronger forward lean — tips flop over so each
+                                     // blade occludes ground ahead of its base (hides the floor).
   }
   posAttr.needsUpdate = true;
   geo.computeVertexNormals();   // plane normal (0,0,1); per-blade facing comes from instance Y-rotation
@@ -139,19 +144,19 @@ function _buildGrass() {
         // heightPower: tips bend most, base stays put (quadratic - from the demo).
         float heightPower = t * t;
         float amp = 0.6 + vBright * 0.4;     // per-blade wind amplitude (demo pattern)
-        // v0.2.270: stronger wind overall — emphasises the rolling gusts so the
-        // random patch-to-patch variation reads clearly.
-        float wind = 0.022 + gust * 0.22 + flut * 0.013;
+        // v0.2.272: gustier still — heavy gust coefficient so the rolling patch-to-patch
+        // variation reads strongly; wind-bend also flops blades over (more ground cover).
+        float wind = 0.030 + gust * 0.34 + flut * 0.016;
         float sway = wind * heightPower * amp;
 
         // Apply bend in world space along the gust direction + perpendicular flutter.
         vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.0);
         wp.xyz += vec3(uWindDir.x * sway, 0.0, uWindDir.y * sway);
-        wp.x += (-uWindDir.y) * flut * 0.013 * t;
-        wp.z += ( uWindDir.x) * flut * 0.013 * t;
+        wp.x += (-uWindDir.y) * flut * 0.016 * t;
+        wp.z += ( uWindDir.x) * flut * 0.016 * t;
 
         // Vertical compression when bending (demo physics) - keeps arc length believable.
-        float totalBend = abs(sway) + abs(flut * 0.013 * t);
+        float totalBend = abs(sway) + abs(flut * 0.016 * t);
         wp.y *= (1.0 - totalBend * 0.1 * heightPower);
 
         // World facing normal for two-sided lighting in the fragment shader.
@@ -227,27 +232,45 @@ function _buildGrass() {
   // Patch grid confined to NAP-zone footprint — see NAP_GRASS_* constants at
   // the top of the file. Skip any patch that lands within ~1.5u of the tree
   // trunk at (NAP_X+6, 0) so we don't bury the bonsai base in blades.
+  // v0.2.272: EXACTLY TARGET_BLADES blades. A fine candidate grid is collected,
+  // then a partial Fisher–Yates shuffle selects exactly TARGET_BLADES of them
+  // so the field stays evenly thinned (uniform, no clumps) at the requested
+  // count rather than being driven by spacing.
   const TREE_X = NAP_X + 6;
   const TREE_Z = 0;
   const TREE_CLEAR_SQ = 1.5 * 1.5;
-  const patches = [];
-  for (let x = NAP_GRASS_X0; x <= NAP_GRASS_X1; x += SPACING) {
-    for (let z = NAP_GRASS_Z0; z <= NAP_GRASS_Z1; z += SPACING) {
+  const candidates = [];
+  for (let x = NAP_GRASS_X0; x <= NAP_GRASS_X1; x += CAND_SPACING) {
+    for (let z = NAP_GRASS_Z0; z <= NAP_GRASS_Z1; z += CAND_SPACING) {
       // jitter scaled to spacing so blades stay evenly distributed (no re-clumping)
-      const jx = x + (Math.random() - 0.5) * SPACING * 0.7;
-      const jz = z + (Math.random() - 0.5) * SPACING * 0.7;
+      const jx = x + (Math.random() - 0.5) * CAND_SPACING * 0.7;
+      const jz = z + (Math.random() - 0.5) * CAND_SPACING * 0.7;
       const dx = jx - TREE_X, dz = jz - TREE_Z;
       if (dx * dx + dz * dz < TREE_CLEAR_SQ) continue;
-      patches.push({
-        x: jx,
-        z: jz,
-        ry: Math.random() * Math.PI * 2,
-        s:  0.85 + Math.random() * 0.35,  // v0.2.265: tighter scale variance for even coverage
-        phase: Math.random(),
-        speed: Math.random(),
-        tint:  Math.random(),            // per-blade colour tint (cool→warm green)
-      });
+      candidates.push(jx, jz);
     }
+  }
+  // Partial Fisher–Yates: pick exactly TARGET_BLADES (or fewer if the candidate
+  // pool ran short) uniformly at random — keeps the thinning even across the zone.
+  const patches = [];
+  const pick = Math.min(TARGET_BLADES, Math.floor(candidates.length / 2));
+  for (let k = 0; k < pick; k++) {
+    const r = k + Math.floor(Math.random() * (Math.floor(candidates.length / 2) - k));
+    // swap candidate k and r (each is a (x,z) pair)
+    const kx = candidates[k * 2], kz = candidates[k * 2 + 1];
+    candidates[k * 2]     = candidates[r * 2];
+    candidates[k * 2 + 1] = candidates[r * 2 + 1];
+    candidates[r * 2]     = kx;
+    candidates[r * 2 + 1] = kz;
+    patches.push({
+      x: candidates[k * 2],
+      z: candidates[k * 2 + 1],
+      ry: Math.random() * Math.PI * 2,
+      s:  0.85 + Math.random() * 0.35,  // tighter scale variance for even coverage
+      phase: Math.random(),
+      speed: Math.random(),
+      tint:  Math.random(),            // per-blade colour tint (cool→warm green)
+    });
   }
 
   const count = patches.length;

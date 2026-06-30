@@ -10,10 +10,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ── Blade constants (mirror arena-foliage.js _buildGrass) ─────────────────────
 const BLADE_SEGS = 8;    // v0.2.267: demo default (8 height divisions, 9 rows)
 const BLADE_H    = 0.30; // shorter + more upright
-const BLADE_W    = 0.018;// thin but visible; per-blade taper widens the base
+const BLADE_W    = 0.038;// v0.2.272: wider blade — width + lean + wind-bend hide the floor
 const FIELD      = 14;          // field is FIELD × FIELD units
-const SPACING    = 0.060;        // v0.2.271: 2x denser again (~280 blades/m²)
-const BLADES     = Math.floor(FIELD * FIELD / (SPACING * SPACING));
+const BLADES     = 121121;       // v0.2.272: user-requested exact count
 
 // ── Renderer / scene / camera ────────────────────────────────────────────────
 const canvas = document.getElementById('app');
@@ -73,7 +72,7 @@ geo.translate(0, BLADE_H / 2, 0);
     else               taper = 0.4 - (hr - 0.7) * 1.3;
     taper = Math.max(0.05, taper);
     arr[ix] = x * taper;
-    arr[ix + 2] += hr * hr * 0.08;
+    arr[ix + 2] += hr * hr * 0.22;   // v0.2.272: stronger forward lean (hides floor)
   }
   posAttr.needsUpdate = true;
 }
@@ -116,17 +115,17 @@ const mat = new THREE.ShaderMaterial({
 
       float heightPower = t * t;
       float amp = 0.6 + vBright * 0.4;
-      // v0.2.270: stronger wind — emphasises the rolling gusts.
-      float wind = 0.022 + gust * 0.22 + flut * 0.013;
+      // v0.2.272: gustier — heavy gust coefficient; wind-bend also flops blades over.
+      float wind = 0.030 + gust * 0.34 + flut * 0.016;
       float sway = wind * heightPower * amp;
 
       vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.0);
       wp.xyz += vec3(uWindDir.x * sway, 0.0, uWindDir.y * sway);
-      wp.x += (-uWindDir.y) * flut * 0.013 * t;
-      wp.z += ( uWindDir.x) * flut * 0.013 * t;
+      wp.x += (-uWindDir.y) * flut * 0.016 * t;
+      wp.z += ( uWindDir.x) * flut * 0.016 * t;
 
       // vertical compression on bend (demo physics)
-      float totalBend = abs(sway) + abs(flut * 0.013 * t);
+      float totalBend = abs(sway) + abs(flut * 0.016 * t);
       wp.y *= (1.0 - totalBend * 0.1 * heightPower);
 
       vWn = mat3(modelMatrix * instanceMatrix) * normal;
@@ -198,14 +197,17 @@ mesh.instanceColor = new THREE.BufferAttribute(new Float32Array(BLADES * 3), 3);
 const _pos = new THREE.Vector3(), _quat = new THREE.Quaternion(), _scl = new THREE.Vector3(), _m4 = new THREE.Matrix4();
 const _up = new THREE.Vector3(0, 1, 0);
 const HALF = FIELD / 2;
+// v0.2.272: grid spacing derived from the exact blade count so the field fills
+// evenly at BLADES blades over FIELD×FIELD (then the loop stops at BLADES).
+const LAB_SPACING = Math.sqrt((FIELD * FIELD) / BLADES);
 let i = 0;
 // uniform grid + jitter scaled to spacing — even ground coverage, no clumps.
 // instanceColor = (phase, brightness, hueShift) — read by the shaders.
-for (let x = -HALF; x <= HALF; x += SPACING) {
-  for (let z = -HALF; z <= HALF; z += SPACING) {
+for (let x = -HALF; x <= HALF; x += LAB_SPACING) {
+  for (let z = -HALF; z <= HALF; z += LAB_SPACING) {
     if (i >= BLADES) break;
-    const jx = x + (Math.random() - 0.5) * SPACING * 0.7;
-    const jz = z + (Math.random() - 0.5) * SPACING * 0.7;
+    const jx = x + (Math.random() - 0.5) * LAB_SPACING * 0.7;
+    const jz = z + (Math.random() - 0.5) * LAB_SPACING * 0.7;
     _pos.set(jx, 0, jz);
     _quat.setFromAxisAngle(_up, Math.random() * Math.PI * 2);
     _scl.setScalar(0.85 + Math.random() * 0.35);
