@@ -102,7 +102,7 @@ function _napDom() {
   _napEl.textContent = '☮  NAP ZONE — PEACE  ☮';
   Object.assign(_napEl.style, {
     position:      'fixed',
-    top:           '112px',
+    top:           '56px',
     left:          '50%',
     transform:     'translateX(-50%)',
     padding:       '10px 26px',
@@ -188,7 +188,7 @@ function _zoneDom() {
   _zoneEl.id = 'zone-notice';
   Object.assign(_zoneEl.style, {
     position:      'fixed',
-    top:           '60px',
+    top:           '140px',
     left:          '50%',
     transform:     'translateX(-50%)',
     maxWidth:      '90vw',
