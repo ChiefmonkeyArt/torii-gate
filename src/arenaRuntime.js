@@ -328,15 +328,28 @@ export function createArenaRuntime(hooks = {}) {
   // bootstrapPhysics() — one-time lazy Rapier world + colliders + player body +
   // viewmodels. Async (Rapier WASM). Throws on failure; the shell ENTER handler
   // catches it and resets the button. Idempotent guard lives in the shell.
+  // v0.2.277: step-level try/catch. The generic 'Arena failed to load' message
+  // hid the real error. Each step now reports its name + e.message to entry-status
+  // AND the console so the actual failure (which step, which error) is visible.
   async function bootstrapPhysics() {
-    await initPhysics();
-    buildArenaColliders();
-    buildDynamicCrates();
-    const handle = spawnPlayerBody();
+    const step = async (name, fn) => {
+      try { await fn(); }
+      catch (e) {
+        const msg = `⚠ ${name} failed: ${e && e.message ? e.message : e}`;
+        console.error('[bootstrap]', name, e);
+        try { showEntryStatus(msg); } catch {}
+        throw new Error(msg);
+      }
+    };
+    await step('initPhysics',       () => initPhysics());
+    await step('buildArenaColliders', () => buildArenaColliders());
+    await step('buildDynamicCrates', () => buildDynamicCrates());
+    let handle;
+    await step('spawnPlayerBody', () => { handle = spawnPlayerBody(); });
     setPlayerBody(handle);
-    loadPlayerModel(playerObj);
-    loadFirstPersonBody(playerObj);
-    buildNapNpc();
+    await step('loadPlayerModel',   () => loadPlayerModel(playerObj));
+    await step('loadFirstPersonBody', () => loadFirstPersonBody(playerObj));
+    await step('buildNapNpc',        () => buildNapNpc());
   }
 
   // enter() — start a fresh run: reset HP/ammo/score (resetRun), move the player to

@@ -487,7 +487,11 @@ async function ensureArenaReady(loadingLabel) {
     console.error('Arena bootstrap failed:', e);
     elEnterBtn.textContent = 'ENTER ARENA';
     elEnterBtn.disabled = false;
-    showEntryStatus('⚠ Arena failed to load — please reload the page and try again.');
+    // v0.2.277: show the REAL error (bootstrapPhysics now throws a step-tagged
+    // message; fall back to e.message for import/boot failures). The generic
+    // message hid the actual failure.
+    const real = (e && e.message) ? e.message : String(e);
+    showEntryStatus(`⚠ Arena failed to load — ${real}`);
     throw e;
   }
   _arenaBootstrapped = true;
