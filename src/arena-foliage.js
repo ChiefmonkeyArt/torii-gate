@@ -74,13 +74,14 @@ function _buildGrass() {
   // core, tapering to a 3-sided point. It occludes from every angle (no edge-on
   // vanishing) and never looks like a flat card. Cross-section radius is tiny so
   // each blade is a thin 3D needle, not a chunky prism.
-  const BLADE_SEGS = 8;     // v0.2.290: more rows for a smooth cone silhouette (was 6).
+  const BLADE_SEGS = 8;     // v0.2.292: more rows for a smooth cone silhouette (was 6).
   const BLADE_H    = 0.507; // 69% taller than original 0.30; 21% of blades get a further x1.21 Y.
-  const BLADE_R    = 0.003; // v0.2.290: genuinely THIN cone (~6mm across at base). 12mm still read
+  const BLADE_R    = 0.003; // v0.2.292: genuinely THIN cone (~6mm across at base). 12mm still read
                              // as fat; halving the radius makes each blade a fine needle that reads
                              // thin even up close. Tapers linearly to a sharp 3-sided point.
-  const TARGET_BLADES = 250000; // 3-sided blades occlude from every angle (flat ribbons vanish
-                                // edge-on, so ~half were invisible): 250k 3D ~= 500k flat density.
+  const TARGET_BLADES = 80000;  // v0.2.292: reduced from 250k so the field renders on headless /
+                                // software-GPU machines (SwiftShader crashed at 250k instances). 80k
+                                // 3-sided cones still read as a full field at ~95/m² over the NAP zone.
   const CAND_SPACING  = 0.040;  // fine candidate grid; partial Fisher-Yates selects TARGET_BLADES.
 
   // Build the 3-sided blade as an indexed BufferGeometry: 3 corner columns
@@ -94,17 +95,17 @@ function _buildGrass() {
   for (let j = 0; j < _rows; j++) {
     const hr = j / BLADE_SEGS;                 // 0..1
     const y  = hr * BLADE_H;
-    // v0.2.290: FLIPPED. The arena pipeline reflects the blade end-over-end, so a
-    // geometry built wide-base/point-tip rendered point-DOWN (thin at the floor,
-    // wide at the top). Building the INVERSE here -> point at y=0, wide at y=H ->
-    // the reflection turns it back into wide-base/point-tip in world space.
-    //   taper = hr: full radius (wide) at the TOP, zero (point) at the BOTTOM.
-    let taper = hr;
-    if (hr <= 0.001) taper = 0.0;              // sharp 3-sided point at the anchored end
+    // v0.2.292: POINT-UP cone (REVERTED the v0.2.290 flip). Verified the arena instance
+    // pipeline has NO reflection (instance determinant is positive = uniform positive
+    // scale + rotation only), so blades render exactly as built. The flip was a mistake:
+    // it made the cone point-DOWN (1 point on the floor, 3 in the air = wide flat top),
+    // matching the user's 'thinner at the bottom than the top' / 'flat top' reports.
+    //   taper = 1.0 - hr: full radius (WIDE base) at the floor, zero (point) at the tip.
+    let taper = 1.0 - hr;
+    if (hr >= 0.999) taper = 0.0;              // sharp 3-sided point at the tip (in the air)
     const r = BLADE_R * taper;
-    // v0.2.290: lean peaks at the POINTED end (hr=0) so after the reflection the
-    // tip (now up top) is the end that sways. (1-hr)^2 -> max at hr=0, zero at hr=1.
-    const lean = (1.0 - hr) * (1.0 - hr) * 0.06;
+    // lean peaks at the TIP (hr=1) so the pointed top is what sways.
+    const lean = hr * hr * 0.06;
     for (let k = 0; k < 3; k++) {
       _gPos.push(r * Math.cos(_angles[k]), y, r * Math.sin(_angles[k]) + lean);
     }
@@ -167,7 +168,7 @@ function _buildGrass() {
         float amp = 0.6 + vBright * 0.4;     // per-blade wind amplitude (demo pattern)
         // v0.2.272: gustier still — heavy gust coefficient so the rolling patch-to-patch
         // variation reads strongly; wind-bend also flops blades over (more ground cover).
-        float wind = 0.030 + gust * 0.14 + flut * 0.016;  // v0.2.290: gentler gust (was 0.34) so tips sway, not flop flat
+        float wind = 0.030 + gust * 0.14 + flut * 0.016;  // v0.2.292: gentler gust (was 0.34) so tips sway, not flop flat
         float sway = wind * heightPower * amp;
 
         // Apply bend in world space along the gust direction + perpendicular flutter.
@@ -351,7 +352,7 @@ function _buildGrass() {
   // browser is actually running, so you can confirm whether you're seeing a
   // cached old build or the live one. If this line is missing entirely, the
   // grass code never ran (stale bundle). flare 5.6 + count 500000 = live v0.2.274.
-  const stamp = `[grass-build] v0.2.290 blades=${count} bladeR=${BLADE_R} bladeH=${BLADE_H} taper=hr(linear) cross=3-sided FLIPPED lean=0.06 sink=-0.05 groundCover=0x3d5a2f windGust=0.14 tall21pct=x1.21Y tip=anchored-point`;
+  const stamp = `[grass-build] v0.2.292 blades=${count} bladeR=${BLADE_R} bladeH=${BLADE_H} taper=(1-hr) cross=3-sided POINT-UP lean=0.06 sink=-0.05 groundCover=0x3d5a2f windGust=0.14 tall21pct=x1.21Y tip=up`;
   console.info(stamp);
   window.__GRASS_BUILD = stamp;
 }
