@@ -12,7 +12,7 @@ const BLADE_SEGS = 8;    // v0.2.267: demo default (8 height divisions, 9 rows)
 const BLADE_H    = 0.30; // shorter + more upright
 const BLADE_W    = 0.018;// thin but visible; per-blade taper widens the base
 const FIELD      = 14;          // field is FIELD × FIELD units
-const SPACING    = 0.12;         // v0.2.267: denser field (~70 blades/m²)
+const SPACING    = 0.085;        // v0.2.270: doubled density (~140 blades/m²)
 const BLADES     = Math.floor(FIELD * FIELD / (SPACING * SPACING));
 
 // ── Renderer / scene / camera ────────────────────────────────────────────────
@@ -46,7 +46,7 @@ scene.add(sun);
 // ── Ground ────────────────────────────────────────────────────────────────────
 const ground = new THREE.Mesh(
   new THREE.CircleGeometry(FIELD * 1.4, 64),
-  new THREE.MeshStandardMaterial({ color: 0x2c3a1c, roughness: 1.0 })
+  new THREE.MeshStandardMaterial({ color: 0x2d5016, roughness: 1.0 })
 );
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.01;
@@ -116,16 +116,17 @@ const mat = new THREE.ShaderMaterial({
 
       float heightPower = t * t;
       float amp = 0.6 + vBright * 0.4;
-      float wind = 0.016 + gust * 0.10 + flut * 0.009;
+      // v0.2.270: stronger wind — emphasises the rolling gusts.
+      float wind = 0.022 + gust * 0.22 + flut * 0.013;
       float sway = wind * heightPower * amp;
 
       vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.0);
       wp.xyz += vec3(uWindDir.x * sway, 0.0, uWindDir.y * sway);
-      wp.x += (-uWindDir.y) * flut * 0.009 * t;
-      wp.z += ( uWindDir.x) * flut * 0.009 * t;
+      wp.x += (-uWindDir.y) * flut * 0.013 * t;
+      wp.z += ( uWindDir.x) * flut * 0.013 * t;
 
       // vertical compression on bend (demo physics)
-      float totalBend = abs(sway) + abs(flut * 0.009 * t);
+      float totalBend = abs(sway) + abs(flut * 0.013 * t);
       wp.y *= (1.0 - totalBend * 0.1 * heightPower);
 
       vWn = mat3(modelMatrix * instanceMatrix) * normal;

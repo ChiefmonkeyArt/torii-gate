@@ -68,7 +68,7 @@ function _buildGrass() {
   const BLADE_SEGS = 8;     // demo default: 8 height divisions (9 rows) — smooth, cheap.
   const BLADE_H    = 0.30;  // shorter + more upright (matches v0.2.266 scale).
   const BLADE_W    = 0.018; // thin but visible; per-blade taper widens the base.
-  const SPACING    = 0.12;  // denser field (~70 blades/m²) — user asked for "more of it".
+  const SPACING    = 0.085; // v0.2.270: doubled density (~140 blades/m²) vs 0.12 — user: "100% more".
 
   // PlaneGeometry(width, height, 1, 8): 2 columns × 9 rows. Translate so the
   // base sits at y=0 and the blade grows upward to y=BLADE_H.
@@ -139,17 +139,19 @@ function _buildGrass() {
         // heightPower: tips bend most, base stays put (quadratic - from the demo).
         float heightPower = t * t;
         float amp = 0.6 + vBright * 0.4;     // per-blade wind amplitude (demo pattern)
-        float wind = 0.016 + gust * 0.10 + flut * 0.009;
+        // v0.2.270: stronger wind overall — emphasises the rolling gusts so the
+        // random patch-to-patch variation reads clearly.
+        float wind = 0.022 + gust * 0.22 + flut * 0.013;
         float sway = wind * heightPower * amp;
 
         // Apply bend in world space along the gust direction + perpendicular flutter.
         vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.0);
         wp.xyz += vec3(uWindDir.x * sway, 0.0, uWindDir.y * sway);
-        wp.x += (-uWindDir.y) * flut * 0.009 * t;
-        wp.z += ( uWindDir.x) * flut * 0.009 * t;
+        wp.x += (-uWindDir.y) * flut * 0.013 * t;
+        wp.z += ( uWindDir.x) * flut * 0.013 * t;
 
         // Vertical compression when bending (demo physics) - keeps arc length believable.
-        float totalBend = abs(sway) + abs(flut * 0.009 * t);
+        float totalBend = abs(sway) + abs(flut * 0.013 * t);
         wp.y *= (1.0 - totalBend * 0.1 * heightPower);
 
         // World facing normal for two-sided lighting in the fragment shader.

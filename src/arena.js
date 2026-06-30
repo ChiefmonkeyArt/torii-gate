@@ -340,11 +340,12 @@ function _loadWallTexture() {
 
 // ── NAP Zone — peaceful area past the torii gate ─────────────────────────
 function _buildNapZone() {
-  // Floor extension past the east wall. Slightly cooler tint than the main
-  // arena floor so it reads as a distinct space.
+  // Floor extension past the east wall. v0.2.270: a clear shade of green so
+  // the grass field reads as growing from soil/turf rather than the dark
+  // near-black of the main arena floor.
   const NAP_W = NAP_FAR_X - NAP_X;
   const napFloorMat = new THREE.MeshStandardMaterial({
-    color: 0x162a1c, roughness: 0.9,
+    color: 0x2d5016, roughness: 0.9,
   });
   const napFloor = new THREE.Mesh(
     new THREE.PlaneGeometry(NAP_W, ARENA_HALF * 2),
