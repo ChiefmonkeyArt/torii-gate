@@ -2,7 +2,7 @@
 import { state } from './state.js';
 import { emit, EV } from './events.js';
 
-const RELAYS = ['wss://relay.damus.io','wss://nos.lol','wss://relay.nostr.band'];
+const RELAYS = ['wss://relay.damus.io','wss://nos.lol','wss://relay.nostr.band','wss://relay.primal.net'];
 export { RELAYS };
 
 // A nostrich profile's `picture` is attacker-controlled (anyone can sign a
@@ -95,11 +95,15 @@ function _updateTitleUI() {
 // relayReq(url, filters, opts?) → Promise<{ ok, events, relay, error }>
 // One relay, one REQ, collect until EOSE. `filters` is a NIP-01 filter array
 // (a single filter object is also accepted). `opts.timeoutMs` caps the wait
-// (default 4000). Pure of side effects beyond the socket; resolves rather than
-// rejecting on failure so callers can fan out.
+// (default 4000). `opts.graceMs` (default 0) adds a late-event grace window:
+// on EOSE the socket stays open for graceMs to catch stragglers that some
+// relays emit after EOSE (observed flakiness during the n2n interop proof)
+// before closing. Pure of side effects beyond the socket; resolves rather
+// than rejecting on failure so callers can fan out.
 export function relayReq(url, filters, opts = {}) {
   const o = opts && typeof opts === 'object' && !Array.isArray(opts) ? opts : {};
   const timeoutMs = Number.isFinite(o.timeoutMs) && o.timeoutMs > 0 ? o.timeoutMs : 4000;
+  const graceMs = Number.isFinite(o.graceMs) && o.graceMs > 0 ? Math.floor(o.graceMs) : 0;
   const subsId = 'rq' + Math.random().toString(36).slice(2, 9);
   const flt = Array.isArray(filters) ? filters : (filters && typeof filters === 'object' ? [filters] : []);
   return new Promise((resolve) => {
@@ -112,15 +116,20 @@ export function relayReq(url, filters, opts = {}) {
     catch (e) { resolve({ ok: false, events: [], relay: url, error: 'bad-url' }); return; }
     const events = [];
     let done = false;
+    let inGrace = false;
+    let mainTimer = null;
+    let graceTimer = null;
     const finish = (ok, error) => {
       if (done) return; done = true;
+      if (mainTimer) clearTimeout(mainTimer);
+      if (graceTimer) clearTimeout(graceTimer);
       try { if (ws.readyState === 1) ws.close(); } catch { /* best-effort close */ }
       resolve({ ok, events, relay: url, error: ok ? null : (error || 'failed') });
     };
-    const timer = setTimeout(() => finish(events.length ? true : false, 'timeout'), timeoutMs);
+    mainTimer = setTimeout(() => finish(events.length ? true : false, 'timeout'), timeoutMs);
     ws.onopen = () => {
       try { ws.send(JSON.stringify(['REQ', subsId, ...flt])); }
-      catch (e) { clearTimeout(timer); finish(false, 'send-failed'); }
+      catch (e) { finish(false, 'send-failed'); }
     };
     ws.onmessage = (ev) => {
       try {
@@ -128,21 +137,48 @@ export function relayReq(url, filters, opts = {}) {
         if (!Array.isArray(frame)) return;
         const [verb, sid, payload] = frame;
         if (verb === 'EVENT' && sid === subsId && payload) events.push(payload);
-        else if (verb === 'EOSE' && sid === subsId) { clearTimeout(timer); finish(true, null); }
-        else if (verb === 'NOTICE') { clearTimeout(timer); finish(false, 'notice'); }
+        else if (verb === 'EOSE' && sid === subsId) {
+          // Late-event grace: some relays emit EOSE before flushing older stored
+          // events. Hold the socket open for graceMs to catch stragglers, then
+          // close. A second EOSE during grace closes immediately.
+          if (graceMs > 0 && !inGrace) {
+            inGrace = true;
+            if (mainTimer) clearTimeout(mainTimer);
+            graceTimer = setTimeout(() => finish(true, null), graceMs);
+          } else {
+            finish(true, null);
+          }
+        }
+        else if (verb === 'NOTICE') { finish(false, 'notice'); }
       } catch { /* ignore a malformed frame */ }
     };
-    ws.onerror = () => { clearTimeout(timer); finish(false, 'error'); };
-    ws.onclose = () => { clearTimeout(timer); finish(events.length ? true : false, 'closed'); };
+    ws.onerror = () => { finish(false, 'error'); };
+    ws.onclose = () => { finish(events.length ? true : false, 'closed'); };
   });
 }
 
 // fanoutReq(relays, filters, opts) → Promise<{ events, used, failed }>. Queries
 // every relay in parallel, merges collected events (deduped by id), and returns
 // the union. Never rejects; failed relays are listed but don't fail the call.
+// opts.retries (default 0) re-queries relays that failed on a prior pass — a
+// single retry recovers transient TLS-reset / 503 flakiness (observed on
+// relay.nostr.band and relay.damus.io under concurrent load during the n2n
+// interop proof). opts.graceMs is passed through to relayReq. Both default to
+// off, so callers opt in deliberately.
 export async function fanoutReq(relays, filters, opts = {}) {
   const list = Array.isArray(relays) ? relays : (relays ? [relays] : []);
-  const results = await Promise.all(list.map((r) => relayReq(r, filters, opts)));
+  const retries = Number.isFinite(opts.retries) && opts.retries > 0 ? Math.floor(opts.retries) : 0;
+  let results = await Promise.all(list.map((r) => relayReq(r, filters, opts)));
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const failed = results.filter((r) => !r.ok);
+    if (!failed.length) break; // nothing left to retry
+    const retryResults = await Promise.all(failed.map((r) => relayReq(r.relay, filters, opts)));
+    // merge retry results back into `results` in place (replace each failed slot)
+    let ri = 0;
+    for (let i = 0; i < results.length; i++) {
+      if (!results[i].ok) { results[i] = retryResults[ri++]; }
+    }
+  }
   const seen = new Set();
   const events = [];
   const used = [];

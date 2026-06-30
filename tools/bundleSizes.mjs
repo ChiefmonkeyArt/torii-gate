@@ -10,9 +10,11 @@
 export const KIB = 1024;
 export const MIB = 1024 * 1024;
 
-// The advisory per-chunk warn threshold. Mirrors vite.config.js
-// `build.chunkSizeWarningLimit: 700` (kB) so the report speaks the same language as the
-// build warning. ADVISORY only — exceeding it is flagged, never a hard failure here.
+// The advisory per-chunk warn threshold. The vite build's chunkSizeWarningLimit
+// is 2500 kB (Rapier is a ~2.2M intentional LAZY chunk — dynamic import on Enter
+// Arena — so the build no longer false-alarms on it). This advisory stays at 700K
+// to keep tracking real upfront-chunk sizes (three-vendor + index) meaningfully;
+// the lazy rapier giant is flagged here as tracked, never a hard failure.
 export const DEFAULT_WARN_LIMIT = 700 * KIB;
 
 // formatBytes(bytes, digits=1) → a compact human string ('623.8 KB', '2.1 MB', '158 B').

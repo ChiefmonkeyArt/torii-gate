@@ -341,6 +341,8 @@ async function refreshOnlineWorlds() {
     relays: RELAYS,
     ourPubkey: state.nostrPubkey || '',
     timeoutMs: 5000,
+    graceMs: 250,   // late-event grace: catch stragglers some relays emit after EOSE
+    retries: 1,     // one retry on failed relays (transient TLS-reset / 503)
   });
   if (!r.ok) {
     _worldsScan = 'offline';

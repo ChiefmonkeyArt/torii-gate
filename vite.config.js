@@ -4,13 +4,19 @@ export default defineConfig({
   server: { port: 5174 },
   build: {
     outDir: 'dist',
-    chunkSizeWarningLimit: 700, // three-vendor legitimately large
+    // Rapier (2.2M) is an intentional LAZY chunk (dynamic import on Enter
+    // Arena) and never blocks initial paint, so 700K is the right bar for the
+    // UPFRONT chunks (three-vendor + game logic); the lazy physics giant is
+    // expected and does not trip a real-size warning.
+    chunkSizeWarningLimit: 2500,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // All three.js core + addons in one vendor chunk
-          // Rapier stays auto-split (lazy import on Enter Arena)
-          if (id.includes('/three/') || id.includes('three/addons')) return 'three-vendor';
+          // All three.js core + addons in one vendor chunk. (Addons can't be
+          // deferred separately yet: the arena modules that import them are
+          // statically imported at startup. Deferring them is a future
+          // arena-bundle lazy-load behind Enter Arena — a game-loop refactor.)
+          if (id.includes('/three/')) return 'three-vendor';
         }
       }
     }

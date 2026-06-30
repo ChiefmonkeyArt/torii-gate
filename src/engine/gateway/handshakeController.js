@@ -136,7 +136,7 @@ export function createHandshakeController(opts = {}) {
     try {
       const filter = buildGatewayFilter({ limit: 100 });
       filter['#p'] = [_ourPubkey]; // addressed-to-us: incoming requests + our accepts
-      const raw = await _request(_relays, [filter], { timeoutMs: 5000 });
+      const raw = await _request(_relays, [filter], { timeoutMs: 5000, graceMs: 250, retries: 1 });
       const events = raw && Array.isArray(raw.events) ? raw.events : [];
 
       const reqs = readTravelRequests(events);

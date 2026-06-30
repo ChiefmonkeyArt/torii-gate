@@ -112,6 +112,8 @@ export async function fetchOnlineWorlds(opts = {}) {
   const request = typeof o.request === 'function' ? o.request : null;
   const relays = _safeRelays(o.relays);
   const timeoutMs = Number.isFinite(o.timeoutMs) && o.timeoutMs > 0 ? o.timeoutMs : 5000;
+  const graceMs = Number.isFinite(o.graceMs) && o.graceMs > 0 ? Math.floor(o.graceMs) : 0;
+  const retries = Number.isFinite(o.retries) && o.retries > 0 ? Math.floor(o.retries) : 0;
   const out = { ok: false, count: 0, worlds: [], used: [], failed: [], errors: [] };
   if (!request) { out.errors.push('request transport is required'); return out; }
   if (!relays.length) { out.errors.push('at least one relay is required'); return out; }
@@ -119,7 +121,7 @@ export async function fetchOnlineWorlds(opts = {}) {
   const filter = buildGatewayFilter({ limit: 200 });
   let raw;
   try {
-    raw = await request(relays, [filter], { timeoutMs });
+    raw = await request(relays, [filter], { timeoutMs, graceMs, retries });
   } catch (e) {
     out.errors.push('request threw');
     return out;
