@@ -9,3 +9,14 @@ dist/
 # GLB optimizer backups (tools/optimize-glbs.mjs --write)
 public/*.glb.original
 
+# Test, coverage, and runtime log artifacts (v0.2.260 audit — repo hygiene)
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vitest-cache/
+.vite/
+.tmp/
+*.tsbuildinfo
+
