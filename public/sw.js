@@ -22,15 +22,20 @@ const CACHE_NAME    = `torii-quest-${CACHE_VERSION}`;
 // network-first (cached only opportunistically by networkFirst for offline fallback,
 // inside this VERSION-named cache that is purged each deploy, so shell+bundle in cache
 // always stay a consistent pair).
+// v0.2.260 audit R3: keep precache to critical-path UI assets only.
+// GLBs are now Draco+webp-compressed (~5 MB total, down from 14.7 MB) and are
+// cached opportunistically on first request by the cacheFirst() fetch handler
+// below — there's no need to fetch them all at install time. Pre-fetching them
+// blocked install on slow networks and wasted bandwidth for users who never
+// reached the arena (e.g. closed the tab on the landing screen).
+//
+// GLB assets shipped under public/ and served by cacheFirst() on demand:
+//   /banker-rigged.glb, /chiefmonkey6.glb, /chiefmonkey-headless.glb,
+//   /nostrich3.glb, /torii-gate.glb, /torii-gateway-experience.glb,
+//   /gun-steampunk.glb.
 const PRECACHE_ASSETS = [
-  '/wall-texture.webp',
-  '/bitcoin-b.png',
-  '/banker-rigged.glb',
-  '/chiefmonkey6.glb',
-  '/nostrich3.glb',
-  '/torii-gate.glb',
-  '/torii-gateway-experience.glb',
-  '/gun-steampunk.glb',
+  '/wall-texture.webp', // arena floor — visible the instant the player loads in
+  '/bitcoin-b.png',     // sats HUD icon — visible on every frame in-arena
 ];
 
 // ── Install — precache all static assets ─────────────────────────────────────
