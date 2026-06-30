@@ -3,13 +3,15 @@
 // buildTravelResponse/extractTravelResponse/readTravelResponses round-trip a
 // sanitised request↔response, and that verifyHandoff (SEC-2) clears only a
 // correctly-attributed accept and fails closed on every mismatch.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { schnorr } from '@noble/curves/secp256k1.js';
 import {
   buildTravelRequest, extractTravelRequest, readTravelRequests,
   buildTravelResponse, extractTravelResponse, readTravelResponses,
   TRAVEL_STATE,
 } from '../src/engine/gateway/travelRequest.js';
 import { verifyHandoff } from '../src/engine/gateway/handoffVerify.js';
+import { computeEventId } from '../src/engine/crypto/nostrSig.js';
 import { GATEWAY_KIND, GATEWAY_TOPIC } from '../src/engine/gateway/gatewayRead.js';
 
 const TRAV = 'b'.repeat(64);   // traveller pubkey
@@ -212,5 +214,177 @@ describe('verifyHandoff (SEC-2)', () => {
   it('rejects malformed expectations (ok:false)', () => {
     expect(verifyHandoff({ response: makeAccept(), expectedRequestId: '', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV }).ok).toBe(false);
     expect(verifyHandoff({ response: null, expectedRequestId: 'x', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV }).ok).toBe(false);
+  });
+});
+
+// v0.2.262 SEC-2 hardening: optional cryptoVerify path. When the caller passes
+// `cryptoVerify: true` + `rawEvent`, the handoff gate must BIP-340 schnorr-verify
+// the raw signed accept (with id recomputed from canonical NIP-01 fields) under
+// the host's claimed pubkey. Anything a hostile relay could attempt (forged
+// sig, tampered content/tags, swapped pubkey, wrong id) fails closed and never
+// elevates trust above 'unverified'.
+describe('verifyHandoff (SEC-2) — crypto-verified path (BIP-340)', () => {
+  function _bytesToHex(b) {
+    let s = '';
+    for (let i = 0; i < b.length; i++) s += b[i].toString(16).padStart(2, '0');
+    return s;
+  }
+  function _hexToBytes(hex) {
+    const out = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    return out;
+  }
+  // Build a real signed accept event from a fresh keypair so its pubkey/id/sig
+  // are all internally consistent. Returns { rawEvent, response, hostPubkey }.
+  function realAccept({ travellerPubkey = TRAV, referencesRequestId = 'a'.repeat(64), spawn = 'https://foreign.example.com' } = {}) {
+    const sk = schnorr.utils.randomSecretKey();
+    const hostPubkey = _bytesToHex(schnorr.getPublicKey(sk));
+    const tags = [
+      ['p', travellerPubkey],
+      ['e', referencesRequestId, '', 'reply'],
+      ['t', 'torii-gateway'],
+      ['state', 'accepted'],
+      ['spawn', spawn],
+    ];
+    const ev = {
+      pubkey: hostPubkey,
+      created_at: Math.floor(Date.now() / 1000),
+      kind: 30078,
+      tags,
+      content: JSON.stringify({ spawn }),
+    };
+    ev.id = computeEventId(ev).id;
+    ev.sig = _bytesToHex(schnorr.sign(_hexToBytes(ev.id), sk));
+    const response = {
+      hostPubkey, travellerPubkey, referencesRequestId, spawn, accepted: true, eventId: ev.id,
+    };
+    return { rawEvent: ev, response, hostPubkey };
+  }
+
+  it('elevates trust to crypto-verified when the raw signed accept verifies', () => {
+    const { rawEvent, response, hostPubkey } = realAccept();
+    const v = verifyHandoff({
+      response,
+      expectedRequestId: response.referencesRequestId,
+      expectedHostPubkey: hostPubkey,
+      expectedTravellerPubkey: TRAV,
+      rawEvent,
+      cryptoVerify: true,
+    });
+    expect(v.ok).toBe(true);
+    expect(v.trusted).toBe(true);
+    expect(v.trust).toBe('crypto-verified');
+    expect(v.errors).toEqual([]);
+  });
+
+  it('fails closed when cryptoVerify is requested but rawEvent is missing (ok:false)', () => {
+    const { response, hostPubkey } = realAccept();
+    const v = verifyHandoff({
+      response,
+      expectedRequestId: response.referencesRequestId,
+      expectedHostPubkey: hostPubkey,
+      expectedTravellerPubkey: TRAV,
+      cryptoVerify: true,
+    });
+    expect(v.ok).toBe(false);
+    expect(v.trusted).toBe(false);
+    expect(v.errors).toContain('cryptoVerify requested but rawEvent is missing');
+  });
+
+  it('fails closed when content was tampered after signing (relay-spoof)', () => {
+    const { rawEvent, response, hostPubkey } = realAccept();
+    // Hostile relay re-points (id, sig) at a different spawn payload. The id
+    // no longer recomputes from canonical fields → schnorr verify fails.
+    const tampered = { ...rawEvent, content: JSON.stringify({ spawn: 'https://attacker.example.com' }) };
+    const v = verifyHandoff({
+      response,
+      expectedRequestId: response.referencesRequestId,
+      expectedHostPubkey: hostPubkey,
+      expectedTravellerPubkey: TRAV,
+      rawEvent: tampered,
+      cryptoVerify: true,
+    });
+    expect(v.trusted).toBe(false);
+    expect(v.trust).toBe('unverified');
+    expect(v.errors.some((e) => e.startsWith('BIP-340 verification failed'))).toBe(true);
+  });
+
+  it('fails closed when raw event pubkey does not match expected host', () => {
+    const { rawEvent, response, hostPubkey } = realAccept();
+    // Caller addressed the request to the real host, but the relay hands us a
+    // raw event signed by someone else (and updates the raw pubkey field).
+    const evil = 'c'.repeat(64);
+    const swapped = { ...rawEvent, pubkey: evil };
+    const v = verifyHandoff({
+      response,
+      expectedRequestId: response.referencesRequestId,
+      expectedHostPubkey: hostPubkey,
+      expectedTravellerPubkey: TRAV,
+      rawEvent: swapped,
+      cryptoVerify: true,
+    });
+    expect(v.trusted).toBe(false);
+    expect(v.errors).toContain('raw event pubkey does not match expected host pubkey');
+  });
+
+  it('fails closed when sanitised response.eventId does not match raw event.id', () => {
+    const { rawEvent, response, hostPubkey } = realAccept();
+    // Relay swaps the raw event under a sanitised model whose eventId pointed
+    // at a different signed accept. The id-equality check trips before crypto.
+    const wrongEventId = 'e'.repeat(64);
+    const v = verifyHandoff({
+      response: { ...response, eventId: wrongEventId },
+      expectedRequestId: response.referencesRequestId,
+      expectedHostPubkey: hostPubkey,
+      expectedTravellerPubkey: TRAV,
+      rawEvent,
+      cryptoVerify: true,
+    });
+    expect(v.trusted).toBe(false);
+    expect(v.errors).toContain('raw event id does not match sanitised response eventId');
+  });
+
+  it('fails closed when the sig is forged (random 128 hex) but everything else matches', () => {
+    const { rawEvent, response, hostPubkey } = realAccept();
+    const forged = { ...rawEvent, sig: 'd'.repeat(128) };
+    const v = verifyHandoff({
+      response,
+      expectedRequestId: response.referencesRequestId,
+      expectedHostPubkey: hostPubkey,
+      expectedTravellerPubkey: TRAV,
+      rawEvent: forged,
+      cryptoVerify: true,
+    });
+    expect(v.trusted).toBe(false);
+    expect(v.errors.some((e) => e.startsWith('BIP-340 verification failed'))).toBe(true);
+  });
+
+  it('accepts an injected verifySignature for unit-test wiring', () => {
+    const { rawEvent, response, hostPubkey } = realAccept();
+    const fakeVerify = vi.fn(() => ({ ok: true, valid: true, errors: [] }));
+    const v = verifyHandoff({
+      response,
+      expectedRequestId: response.referencesRequestId,
+      expectedHostPubkey: hostPubkey,
+      expectedTravellerPubkey: TRAV,
+      rawEvent,
+      cryptoVerify: true,
+      verifySignature: fakeVerify,
+    });
+    expect(fakeVerify).toHaveBeenCalledOnce();
+    expect(v.trusted).toBe(true);
+    expect(v.trust).toBe('crypto-verified');
+  });
+
+  it('skips crypto when no rawEvent or cryptoVerify is supplied (legacy structural path)', () => {
+    const { response, hostPubkey } = realAccept();
+    const v = verifyHandoff({
+      response,
+      expectedRequestId: response.referencesRequestId,
+      expectedHostPubkey: hostPubkey,
+      expectedTravellerPubkey: TRAV,
+    });
+    expect(v.trusted).toBe(true);
+    expect(v.trust).toBe('host-matched');
   });
 });

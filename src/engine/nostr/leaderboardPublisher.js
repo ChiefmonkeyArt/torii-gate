@@ -56,12 +56,16 @@ export function createLeaderboardPublisher({ sign = null, publish = null, gate =
     if (typeof publish !== 'function') return result;     // signed, not shipped
 
     // SEC-1: the signed event must clear the gate BEFORE the relay write. A gate
-    // failure fails closed — publish() is never called.
+    // failure fails closed — publish() is never called. v0.2.262: cryptoVerify
+    // is opt-in via ctx so any LIVE publisher can require BIP-340 verification
+    // (recompute event id from canonical fields + schnorr-verify under pubkey)
+    // without breaking the legacy structural-only callers in tests.
     if (typeof gate === 'function') {
       const c = ctx && typeof ctx === 'object' && !Array.isArray(ctx) ? ctx : {};
       const verdict = gate(result.event, {
         expectedSignerPubkey: c.signerPubkey || null,
         consent: c.consent === true,
+        cryptoVerify: c.cryptoVerify === true,
       });
       if (!verdict || verdict.trusted !== true) {
         result.ok = false;

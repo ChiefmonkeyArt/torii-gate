@@ -46,6 +46,7 @@ import { fanoutReq, signEvent, fanoutPublish, RELAYS } from './nostr.js';
 import { fetchOnlineWorlds, buildPresenceEvent, publishOurPresence } from './engine/gateway/worldPresence.js';
 // v0.2.252 (P1): signed n2n travel-request handshake — stateful controller + SEC-2 verify gate.
 import { createHandshakeController } from './engine/gateway/handshakeController.js';
+import { verifyHandoff } from './engine/gateway/handoffVerify.js';
 // v0.2.253 (P2): SEC-3 product URL hardening — the gate before any armed spawn URL
 // becomes navigable. Pure: only validates + re-emits a safe https URL string.
 import { hardenSpawnUrl, appendTraveller } from './engine/gateway/urlHarden.js';
@@ -319,6 +320,25 @@ function _executeJump() {
   const snap = _handshake.snapshot();
   const armed = snap && snap.armed;
   if (!armed) { renderGatewayCard(); return; }
+  // v0.2.262 SEC-2 defence-in-depth: re-run the BIP-340 schnorr verify on the
+  // raw signed accept we stashed at arm time, RIGHT before touching
+  // window.location.href. Even though tick() already crypto-verified before
+  // arming, this second pass keeps the single navigation site the single
+  // crypto bottleneck — a future code path that arms _armed by any other route
+  // still cannot trigger the hop without a valid signed accept.
+  const reverify = verifyHandoff({
+    response: armed.verifiedResponse || null,
+    expectedRequestId: armed.requestEventId || '',
+    expectedHostPubkey: armed.hostPubkey || '',
+    expectedTravellerPubkey: state.nostrPubkey || '',
+    rawEvent: armed.verifiedRawEvent || null,
+    cryptoVerify: true,
+  });
+  if (!reverify.trusted || reverify.trust !== 'crypto-verified') {
+    _handshake.clearArmed();
+    renderGatewayCard();
+    return;
+  }
   const spawn = armed.spawn || 'https://quest-torii.pplx.app';
   const hardened = hardenSpawnUrl(spawn);
   if (!hardened.ok) {
@@ -329,7 +349,8 @@ function _executeJump() {
   const withTraveller = appendTraveller(hardened.url, state.nostrPubkey || '');
   const target = withTraveller.ok ? withTraveller.url : hardened.url;
   _handshake.clearArmed();
-  // The single navigation site for the n2n hop. SEC-2 + SEC-3 both cleared above.
+  // The single navigation site for the n2n hop. SEC-2 (crypto-verified twice)
+  // + SEC-3 (URL hardening) both cleared above.
   try { window.location.href = target; } catch (e) { renderGatewayCard(); }
 }
 

@@ -151,13 +151,26 @@ export function createHandshakeController(opts = {}) {
 
       if (_pending) {
         const resps = readTravelResponses(events);
+        // Map raw events by id so we can hand the raw signed accept into the
+        // SEC-2 crypto floor (BIP-340 schnorr + id recompute). The sanitised
+        // model alone cannot be re-verified — only the raw event carries the
+        // canonical fields a schnorr verify needs.
+        const rawById = new Map();
+        for (const ev of events) { if (ev && typeof ev.id === 'string') rawById.set(ev.id, ev); }
         for (const resp of resps.responses) {
           if (!resp.accepted) continue;
+          const rawEv = resp.eventId ? rawById.get(resp.eventId) : null;
           const v = verifyHandoff({
             response: resp,
             expectedRequestId: _pending.requestEventId,
             expectedHostPubkey: _pending.hostPubkey,
             expectedTravellerPubkey: _ourPubkey,
+            // v0.2.262 SEC-2 crypto floor. Pass cryptoVerify+rawEvent so the
+            // gate runs BIP-340 verification; without a raw event the request
+            // returns ok:false and we move on (relay echoed a bare sanitised
+            // shell with no underlying signed event — cannot trust).
+            rawEvent: rawEv,
+            cryptoVerify: true,
           });
           if (v.trusted) {
             _armed = {
@@ -165,6 +178,15 @@ export function createHandshakeController(opts = {}) {
               spawn: resp.spawn,
               hostPubkey: _pending.hostPubkey,
               title: _pending.title,
+              // Stash the raw verified event + the sanitised model so
+              // _executeJump can re-run the gate one more time right before it
+              // touches window.location.href. Defence-in-depth: a paused
+              // session that picks back up later still re-verifies before
+              // navigating, and the navigation site stays the single bottleneck.
+              verifiedRawEvent: rawEv || null,
+              verifiedResponse: resp,
+              requestEventId: _pending.requestEventId,
+              trust: v.trust,
             };
             _pending = null;
             break;
