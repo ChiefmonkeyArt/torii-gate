@@ -1,21 +1,19 @@
 {
   "schema": "torii.next-action-state",
   "schemaVersion": 1,
-  "generatedAt": "2026-06-30T16:03:49.222Z",
+  "generatedAt": "2026-06-30T15:40:58.879Z",
   "badge": "NEXT-ACTION STATE · LOCAL · READ-ONLY",
   "version": "v0.2.266-alpha",
   "packageVersion": "0.2.266-alpha",
-  "gitCommit": "e541495",
+  "gitCommit": "f3399b6",
   "liveUrl": "https://torii-quest.pplx.app",
   "release": {
-    "ready": false,
-    "gateStatus": "NOT READY",
+    "ready": true,
+    "gateStatus": "READY",
     "gateCommand": "npm run test:release",
-    "blockers": [
-      "docs"
-    ],
+    "blockers": [],
     "regression": {
-      "count": 16,
+      "count": 15,
       "expected": 15
     }
   },
@@ -29,7 +27,7 @@
   },
   "manualBlocker": {
     "pending": true,
-    "statusLabel": "MANUAL VALIDATION OUTSTANDING",
+    "statusLabel": "LOCAL GATES GREEN · MANUAL PLAYTEST + APPROVAL PENDING",
     "pill": "manual"
   },
   "mvpApproval": {
@@ -37,7 +35,7 @@
     "approved": false,
     "approvedBy": null,
     "approvedAt": null,
-    "version": "v0.2.265-alpha"
+    "version": "v0.2.266-alpha"
   },
   "playtestResults": {
     "schema": "torii.playtest-results-state",
@@ -126,11 +124,11 @@
     "impliesPlaytestComplete": false
   },
   "mvpGate": {
-    "verdict": "signals-incomplete",
+    "verdict": "awaiting-approval",
     "approved": false,
-    "confidenceGreen": false,
+    "confidenceGreen": true,
     "confidenceSignals": {
-      "releaseReady": false,
+      "releaseReady": true,
       "entrySmokePass": true,
       "dashboardSmokePass": true,
       "suiteGreen": true
@@ -173,10 +171,10 @@
     "HANDOFF.generated.md"
   ],
   "reports": [
-    "torii-v0.2.206-mvp-release-package-report.md",
-    "torii-v0.2.207-github-release-dry-run-report.md",
-    "torii-v0.2.208-progress-parser-cleanup-report.md",
-    "torii-v0.2.209-generated-commit-stamp-clarity-report.md"
+    "torii-v0.2.213-shellless-release-tooling-report.md",
+    "torii-v0.2.214-continuum-rc-status-report.md",
+    "torii-v0.2.215-manual-validation-dashboard-report.md",
+    "torii-v0.2.216-no-blocker-queue-dashboard-report.md"
   ],
   "safety": {
     "deploy": false,

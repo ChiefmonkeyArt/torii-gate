@@ -6,10 +6,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ── Blade constants (mirror arena-foliage.js _buildGrass) ─────────────────────
-const BLADE_SEGS = 8;
-const BLADE_H    = 0.46;
-const BLADE_W    = 0.014;
-const KEEL       = 0.008;
+const BLADE_SEGS = 20;   // v0.2.266c: smooth quadratic bend
+const BLADE_H    = 0.30; // v0.2.266: shorter + more upright
+const BLADE_W    = 0.014;// v0.2.266c: thin but visible
 const FIELD      = 14;          // field is FIELD × FIELD units
 const SPACING    = 0.16;        // v0.2.265: tight uniform grid for full even ground coverage (matches arena)
 const BLADES     = Math.floor(FIELD * FIELD / (SPACING * SPACING));
@@ -51,36 +50,31 @@ ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.01;
 scene.add(ground);
 
-// ── Blade geometry: V-channel cross-section ──────────────────────────────────
-// 3 verts per row (left, keel, right) + one tip vertex. Rows use t = row/SEGS
-// (never reaching 1) so the top row keeps a non-zero width — this avoids the
-// degenerate zero-area triangles that produced NaN normals / black tip speckles.
-const VERTS_PER_BLADE = BLADE_SEGS * 3 + 1;
+// ── Blade geometry: flat tapered ribbon (v0.2.266c) ────────────────────
+// 2 verts per row (left, right) + one tip vertex. Rows use t = row/SEGS
+// (never 1) so the top row keeps a non-zero width — avoids degenerate tris.
+const VERTS_PER_BLADE = BLADE_SEGS * 2 + 1;
 const positions = [], uvs = [], indices = [];
 {
   const base = 0;
   for (let row = 0; row < BLADE_SEGS; row++) {
-    const t = row / BLADE_SEGS;          // 0 .. (SEGS-1)/SEGS
+    const t = row / BLADE_SEGS;
     const y = t * BLADE_H;
-    const hw   = BLADE_W * Math.pow(1.0 - t, 1.8);
-    const keel = KEEL   * Math.pow(1.0 - t, 1.4);
-    positions.push(-hw, y, 0,   0, y, keel,   hw, y, 0);
-    uvs.push(0, t,  0.5, t,  1, t);
+    const hw = BLADE_W * Math.pow(1.0 - t, 1.6);
+    positions.push(-hw, y, 0,   hw, y, 0);
+    uvs.push(0, t,  1, t);
   }
   positions.push(0, BLADE_H, 0);          // tip vertex (sharp point)
   uvs.push(0.5, 1.0);
   for (let row = 0; row < BLADE_SEGS - 1; row++) {
-    const l0 = base + row * 3, k0 = l0 + 1, r0 = l0 + 2;
-    const l1 = l0 + 3, k1 = l0 + 4, r1 = l0 + 5;
-    indices.push(l0, k0, k1,  l0, k1, l1);   // left face
-    indices.push(k0, r0, r1,  k0, r1, k1);   // right face
+    const l0 = base + row * 2, r0 = l0 + 1;
+    const l1 = l0 + 2, r1 = l0 + 3;
+    indices.push(l0, r0, r1,  l0, r1, l1);   // quad face
   }
-  // tip cap — two tris from the last row to the tip point
-  const lr = base + (BLADE_SEGS - 1) * 3;
-  const kr = lr + 1, rr = lr + 2;
-  const tip = base + BLADE_SEGS * 3;
-  indices.push(lr, kr, tip);
-  indices.push(kr, rr, tip);
+  const lr = base + (BLADE_SEGS - 1) * 2;
+  const rr = lr + 1;
+  const tip = base + BLADE_SEGS * 2;
+  indices.push(lr, rr, tip);
 }
 const geo = new THREE.BufferGeometry();
 geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
@@ -97,7 +91,7 @@ const mat = new THREE.ShaderMaterial({
   vertexShader: /* glsl */`
     varying float vT;
     varying float vTint;
-    varying float vDiff;
+    varying vec3  vWn;
     uniform float uTime;
     uniform vec2  uWindDir;
     void main() {
@@ -108,45 +102,45 @@ const mat = new THREE.ShaderMaterial({
 
       vec3 p = position;
 
-      // quadratic Bezier spine — forward curl along the keel (+Z). Stronger curl
-      // base so blades visibly arch over rather than standing flat.
-      float curl = 0.18 + instanceColor.g * 0.22;
-      float bz   = 2.0 * (1.0 - t) * t * (curl * 0.55) + t * t * curl;
+      // quadratic Bezier spine — SMALL forward curl (v0.2.266: mostly upright)
+      float curl = 0.035 + instanceColor.g * 0.045;
+      float bz   = 2.0 * (1.0 - t) * t * (curl * 0.5) + t * t * curl;
       p.z += bz;
-      // graceful droop: tip falls slightly so the arch reads as a curve
-      p.y -= 0.06 * t * t;
+      // minimal droop
+      p.y -= 0.018 * t * t;
 
-      // per-blade twist around the spine (Y)
-      float twist = (fract(instanceColor.r * 7.31) - 0.5) * 1.3;
-      float ang   = twist * t;
-      float ca = cos(ang), sa = sin(ang);
-      p.xz = vec2(ca * p.x - sa * p.z, sa * p.x + ca * p.z);
-      vec3 nrm = vec3(ca * normal.x - sa * normal.z, normal.y, sa * normal.x + ca * normal.z);
+      // v0.2.266c: flat ribbon — normal is plane facing; per-blade facing via CPU Y-rotation.
+      // World normal passed to fragment for two-sided lighting (gl_FrontFacing is frag-only).
+      vWn = mat3(modelMatrix * instanceMatrix) * normal;
 
-      // world-space patch-coherent wind
+      // world-space ORGANIC wind (v0.2.266): multi-octave gust envelope +
+      // per-blade phase so neighbouring blades desync — wind rolls over
+      // random patches instead of pulsing in unison.
       vec3 wpos = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-      float along = dot(wpos, vec3(uWindDir.x, 0.0, uWindDir.y));
-      float front = sin(along * 0.30 - uTime * 1.6);
-      float gust  = smoothstep(-0.15, 0.85, front);
-      float cn = ( sin(wpos.x * 0.70 + uTime * 0.80 + instanceColor.r * 6.2832)
-                + cos(wpos.z * 0.60 + uTime * 0.60 - instanceColor.r * 6.2832)
-                + sin((wpos.x + wpos.z) * 0.35 + uTime * 1.10) ) / 3.0;
-      float wind = 0.04 + gust * 0.22 + cn * 0.05;
+      float ph  = instanceColor.r * 6.2832;
+      float g1 = sin(wpos.x * 0.21 + uTime * 0.70 + ph);
+      float g2 = sin(wpos.z * 0.17 - uTime * 0.50 + ph * 1.7);
+      float g3 = sin((wpos.x + wpos.z) * 0.11 + uTime * 0.30 + ph * 0.6);
+      float gust = (g1 * 0.5 + g2 * 0.3 + g3 * 0.2) * 0.5 + 0.5;
+      gust = smoothstep(0.25, 0.95, gust);
+      float flut = sin(wpos.x * 1.30 + wpos.z * 0.70 + uTime * 2.20 + ph * 3.1)
+                 + cos(wpos.z * 1.10 - wpos.x * 0.50 + uTime * 1.70 - ph * 2.3);
+      float wind = 0.016 + gust * 0.10 + flut * 0.009;
       float sway = wind * t * t;
 
       vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.0);
       wp.xyz += vec3(uWindDir.x * sway, 0.0, uWindDir.y * sway);
-      wp.x  += cn * 0.03 * t;
+      wp.x += (-uWindDir.y) * flut * 0.009 * t;
+      wp.z += ( uWindDir.x) * flut * 0.009 * t;
 
-      vec3 L = normalize(vec3(0.40, 0.85, 0.40));
-      vDiff = 0.40 + 0.60 * max(0.0, dot(normalize(nrm), L));
+      // Lighting in fragment shader (needs gl_FrontFacing).
       gl_Position = projectionMatrix * viewMatrix * wp;
     }
   `,
   fragmentShader: /* glsl */`
     varying float vT;
     varying float vTint;
-    varying float vDiff;
+    varying vec3  vWn;
     void main() {
       vec3 rootCol = vec3(0.01, 0.14, 0.02);
       vec3 midCool = vec3(0.09, 0.48, 0.07);
@@ -159,6 +153,10 @@ const mat = new THREE.ShaderMaterial({
         ? mix(rootCol, midCol, vT * 2.0)
         : mix(midCol,  tipCol, (vT - 0.5) * 2.0);
       float ao = smoothstep(0.0, 0.15, vT);
+      vec3 wn = normalize(vWn);
+      if (!gl_FrontFacing) wn = -wn;
+      vec3 L  = normalize(vec3(0.40, 0.85, 0.40));
+      float vDiff = 0.40 + 0.60 * max(0.0, dot(wn, L));
       gl_FragColor = vec4(col * (0.6 + 0.4 * ao) * vDiff, 1.0);
     }
   `,
