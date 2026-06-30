@@ -39,7 +39,7 @@
 //
 // Pure transform helpers (resolveTarget / findSection / appendBulletUnderHeading /
 // replaceNamedSection / appendNote / listHeadings / capabilityFor) are exported
-// and unit-tested by tests/md-patch.test.js; the CLI entry at the bottom of this
+// and unit-tested by tests/md-patch.*.test.js; the CLI entry at the bottom of this
 // file does the fs I/O (read → backup → write) behind `--dry-run` and exit codes.
 //
 // Run:  npm run md:patch -- <action> <file> ...

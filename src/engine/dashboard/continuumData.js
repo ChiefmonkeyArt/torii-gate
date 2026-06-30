@@ -36,7 +36,7 @@ import { buildHandoffControlPanel, buildHandoffControlPanelCard } from '../statu
 import { buildMvpApprovalGate, buildMvpApprovalGateCard } from '../status/mvpApprovalGate.js';
 import { buildPlaytestVerdictCard } from '../status/playtestVerdict.js';
 
-export const CONTINUUM_VERSION = 'v0.2.266-alpha';
+export const CONTINUUM_VERSION = 'v0.2.267-alpha';
 export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 
 // CURRENT_TEST_STATUS (v0.2.200) — the SINGLE curated source of truth for the test-suite
@@ -52,7 +52,7 @@ export const CONTINUUM_BADGE = 'PROJECT OVERSIGHT · STATIC · READ-ONLY';
 // now lives in exactly ONE place.
 export const CURRENT_TEST_STATUS = Object.freeze({
   passing: 1834,
-  files: 108,
+  files: 122,
   fastProfile: 5,
   foundationProfile: 25,
 });
@@ -1110,7 +1110,7 @@ export const CONTINUUM_REFRESH_SCRIPT = `
 // CONTINUUM_SCRIPT_SHA256 (v0.2.172) — base64 sha256 of CONTINUUM_REFRESH_SCRIPT, in
 // the `'sha256-…'` source-expression form a CSP `script-src` consumes. Hardcoded
 // (this module stays crypto-free so it remains node- AND browser-bundle-safe, like
-// the hash in index.html); `tests/continuum-dashboard.test.js` recomputes it with
+// the hash in index.html); `tests/continuum-dashboard.render.test.js` recomputes it with
 // node:crypto and FAILS the build if the script body and this constant ever diverge.
 export const CONTINUUM_SCRIPT_SHA256 = "sha256-otKqhP2RYAA6ZkrRVcAQSBm7B1ssPR70QQR5dXePHmw=";
 
@@ -1147,7 +1147,7 @@ export const CONTINUUM = Object.freeze({
 
   // "At a glance" metrics.
   metrics: [
-    { label: 'Source version', value: 'v0.2.266-alpha (build truth; live trails — manual deploy)' },
+    { label: 'Source version', value: 'v0.2.267-alpha (build truth; live trails — manual deploy)' },
     { label: 'Tests', value: `${testCountLabel()} (profiles: test:fast ~${CURRENT_TEST_STATUS.fastProfile} curated · test:foundation:list ~${CURRENT_TEST_STATUS.foundationProfile} curated · test:foundation = vitest --changed origin/main)` },
     { label: 'Regression check', value: '16 / 16 GREEN' },
     { label: 'Bundle (advisory)', value: '~2.9 MB raw / ~1022 KB gzip (rapier chunk >700 KB, expected)' },

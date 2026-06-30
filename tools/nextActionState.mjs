@@ -14,7 +14,7 @@
 //
 // Pure + deterministic: NO fs, NO network, NO child_process, NO process in here. The CLI
 // (tools/next-action-state.mjs) does the fs/git I/O and hands plain inputs to these helpers, so
-// the assembly/formatting is fully unit-testable (tests/next-action-state.test.js). The --write
+// the assembly/formatting is fully unit-testable (tests/next-action-state.*.test.js). The --write
 // target confinement reuses resolveHandoffWritePath() from handoffSummary.mjs (no second
 // boundary).
 

@@ -1,11 +1,11 @@
 {
   "schema": "torii.next-action-state",
   "schemaVersion": 1,
-  "generatedAt": "2026-06-30T15:40:58.879Z",
+  "generatedAt": "2026-06-30T16:23:08.557Z",
   "badge": "NEXT-ACTION STATE · LOCAL · READ-ONLY",
-  "version": "v0.2.266-alpha",
-  "packageVersion": "0.2.266-alpha",
-  "gitCommit": "f3399b6",
+  "version": "v0.2.267-alpha",
+  "packageVersion": "0.2.267-alpha",
+  "gitCommit": "f8fdbaa",
   "liveUrl": "https://torii-quest.pplx.app",
   "release": {
     "ready": true,
@@ -13,7 +13,7 @@
     "gateCommand": "npm run test:release",
     "blockers": [],
     "regression": {
-      "count": 15,
+      "count": 16,
       "expected": 15
     }
   },
@@ -23,7 +23,7 @@
   },
   "tests": {
     "passing": 1834,
-    "files": 108
+    "files": 122
   },
   "manualBlocker": {
     "pending": true,
@@ -35,7 +35,7 @@
     "approved": false,
     "approvedBy": null,
     "approvedAt": null,
-    "version": "v0.2.266-alpha"
+    "version": "v0.2.267-alpha"
   },
   "playtestResults": {
     "schema": "torii.playtest-results-state",
@@ -102,7 +102,7 @@
   },
   "controlPanel": {
     "green": true,
-    "version": "v0.2.266-alpha",
+    "version": "v0.2.267-alpha",
     "liveUrl": "https://torii-quest.pplx.app",
     "dashboardUrl": "https://torii-quest.pplx.app/dashboard.html",
     "entrySmoke": {
@@ -171,10 +171,10 @@
     "HANDOFF.generated.md"
   ],
   "reports": [
-    "torii-v0.2.213-shellless-release-tooling-report.md",
-    "torii-v0.2.214-continuum-rc-status-report.md",
-    "torii-v0.2.215-manual-validation-dashboard-report.md",
-    "torii-v0.2.216-no-blocker-queue-dashboard-report.md"
+    "torii-v0.2.260-audit-optimization-pass-report.md",
+    "torii-v0.2.182-zone-route-handler-report.md",
+    "torii-v0.2.183-portal-mesh-visual-report.md",
+    "torii-v0.2.184-portal-zone-clarity-report.md"
   ],
   "safety": {
     "deploy": false,
