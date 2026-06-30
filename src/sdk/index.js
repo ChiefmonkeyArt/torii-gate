@@ -67,12 +67,13 @@ export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
 export * as updateStatus from '../engine/update/updateStatus.js';
-export * as updateFlowSmoke from '../engine/update/updateFlowSmoke.js';
-export * as hostRouteSmoke from '../engine/host/hostRouteSmoke.js';
+// updateFlowSmoke, hostRouteSmoke, continuum: moved to src/sdk/dashboard.js (R1, v0.2.261)
+// — dashboard-only surfaces (~176 KB combined). They were dragging strings/HTML into
+// the runtime app chunk; build scripts and tests now import them from the dashboard
+// barrel directly. Do NOT re-add them here.
 export * as mvpReadiness from '../engine/status/mvpReadiness.js';
 export * as handoffControlPanel from '../engine/status/handoffControlPanel.js';
 export * as mvpLoop from '../engine/mvpLoop.js';
-export * as continuum from '../engine/dashboard/continuumData.js';
 export * as proofSurfaceSpecs from '../engine/world/proofSurfaceSpecs.js';
 export * as anchorTransforms from '../engine/world/anchorTransforms.js';
 export { createRaycastService, raycastService } from '../engine/physics/raycastService.js';
@@ -252,15 +253,7 @@ export const SDK_SURFACE = Object.freeze({
   // source + inert preview into one render-ready, display-only update-status view;
   // NO network, NO auto-update, NO action surface.
   updateStatus:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateStatus.js' },
-  // Update-flow smoke harness (v0.2.196) — folds the pure update-check / release
-  // metadata / consent contracts into one fail-fast read-only report; NO network,
-  // NO auto-update, NO shell/install/apply surface, never performs an update.
-  updateFlowSmoke: { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateFlowSmoke.js' },
-  // Host route + asset smoke harness (v0.2.197) — folds the pure static-host
-  // readiness contracts (root index / dashboard + release-metadata assets /
-  // /zone/* SPA fallback / unknown-zone→index / safe slug parsing) into one
-  // fail-fast read-only report; NO server, NO deploy, NO DNS/SSH/network.
-  hostRouteSmoke:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/host/hostRouteSmoke.js' },
+  // updateFlowSmoke + hostRouteSmoke: moved to DASHBOARD_SURFACE in src/sdk/dashboard.js (R1, v0.2.261).
   // MVP release-readiness rollup (v0.2.198) — folds the pure local readiness
   // signals (version, nostr read health, gateway travel / update-flow / host-route
   // smoke, release-metadata floor, injected test/VPS/docs verdicts) into ONE
@@ -274,10 +267,7 @@ export const SDK_SURFACE = Object.freeze({
   handoffControlPanel: { tier: STABILITY.EXPERIMENTAL, module: '../engine/status/handoffControlPanel.js' },
   // MVP loop header — frames the four PoC preview cards as one Travel→Market→Score→Update loop (v0.2.143).
   mvpLoop:         { tier: STABILITY.EXPERIMENTAL, module: '../engine/mvpLoop.js' },
-  // Torii Continuum project-oversight dashboard data + pure static-page renderer
-  // (v0.2.171) — curated progress.md model, computed totals/percentages, SVG-ring/
-  // bar HTML render. READ-ONLY: no live writes/signing/relay/navigation.
-  continuum:       { tier: STABILITY.EXPERIMENTAL, module: '../engine/dashboard/continuumData.js' },
+  // continuum: moved to DASHBOARD_SURFACE in src/sdk/dashboard.js (R1, v0.2.261).
   // In-world proof-mesh LAYOUT/SPEC contracts for the four MVP proof surfaces — pure
   // placement data for the future mesh pass; no Three/render (v0.2.147).
   proofSurfaceSpecs: { tier: STABILITY.EXPERIMENTAL, module: '../engine/world/proofSurfaceSpecs.js' },

@@ -50,12 +50,12 @@ export const SMOKE_HARNESSES = Object.freeze([
     purpose: 'Gateway travel-contract smoke (dry-run boundary; never navigates).',
   }),
   Object.freeze({
-    key: 'updateFlowSmoke', sdk: 'SDK.updateFlowSmoke', shell: 'shells.updateFlowSmoke(o?)',
+    key: 'updateFlowSmoke', sdk: 'DashboardSDK.updateFlowSmoke', shell: 'shells.updateFlowSmoke(o?)',
     signalKey: 'update-flow-smoke',
     purpose: 'Update-flow contract smoke over frozen fixtures (manual-only; never fetches/installs).',
   }),
   Object.freeze({
-    key: 'hostRouteSmoke', sdk: 'SDK.hostRouteSmoke', shell: 'shells.hostRouteSmoke(o?)',
+    key: 'hostRouteSmoke', sdk: 'DashboardSDK.hostRouteSmoke', shell: 'shells.hostRouteSmoke(o?)',
     signalKey: 'host-route-smoke',
     purpose: 'Static-host route + asset readiness smoke (no server/DNS/SSH/network).',
   }),
