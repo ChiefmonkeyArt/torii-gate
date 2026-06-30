@@ -65,48 +65,57 @@ function _buildGrass() {
   // instanceColor carries (phase, brightness, hueShift). The organic multi-octave
   // gust wind from v0.2.266 is retained on top — only the blade + colour pipeline
   // are ported from the demo.
-  const BLADE_SEGS = 8;     // demo default: 8 height divisions (9 rows) — smooth, cheap.
-  const BLADE_H    = 0.507; // v0.2.281: 69% taller (0.30 × 1.69). 21% of blades get a further
-                             // ×1.21 Y scale (TALL_FRAC) for natural height variation.
-  const BLADE_W    = 0.020; // v0.2.285: genuinely THIN blade (was 0.028). Pairs with the smooth
-                             // taper below (no flared root) so blades read as fine round strands,
-                             // not flat angular cards. The ground-cover plane hides floor gaps now.
-  const TARGET_BLADES = 500000; // v0.2.273: fill the gaps — 500k across the NAP zone (~570/m²).
-  const CAND_SPACING  = 0.040;  // fine candidate grid (yields >500k over the NAP zone); a partial
-                                // Fisher–Yates then selects exactly TARGET_BLADES.
+  // v0.2.286: 3-SIDED BLADE (triangular-prism cross-section). The flat ribbon
+  // (PlaneGeometry, DoubleSide) read as a fat angular card whenever it faced the
+  // camera, and ~half the blades were invisible edge-on at any angle. Thinning a
+  // 2D plane only makes a thinner card; it never becomes thin 3D grass, which is
+  // why every width cut from v0.2.282->285 still read as "fat angular square".
+  // A 3-sided blade has real volume: 3 outward faces around a tiny triangular
+  // core, tapering to a 3-sided point. It occludes from every angle (no edge-on
+  // vanishing) and never looks like a flat card. Cross-section radius is tiny so
+  // each blade is a thin 3D needle, not a chunky prism.
+  const BLADE_SEGS = 6;     // height divisions (7 rows); the 3-sided silhouette is already smooth.
+  const BLADE_H    = 0.507; // 69% taller than original 0.30; 21% of blades get a further x1.21 Y.
+  const BLADE_R    = 0.006; // 3-sided cross-section circumradius (~12mm across at base -> point).
+                             // Genuinely thin + volumetric; fixes the fat-card look no width could.
+  const TARGET_BLADES = 250000; // 3-sided blades occlude from every angle (flat ribbons vanish
+                                // edge-on, so ~half were invisible): 250k 3D ~= 500k flat density.
+  const CAND_SPACING  = 0.040;  // fine candidate grid; partial Fisher-Yates selects TARGET_BLADES.
 
-  // PlaneGeometry(width, height, 1, 8): 2 columns × 9 rows. Translate so the
-  // base sits at y=0 and the blade grows upward to y=BLADE_H.
-  const geo = new THREE.PlaneGeometry(BLADE_W, BLADE_H, 1, BLADE_SEGS);
-  geo.translate(0, BLADE_H / 2, 0);
-
-  // CPU piecewise taper + curve (ported from the demo's math). Gives a natural
-  // blade silhouette instead of a flat rectangle: wide base, gradual middle
-  // taper, sharp tip, plus a tiny forward curl.
-  const posAttr = geo.attributes.position;
-  const arr = posAttr.array;
-  const vCount = arr.length / 3;
-  for (let i = 0; i < vCount; i++) {
-    const ix = i * 3;
-    const x = arr[ix];
-    const y = arr[ix + 1];
-    const hr = y / BLADE_H;            // height ratio 0..1
-    // v0.2.285: SMOOTH single-curve taper, no flared root, no piecewise breakpoints.
-    // The old taper had a 5.6×/3.4× flared base + hard angular steps at hr=0.15/0.3/0.7
-    // — that read as a fat spade/square bottom and angular silhouette. Now: a gentle
-    // power curve from full width at the base to a point at the tip, continuous and
-    // round. The flare is gone entirely (the ground-cover plane + root sink hide the
-    // floor now, so a fat root is no longer needed to fill gaps).
-    let taper = Math.pow(1.0 - hr, 0.85);
-    taper = Math.max(0.0, taper);
-    // v0.2.281: collapse the top row to the centerline so the tip is a TRUE point.
-    if (hr >= 0.999) taper = 0.0;
-    arr[ix] = x * taper;
-    arr[ix + 2] += hr * hr * 0.22;   // v0.2.272: stronger forward lean — tips flop over so each
-                                     // blade occludes ground ahead of its base (hides the floor).
+  // Build the 3-sided blade as an indexed BufferGeometry: 3 corner columns
+  // (angles 0, 120, 240 deg) x (BLADE_SEGS+1) height rows. Radius tapers from
+  // BLADE_R at the base to 0 at the tip; a forward curl (z += hr^2*0.22) leans
+  // tips over so blades occlude the ground ahead of their base (hides the floor).
+  const _angles = [0, 2 * Math.PI / 3, 4 * Math.PI / 3];
+  const _rows = BLADE_SEGS + 1;
+  const _gPos = [];
+  const _gIdx = [];
+  for (let j = 0; j < _rows; j++) {
+    const hr = j / BLADE_SEGS;                 // 0..1
+    const y  = hr * BLADE_H;
+    // Taper: full radius at base -> point at tip. Exponent > 1 narrows the blade
+    // through the body (not just at the tip) for a fine needle silhouette.
+    let taper = Math.pow(1.0 - hr, 1.2);
+    if (hr >= 0.999) taper = 0.0;              // true 3-sided point at the tip
+    const r = BLADE_R * taper;
+    const lean = hr * hr * 0.22;               // v0.2.272: forward curl
+    for (let k = 0; k < 3; k++) {
+      _gPos.push(r * Math.cos(_angles[k]), y, r * Math.sin(_angles[k]) + lean);
+    }
   }
-  posAttr.needsUpdate = true;
-  geo.computeVertexNormals();   // plane normal (0,0,1); per-blade facing comes from instance Y-rotation
+  // 3 side faces, each a quad strip up the height between corner k and k+1.
+  for (let j = 0; j < BLADE_SEGS; j++) {
+    for (let k = 0; k < 3; k++) {
+      const k2 = (k + 1) % 3;
+      const b0 = j * 3 + k,  b1 = j * 3 + k2;
+      const t0 = (j + 1) * 3 + k, t1 = (j + 1) * 3 + k2;
+      _gIdx.push(b0, b1, t0,  b1, t1, t0);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(_gPos, 3));
+  geo.setIndex(_gIdx);
+  geo.computeVertexNormals();   // per-face outward normals -> real 3D two-sided lighting in frag
 
   const mat = new THREE.ShaderMaterial({
     uniforms: {
@@ -336,7 +345,7 @@ function _buildGrass() {
   // browser is actually running, so you can confirm whether you're seeing a
   // cached old build or the live one. If this line is missing entirely, the
   // grass code never ran (stale bundle). flare 5.6 + count 500000 = live v0.2.274.
-  const stamp = `[grass-build] v0.2.285 blades=${count} bladeW=${BLADE_W} bladeH=${BLADE_H} taper=smooth(1-hr)^0.85 lean=0.22 sink=-0.05 groundCover=0x3d5a2f windGust=0.34 tall21pct=×1.21Y tip=point noFlare`;
+  const stamp = `[grass-build] v0.2.286 blades=${count} bladeR=${BLADE_R} bladeH=${BLADE_H} taper=(1-hr)^1.2 cross=3-sided lean=0.22 sink=-0.05 groundCover=0x3d5a2f windGust=0.34 tall21pct=x1.21Y tip=3-sided-point`;
   console.info(stamp);
   window.__GRASS_BUILD = stamp;
 }
