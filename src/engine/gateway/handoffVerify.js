@@ -27,7 +27,7 @@
 //   6. response carries a BIP-340 schnorr signature (response.sig + response.signed)
 //      that verifies under response.hostPubkey over the NIP-01 event id (S1)
 
-import { verifyNostrEventSig } from './nostrSig.js';
+import { verifyNostrEventSig } from '../crypto/nostrSig.js';
 
 const HEX64 = /^[0-9a-f]{64}$/;
 function _isHex64(v) { return typeof v === 'string' && HEX64.test(v); }

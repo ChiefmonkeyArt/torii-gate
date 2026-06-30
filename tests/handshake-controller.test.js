@@ -9,7 +9,7 @@ import { createHandshakeController } from '../src/engine/gateway/handshakeContro
 import {
   buildTravelRequest, buildTravelResponse, extractTravelRequest,
 } from '../src/engine/gateway/travelRequest.js';
-import { nostrEventId } from '../src/engine/gateway/nostrSig.js';
+import { nostrEventId } from '../src/engine/crypto/nostrSig.js';
 import { GATEWAY_KIND, GATEWAY_TOPIC } from '../src/engine/gateway/gatewayRead.js';
 import { schnorr } from '@noble/curves/secp256k1.js';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';

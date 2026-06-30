@@ -1,14 +1,16 @@
-// engine/gateway/nostrSig.js — NIP-01 event id + BIP-340 schnorr verify (S1, v0.2.263).
-// The crypto floor under the n2n handshake. A nostr event is signed by its author
-// over the event ID — the sha256 of the NIP-01 canonical serialization
-// `[0, pubkey, created_at, kind, tags, content]` — and `sig` is a BIP-340 schnorr
-// signature over those 32 id bytes by the author's X-only pubkey. A nostr pubkey
-// (hex64) IS the 32-byte X-only schnorr key, so it feeds schnorr.verify directly.
+// engine/crypto/nostrSig.js — NIP-01 event id + BIP-340 schnorr verify (S1, v0.2.263;
+// moved to shared crypto/ in v0.2.277 so gateway AND leaderboard import one verifier).
+// The crypto floor under the n2n handshake AND the SEC-1 leaderboard publish gate.
+// A nostr event is signed by its author over the event ID — the sha256 of the
+// NIP-01 canonical serialization `[0, pubkey, created_at, kind, tags, content]` —
+// and `sig` is a BIP-340 schnorr signature over those 32 id bytes by the author's
+// X-only pubkey. A nostr pubkey (hex64) IS the 32-byte X-only schnorr key, so it
+// feeds schnorr.verify directly.
 //
-// PURE + node-safe: NO DOM, NO socket, NO key handling. @noble/curves +
+// PURE + node-safe: NO DOM, NO socket, NO key handling, NO `three`. @noble/curves +
 // @noble/hashes are the project's first runtime crypto dependency (S1). Both run
-// identically in node and the browser, so this module is safe to import from the
-// pure verify seam and from tests.
+// identically in node and the browser, so this module lives in the shell-safe graph
+// and is safe to import from the pure verify seam, from leaderboard, and from tests.
 
 import { schnorr } from '@noble/curves/secp256k1.js';
 import { sha256 } from '@noble/hashes/sha2.js';

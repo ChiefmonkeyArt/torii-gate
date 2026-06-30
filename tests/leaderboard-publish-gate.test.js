@@ -1,46 +1,70 @@
-// tests/leaderboard-publish-gate.test.js — SEC-1 leaderboard publish gate (v0.2.256).
+// tests/leaderboard-publish-gate.test.js — SEC-1 leaderboard publish gate (v0.2.256;
+// real BIP-340 crypto landed v0.2.277).
 // Asserts the gate that must clear before a signed score event is published to a
 // relay. A failure NEVER yields trusted:true; the publisher treats !trusted as
-// "do not publish". Mirrors the url-harden / handoff-verify gate test pattern.
+// "do not publish". The gate now requires a REAL schnorr signature: structural
+// checks are a fast pre-flight, then verifyNostrEventSig must pass under the
+// event's pubkey. A tampered, wrong-key, or stub-signed event fails closed —
+// there is no structural-only trusted path anymore (mirrors SEC-2 handoffVerify).
 import { describe, it, expect, vi } from 'vitest';
 import { verifyPublishGate } from '../src/engine/leaderboard/publishGate.js';
 import { LEADERBOARD_KIND } from '../src/engine/nostr/leaderboard.js';
 import { createLeaderboardPublisher } from '../src/engine/nostr/leaderboardPublisher.js';
+import { nostrEventId } from '../src/engine/crypto/nostrSig.js';
+import { schnorr } from '@noble/curves/secp256k1.js';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
-const PK = 'a'.repeat(64); // valid hex64 signer pubkey
-const ID = 'b'.repeat(64);
-const SIG = 'c'.repeat(64);
+const PK_SK = hexToBytes('a1'.repeat(32));   // the logged-in player's secret key
+const EVIL_SK = hexToBytes('e7'.repeat(32)); // an attacker's secret key
+const PK = bytesToHex(schnorr.getPublicKey(PK_SK)); // x-only hex64 signer pubkey
 const NOW = Math.floor(Date.now() / 1000);
-const SCORE = { runId: 'run-1', score: 10, kills: 5, headshots: 2, accuracy: 0.5, version: 'v0.2.256-alpha' };
+const SCORE = { runId: 'run-1', score: 10, kills: 5, headshots: 2, accuracy: 0.5, version: 'v0.2.277-alpha' };
+const STUB_SIG = 'c'.repeat(128); // a well-shaped but non-real schnorr signature
 
-// A fully-valid signed kind-30000 event addressed to PK.
-function signedEvent(overrides = {}) {
-  return {
-    kind: LEADERBOARD_KIND,
-    pubkey: PK,
-    id: ID,
-    sig: SIG,
-    created_at: NOW,
-    tags: [
-      ['d', SCORE.runId],
-      ['score', String(SCORE.score)],
-      ['kills', String(SCORE.kills)],
-      ['headshots', String(SCORE.headshots)],
-      ['accuracy', SCORE.accuracy.toFixed(4)],
-      ['version', SCORE.version],
-      ['t', 'torii-quest'],
-    ],
-    content: JSON.stringify(SCORE),
-    ...overrides,
-  };
+const DEFAULT_TAGS = [
+  ['d', SCORE.runId],
+  ['score', String(SCORE.score)],
+  ['kills', String(SCORE.kills)],
+  ['headshots', String(SCORE.headshots)],
+  ['accuracy', SCORE.accuracy.toFixed(4)],
+  ['version', SCORE.version],
+  ['t', 'torii-quest'],
+];
+
+// realSign — derive the x-only pubkey, compute the NIP-01 id, BIP-340 schnorr-sign
+// it (exactly what a NIP-07 signer does).
+function realSign(unsigned, sk) {
+  const pubkey = bytesToHex(schnorr.getPublicKey(sk));
+  const evt = { ...unsigned, pubkey };
+  const id = nostrEventId(evt);
+  const sig = bytesToHex(schnorr.sign(hexToBytes(id), sk));
+  return { ...evt, id, sig };
 }
 
-describe('SEC-1 publishGate — accept path', () => {
-  it('trusts a well-formed signed event signed by the expected player with consent', () => {
+// A fully-valid REAL-signed kind-30000 event from PK. `overrides` to the signable
+// fields (kind/created_at/tags/content) are applied BEFORE signing so the sig stays
+// valid; `id`/`sig` overrides are applied AFTER signing to exercise the crypto path.
+function signedEvent(overrides = {}, sk = PK_SK) {
+  const { id: idOv, sig: sigOv, ...signable } = overrides;
+  const base = {
+    kind: LEADERBOARD_KIND,
+    created_at: NOW,
+    tags: DEFAULT_TAGS.map((t) => [...t]),
+    content: JSON.stringify(SCORE),
+    ...signable,
+  };
+  const signed = realSign(base, sk);
+  if (idOv !== undefined) signed.id = idOv;
+  if (sigOv !== undefined) signed.sig = sigOv;
+  return signed;
+}
+
+describe('SEC-1 publishGate — accept path (crypto-verified)', () => {
+  it('trusts a real-signed event signed by the expected player with consent', () => {
     const v = verifyPublishGate(signedEvent(), { expectedSignerPubkey: PK, consent: true });
     expect(v.ok).toBe(true);
     expect(v.trusted).toBe(true);
-    expect(v.trust).toBe('structure-verified');
+    expect(v.trust).toBe('crypto-verified');
     expect(v.errors).toEqual([]);
   });
 
@@ -48,6 +72,7 @@ describe('SEC-1 publishGate — accept path', () => {
     const ev = signedEvent({ content: JSON.stringify({ ...SCORE, score: 1_000_000, kills: 10_000 }) });
     const v = verifyPublishGate(ev, { expectedSignerPubkey: PK, consent: true });
     expect(v.trusted).toBe(true);
+    expect(v.trust).toBe('crypto-verified');
   });
 });
 
@@ -74,8 +99,8 @@ describe('SEC-1 publishGate — reject path (event shape / identity)', () => {
   });
 
   it('rejects an event signed by a different pubkey (anti-impersonation)', () => {
-    const other = 'd'.repeat(64);
-    const v = verifyPublishGate(signedEvent({ pubkey: other }), { expectedSignerPubkey: PK, consent: true });
+    // A genuine, validly-signed event from EVIL — but not the expected player.
+    const v = verifyPublishGate(signedEvent({}, EVIL_SK), { expectedSignerPubkey: PK, consent: true });
     expect(v.trusted).toBe(false);
     expect(v.errors).toContain('event signer does not match expected signer pubkey');
   });
@@ -89,7 +114,7 @@ describe('SEC-1 publishGate — reject path (event shape / identity)', () => {
   it('rejects a missing sig (bare unsigned template)', () => {
     const v = verifyPublishGate(signedEvent({ sig: '' }), { expectedSignerPubkey: PK, consent: true });
     expect(v.trusted).toBe(false);
-    expect(v.errors).toContain('event sig must be a hex64 string');
+    expect(v.errors).toContain('event sig must be a hex128 schnorr signature');
   });
 });
 
@@ -157,18 +182,46 @@ describe('SEC-1 publishGate — reject path (abuse ceilings + consent)', () => {
   });
 });
 
+describe('SEC-1 publishGate — BIP-340 schnorr crypto layer (v0.2.277)', () => {
+  it('fails closed on a tampered body (id no longer binds the content)', () => {
+    const ev = signedEvent();
+    ev.content = JSON.stringify({ ...SCORE, score: 999 }); // mutate AFTER signing
+    const v = verifyPublishGate(ev, { expectedSignerPubkey: PK, consent: true });
+    expect(v.trusted).toBe(false);
+    expect(v.trust).toBe('unverified');
+    expect(v.errors).toContain('schnorr signature verification failed');
+  });
+
+  it('fails closed on a wrong-key signature (sig from another key over our id)', () => {
+    const ev = signedEvent();
+    ev.sig = bytesToHex(schnorr.sign(hexToBytes(ev.id), EVIL_SK)); // EVIL signs PK's id
+    const v = verifyPublishGate(ev, { expectedSignerPubkey: PK, consent: true });
+    expect(v.trusted).toBe(false);
+    expect(v.errors).toContain('schnorr signature verification failed');
+  });
+
+  it('fails closed on a stub (well-shaped but non-real) signature', () => {
+    const v = verifyPublishGate(signedEvent({ sig: STUB_SIG }), { expectedSignerPubkey: PK, consent: true });
+    expect(v.trusted).toBe(false);
+    expect(v.errors).toContain('schnorr signature verification failed');
+  });
+
+  it('a structurally-valid but stub-signed event no longer passes (no structure-only trust)', () => {
+    const v = verifyPublishGate(signedEvent({ sig: STUB_SIG }), { expectedSignerPubkey: PK, consent: true });
+    expect(v.trust).not.toBe('crypto-verified');
+    expect(v.trusted).toBe(false);
+  });
+});
+
 describe('SEC-1 publishGate — publisher integration (gate blocks relay write)', () => {
+  // The sign mock produces a REAL signed event (NIP-07-equivalent) so the gate's
+  // crypto layer has a genuine signature to verify.
+  const realSigner = async (t) => realSign({ ...t, created_at: NOW }, PK_SK);
+
   it('blocks publish() when the gate fails (consent missing) and never calls publish', async () => {
     const publish = vi.fn(async () => 'OK');
-    const sign = vi.fn(async (t) => ({
-      ...t,
-      pubkey: PK,
-      id: ID,
-      sig: SIG,
-      created_at: NOW,
-    }));
+    const sign = vi.fn(realSigner);
     const pub = createLeaderboardPublisher({ sign, publish, gate: verifyPublishGate });
-    // ctx with NO consent → gate fails closed
     const res = await pub.publishScore(SCORE, { signerPubkey: PK, consent: false });
     expect(res.signed).toBe(true);
     expect(res.published).toBe(false);
@@ -177,24 +230,27 @@ describe('SEC-1 publishGate — publisher integration (gate blocks relay write)'
     expect(publish).not.toHaveBeenCalled();
   });
 
-  it('allows publish() when the gate passes', async () => {
+  it('allows publish() when the gate passes (crypto-verified)', async () => {
     const publish = vi.fn(async () => 'OK');
-    const sign = vi.fn(async (t) => ({
-      ...t,
-      pubkey: PK,
-      id: ID,
-      sig: SIG,
-      created_at: NOW,
-    }));
+    const sign = vi.fn(realSigner);
     const pub = createLeaderboardPublisher({ sign, publish, gate: verifyPublishGate });
     const res = await pub.publishScore(SCORE, { signerPubkey: PK, consent: true });
     expect(res.published).toBe(true);
     expect(publish).toHaveBeenCalledOnce();
   });
 
+  it('blocks publish() when the signer is not the expected player (forged identity)', async () => {
+    const publish = vi.fn(async () => 'OK');
+    const sign = vi.fn(async (t) => realSign({ ...t, created_at: NOW }, EVIL_SK));
+    const pub = createLeaderboardPublisher({ sign, publish, gate: verifyPublishGate });
+    const res = await pub.publishScore(SCORE, { signerPubkey: PK, consent: true });
+    expect(res.published).toBe(false);
+    expect(publish).not.toHaveBeenCalled();
+  });
+
   it('without a gate, behaviour is unchanged (backward compatible)', async () => {
     const publish = vi.fn(async () => 'OK');
-    const sign = vi.fn(async (t) => ({ ...t, sig: SIG }));
+    const sign = vi.fn(async (t) => ({ ...t, sig: STUB_SIG }));
     const pub = createLeaderboardPublisher({ sign, publish }); // no gate
     const res = await pub.publishScore(SCORE); // no ctx
     expect(res.published).toBe(true);

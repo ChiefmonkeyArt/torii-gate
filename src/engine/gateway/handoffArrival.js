@@ -17,7 +17,7 @@
 // carries the signed-event fields) and returns a verdict. The host (main.js / the
 // handshake controller) does the relay I/O and the actual seating.
 
-import { verifyNostrEventSig } from './nostrSig.js';
+import { verifyNostrEventSig } from '../crypto/nostrSig.js';
 
 const HEX64 = /^[0-9a-f]{64}$/;
 function _isHex64(v) { return typeof v === 'string' && HEX64.test(v); }

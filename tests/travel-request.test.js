@@ -10,7 +10,7 @@ import {
   TRAVEL_STATE,
 } from '../src/engine/gateway/travelRequest.js';
 import { verifyHandoff } from '../src/engine/gateway/handoffVerify.js';
-import { nostrEventId } from '../src/engine/gateway/nostrSig.js';
+import { nostrEventId } from '../src/engine/crypto/nostrSig.js';
 import { GATEWAY_KIND, GATEWAY_TOPIC } from '../src/engine/gateway/gatewayRead.js';
 import { schnorr } from '@noble/curves/secp256k1.js';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';

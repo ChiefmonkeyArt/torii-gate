@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { createHandshakeController } from '../src/engine/gateway/handshakeController.js';
 import { appendTraveller, hardenSpawnUrl } from '../src/engine/gateway/urlHarden.js';
-import { nostrEventId } from '../src/engine/gateway/nostrSig.js';
+import { nostrEventId } from '../src/engine/crypto/nostrSig.js';
 import { schnorr } from '@noble/curves/secp256k1.js';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
