@@ -243,7 +243,7 @@ export const SDK_SURFACE = Object.freeze({
   // ring radius === trigger range); NO THREE/DOM/render/nav. The browser-only
   // adapter (portalMesh.js) consumes it and builds inert meshes ONCE.
   portalMeshPlan:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/portalMeshPlan.js' },
-  // PURE approach-affordance view-model (v0.2.288) — grades player proximity into
+  // PURE approach-affordance view-model (v0.2.289) — grades player proximity into
   // idle/approaching/ready + a glow scalar the portal mesh adapter applies. INERT:
   // `ready` mirrors the trigger arm range; it never arms/confirms a hop itself.
   portalApproach:  { tier: STABILITY.EXPERIMENTAL, module: '../engine/gateway/portalApproach.js' },

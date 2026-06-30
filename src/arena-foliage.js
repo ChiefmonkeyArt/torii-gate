@@ -74,18 +74,19 @@ function _buildGrass() {
   // core, tapering to a 3-sided point. It occludes from every angle (no edge-on
   // vanishing) and never looks like a flat card. Cross-section radius is tiny so
   // each blade is a thin 3D needle, not a chunky prism.
-  const BLADE_SEGS = 6;     // height divisions (7 rows); the 3-sided silhouette is already smooth.
+  const BLADE_SEGS = 8;     // v0.2.289: more rows for a smooth cone silhouette (was 6).
   const BLADE_H    = 0.507; // 69% taller than original 0.30; 21% of blades get a further x1.21 Y.
-  const BLADE_R    = 0.006; // 3-sided cross-section circumradius (~12mm across at base -> point).
-                             // Genuinely thin + volumetric; fixes the fat-card look no width could.
+  const BLADE_R    = 0.003; // v0.2.289: genuinely THIN cone (~6mm across at base). 12mm still read
+                             // as fat; halving the radius makes each blade a fine needle that reads
+                             // thin even up close. Tapers linearly to a sharp 3-sided point.
   const TARGET_BLADES = 250000; // 3-sided blades occlude from every angle (flat ribbons vanish
                                 // edge-on, so ~half were invisible): 250k 3D ~= 500k flat density.
   const CAND_SPACING  = 0.040;  // fine candidate grid; partial Fisher-Yates selects TARGET_BLADES.
 
   // Build the 3-sided blade as an indexed BufferGeometry: 3 corner columns
   // (angles 0, 120, 240 deg) x (BLADE_SEGS+1) height rows. Radius tapers from
-  // BLADE_R at the base to 0 at the tip; a forward curl (z += hr^2*0.22) leans
-  // tips over so blades occlude the ground ahead of their base (hides the floor).
+  // BLADE_R at the base to 0 at the tip; a slight forward curl (z += hr^2*0.06)
+  // gives a gentle lean (tips stay upright + pointed, not flopped flat).
   const _angles = [0, 2 * Math.PI / 3, 4 * Math.PI / 3];
   const _rows = BLADE_SEGS + 1;
   const _gPos = [];
@@ -93,12 +94,18 @@ function _buildGrass() {
   for (let j = 0; j < _rows; j++) {
     const hr = j / BLADE_SEGS;                 // 0..1
     const y  = hr * BLADE_H;
-    // Taper: full radius at base -> point at tip. Exponent > 1 narrows the blade
-    // through the body (not just at the tip) for a fine needle silhouette.
-    let taper = Math.pow(1.0 - hr, 1.2);
-    if (hr >= 0.999) taper = 0.0;              // true 3-sided point at the tip
+    // v0.2.289: LINEAR taper = true cone (straight sides, full radius at base -> point
+    // at tip). The ^1.2 curve kept the blade ~77% as wide at 20% height and ~54% at the
+    // middle, so it read as a fat cylinder with a blunt top, not a cone. A straight cone
+    // narrows steadily the whole way up -> "long thin stretched-out triangular cone".
+    let taper = 1.0 - hr;
+    if (hr >= 0.999) taper = 0.0;              // sharp 3-sided point at the tip
     const r = BLADE_R * taper;
-    const lean = hr * hr * 0.22;               // v0.2.272: forward curl
+    // v0.2.289: SLIGHT forward lean only (0.06, was 0.22). The heavy 0.22 lean flopped tips
+    // over by up to 22cm on a 50cm blade -> the field read as a flat-topped canopy. The
+    // ground-cover plane already hides the floor, so the strong flop is no longer needed;
+    // let the cones stand tall and pointed.
+    const lean = hr * hr * 0.06;
     for (let k = 0; k < 3; k++) {
       _gPos.push(r * Math.cos(_angles[k]), y, r * Math.sin(_angles[k]) + lean);
     }
@@ -161,7 +168,7 @@ function _buildGrass() {
         float amp = 0.6 + vBright * 0.4;     // per-blade wind amplitude (demo pattern)
         // v0.2.272: gustier still — heavy gust coefficient so the rolling patch-to-patch
         // variation reads strongly; wind-bend also flops blades over (more ground cover).
-        float wind = 0.030 + gust * 0.34 + flut * 0.016;
+        float wind = 0.030 + gust * 0.14 + flut * 0.016;  // v0.2.289: gentler gust (was 0.34) so tips sway, not flop flat
         float sway = wind * heightPower * amp;
 
         // Apply bend in world space along the gust direction + perpendicular flutter.
@@ -345,7 +352,7 @@ function _buildGrass() {
   // browser is actually running, so you can confirm whether you're seeing a
   // cached old build or the live one. If this line is missing entirely, the
   // grass code never ran (stale bundle). flare 5.6 + count 500000 = live v0.2.274.
-  const stamp = `[grass-build] v0.2.286 blades=${count} bladeR=${BLADE_R} bladeH=${BLADE_H} taper=(1-hr)^1.2 cross=3-sided lean=0.22 sink=-0.05 groundCover=0x3d5a2f windGust=0.34 tall21pct=x1.21Y tip=3-sided-point`;
+  const stamp = `[grass-build] v0.2.289 blades=${count} bladeR=${BLADE_R} bladeH=${BLADE_H} taper=linear(1-hr) cross=3-sided lean=0.06 sink=-0.05 groundCover=0x3d5a2f windGust=0.14 tall21pct=x1.21Y tip=sharp-cone`;
   console.info(stamp);
   window.__GRASS_BUILD = stamp;
 }
