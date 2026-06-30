@@ -15,8 +15,10 @@
 // CSP-Level-2 fallback for browsers that don't understand `strict-dynamic` (they ignore
 // `strict-dynamic` and load the same-origin entry via `'self'`).
 //
-// No third-party origin appears anywhere: gstatic.com is gone (S4) because the Draco
-// decoder is vendored at /draco/ and fetched same-origin (covered by connect-src 'self').
+// connect-src carries the Nostr relay sockets plus the ONE read-only HTTPS origin the
+// update-check needs — https://api.github.com (releases/latest, GET only, cached client-side
+// in liveUpdateCheck.js). No script/style/font third-party origin appears anywhere: gstatic.com
+// is gone (S4) because the Draco decoder is vendored at /draco/ and fetched same-origin.
 
 // sha256 of the built inline bootstrap script. This is a FALLBACK used only by the
 // `vite preview` server when no built dist/index.html exists yet. The ACTUAL sha for a
@@ -33,7 +35,7 @@ export const CSP_DIRECTIVES = [
   ["form-action", "'self'"],
   ["script-src", `'self' 'wasm-unsafe-eval' blob: 'strict-dynamic' ${INLINE_SCRIPT_SHA256}`],
   ["worker-src", "'self' blob:"],
-  ["connect-src", "'self' blob: wss://relay.damus.io wss://nos.lol wss://relay.nostr.band wss://relay.primal.net"],
+  ["connect-src", "'self' blob: https://api.github.com wss://relay.damus.io wss://nos.lol wss://relay.nostr.band wss://relay.primal.net"],
 ];
 
 export const CSP_VALUE = CSP_DIRECTIVES.map(([k, v]) => `${k} ${v}`).join("; ");

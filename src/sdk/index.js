@@ -68,6 +68,7 @@ export * as updateCheck from '../engine/update/updateCheck.js';
 export * as updatePreview from '../engine/update/updatePreview.js';
 export * as githubReleaseSource from '../engine/update/githubReleaseSource.js';
 export * as updateStatus from '../engine/update/updateStatus.js';
+export * as liveUpdateCheck from '../engine/update/liveUpdateCheck.js';
 // updateFlowSmoke, hostRouteSmoke, continuum: moved to src/sdk/dashboard.js (R1, v0.2.261)
 // — dashboard-only surfaces (~176 KB combined). They were dragging strings/HTML into
 // the runtime app chunk; build scripts and tests now import them from the dashboard
@@ -259,6 +260,10 @@ export const SDK_SURFACE = Object.freeze({
   // source + inert preview into one render-ready, display-only update-status view;
   // NO network, NO auto-update, NO action surface.
   updateStatus:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/updateStatus.js' },
+  // LIVE + cached update-check orchestration (M2, v0.2.282) — the title-card path:
+  // a fresh localStorage probe short-circuits the network, else ONE read-only GET to
+  // api.github.com via an injected fetcher; fails closed to UNABLE. NO auto-update.
+  liveUpdateCheck: { tier: STABILITY.EXPERIMENTAL, module: '../engine/update/liveUpdateCheck.js' },
   // updateFlowSmoke + hostRouteSmoke: moved to DASHBOARD_SURFACE in src/sdk/dashboard.js (R1, v0.2.261).
   // MVP release-readiness rollup (v0.2.198) — folds the pure local readiness
   // signals (version, nostr read health, gateway travel / update-flow / host-route

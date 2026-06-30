@@ -51,7 +51,7 @@ import { createHash } from 'node:crypto';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.281-alpha';
+const EXPECTED_VERSION = 'v0.2.282-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -453,7 +453,7 @@ console.log('[16] CSP via HTTP header + vendored Draco (S3+S4)');
   try {
     const csp = await import('./csp.mjs');
     CSP_VALUE = csp.CSP_VALUE; INLINE_SHA = csp.INLINE_SCRIPT_SHA256; HEADERS_BODY = csp.headersFileBody();
-    const need = ["object-src 'none'", "base-uri 'self'", "form-action 'self'", "'strict-dynamic'", "'wasm-unsafe-eval'", 'worker-src', 'connect-src', INLINE_SHA];
+    const need = ["object-src 'none'", "base-uri 'self'", "form-action 'self'", "'strict-dynamic'", "'wasm-unsafe-eval'", 'worker-src', 'connect-src', 'https://api.github.com', INLINE_SHA];
     const missing = need.filter((d) => !CSP_VALUE.includes(d));
     if (missing.length) fail(`tools/csp.mjs CSP_VALUE missing: ${missing.join(', ')}`);
     else if (/gstatic/.test(CSP_VALUE)) fail('tools/csp.mjs CSP_VALUE still references gstatic');

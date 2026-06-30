@@ -23,7 +23,9 @@ import { leaderboardPreviewBlock } from './engine/nostr/leaderboardPreview.js';
 // gated by explicit consent AND the SEC-1 crypto-verified publishGate verdict.
 import { createLiveLeaderboardPublisher, buildFinalRunScore } from './engine/leaderboard/livePublish.js';
 import { summariseConsent } from './engine/consent/consentGate.js';
-import { updatePreviewBlock } from './engine/update/updatePreview.js';
+// v0.2.282 (M2): LIVE update-check — real read-only GitHub releases/latest fetch,
+// cached client-side and failing closed to "unable to check"; NO auto-update.
+import { checkForUpdateLive, liveStatusView } from './engine/update/liveUpdateCheck.js';
 import { mvpLoopSummary } from './engine/mvpLoop.js';
 // v0.2.251 (P0): live n2n world-presence transport + pure presence layer.
 import { fanoutReq, signEvent, fanoutPublish, RELAYS } from './nostr.js';
@@ -467,17 +469,9 @@ async function _publishMyScore() {
   on(EV.NOSTR_LOGIN, _refreshLbPublishButton);
 })();
 
-function renderUpdatePreview() {
+function _drawUpdateBlock(block) {
   const body = document.getElementById('update-preview-body');
   if (!body) return;
-  const block = updatePreviewBlock({
-    tag_name: 'v0.2.999-alpha',
-    name: 'Torii Quest v0.2.999-alpha',
-    html_url: 'https://github.com/torii-quest/torii-quest/releases/tag/v0.2.999-alpha',
-    body: 'Sample release notes (local fixture) — bigger arena, nostrich skins, Chiefmonkey balance.',
-    prerelease: true,
-    published_at: '2026-06-24T00:00:00Z',
-  });
   body.replaceChildren(...block.lines.flatMap(({ label, value }) => {
     const l = document.createElement('div');
     l.className = 'up-row-label';
@@ -487,6 +481,21 @@ function renderUpdatePreview() {
     v.textContent = value;
     return [l, v];
   }));
+}
+
+// LIVE update-check: paint an immediate "checking…" row, then resolve against the real
+// GitHub releases/latest endpoint (cached client-side) and repaint. Failure / rate-limit /
+// 404 degrade to an inert "UNABLE TO CHECK" — the card never breaks. No auto-update.
+function renderUpdatePreview() {
+  const body = document.getElementById('update-preview-body');
+  if (!body) return;
+  _drawUpdateBlock({ lines: [{ label: 'Status', value: 'CHECKING…' }] });
+  const fetcher = (typeof window !== 'undefined' && typeof window.fetch === 'function')
+    ? window.fetch.bind(window) : null;
+  const storage = (typeof window !== 'undefined') ? window.localStorage : null;
+  checkForUpdateLive({ fetcher, storage })
+    .then((block) => _drawUpdateBlock(block))
+    .catch(() => _drawUpdateBlock(liveStatusView({ latestVersion: null })));
 }
 renderUpdatePreview();
 
