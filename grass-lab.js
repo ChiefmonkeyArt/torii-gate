@@ -10,9 +10,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ── Blade constants (mirror arena-foliage.js _buildGrass) ─────────────────────
 const BLADE_SEGS = 8;    // v0.2.267: demo default (8 height divisions, 9 rows)
 const BLADE_H    = 0.30; // shorter + more upright
-const BLADE_W    = 0.038;// v0.2.272: wider blade — width + lean + wind-bend hide the floor
+const BLADE_W    = 0.055;// v0.2.273: wider blade + flared base (hides floor)
 const FIELD      = 14;          // field is FIELD × FIELD units
-const BLADES     = 121121;       // v0.2.272: user-requested exact count
+const BLADES     = 500000;       // v0.2.273: fill the gaps
 
 // ── Renderer / scene / camera ────────────────────────────────────────────────
 const canvas = document.getElementById('app');
@@ -67,7 +67,8 @@ geo.translate(0, BLADE_H / 2, 0);
     const y = arr[ix + 1];
     const hr = y / BLADE_H;
     let taper;
-    if (hr < 0.3)      taper = 1.0;
+    if (hr < 0.15)     taper = 1.4 - (hr / 0.15) * 0.4;   // v0.2.273: flared base
+    else if (hr < 0.3) taper = 1.0;
     else if (hr < 0.7) taper = 1.0 - (hr - 0.3) * 1.5;
     else               taper = 0.4 - (hr - 0.7) * 1.3;
     taper = Math.max(0.05, taper);

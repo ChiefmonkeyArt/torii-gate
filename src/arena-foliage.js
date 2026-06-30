@@ -67,11 +67,10 @@ function _buildGrass() {
   // are ported from the demo.
   const BLADE_SEGS = 8;     // demo default: 8 height divisions (9 rows) — smooth, cheap.
   const BLADE_H    = 0.30;  // shorter + more upright (matches v0.2.266 scale).
-  const BLADE_W    = 0.038; // v0.2.272: WIDER blade. Thin upright blades never occlude the
-                             // floor regardless of count — width + forward lean + wind-bend
-                             // are what actually hide the ground between blades.
-  const TARGET_BLADES = 121121; // v0.2.272: user-requested EXACT count, uniformly distributed.
-  const CAND_SPACING  = 0.084;  // candidate grid (yields >121k over the NAP zone); a partial
+  const BLADE_W    = 0.055; // v0.2.273: WIDER blade + flared base (see taper below) so each
+                             // blade covers more ground at its root — hides the floor between blades.
+  const TARGET_BLADES = 500000; // v0.2.273: fill the gaps — 500k across the NAP zone (~570/m²).
+  const CAND_SPACING  = 0.040;  // fine candidate grid (yields >500k over the NAP zone); a partial
                                 // Fisher–Yates then selects exactly TARGET_BLADES.
 
   // PlaneGeometry(width, height, 1, 8): 2 columns × 9 rows. Translate so the
@@ -91,9 +90,10 @@ function _buildGrass() {
     const y = arr[ix + 1];
     const hr = y / BLADE_H;            // height ratio 0..1
     let taper;
-    if (hr < 0.3)      taper = 1.0;                       // wide base
-    else if (hr < 0.7) taper = 1.0 - (hr - 0.3) * 1.5;   // gradual middle
-    else               taper = 0.4 - (hr - 0.7) * 1.3;   // sharp tip
+    if (hr < 0.15)     taper = 1.4 - (hr / 0.15) * 0.4;            // v0.2.273: FLARED BASE (1.4 → 1.0)
+    else if (hr < 0.3) taper = 1.0;                               // wide base
+    else if (hr < 0.7) taper = 1.0 - (hr - 0.3) * 1.5;           // gradual middle
+    else               taper = 0.4 - (hr - 0.7) * 1.3;           // sharp tip
     taper = Math.max(0.05, taper);
     arr[ix] = x * taper;
     arr[ix + 2] += hr * hr * 0.22;   // v0.2.272: stronger forward lean — tips flop over so each
