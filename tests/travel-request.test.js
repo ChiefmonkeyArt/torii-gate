@@ -10,11 +10,29 @@ import {
   TRAVEL_STATE,
 } from '../src/engine/gateway/travelRequest.js';
 import { verifyHandoff } from '../src/engine/gateway/handoffVerify.js';
+import { nostrEventId } from '../src/engine/gateway/nostrSig.js';
 import { GATEWAY_KIND, GATEWAY_TOPIC } from '../src/engine/gateway/gatewayRead.js';
+import { schnorr } from '@noble/curves/secp256k1.js';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
-const TRAV = 'b'.repeat(64);   // traveller pubkey
-const HOST = '9'.repeat(64);   // host pubkey
-const EVIL = 'c'.repeat(64);  // a third party / wrong host
+// Real BIP-340 keypairs (S1) — derive nostr-style X-only pubkeys (hex64) from
+// fixed secret keys so the suite is deterministic and self-contained.
+const HOST_SK = hexToBytes('11'.repeat(32));
+const TRAV_SK = hexToBytes('22'.repeat(32));
+const EVIL_SK = hexToBytes('33'.repeat(32));
+const HOST = bytesToHex(schnorr.getPublicKey(HOST_SK)); // host pubkey
+const TRAV = bytesToHex(schnorr.getPublicKey(TRAV_SK)); // traveller pubkey
+const EVIL = bytesToHex(schnorr.getPublicKey(EVIL_SK)); // a third party / wrong host
+
+// realSign(unsigned, sk) — compute the NIP-01 id and sign it with BIP-340 schnorr
+// (what a real nostr signer / NIP-07 extension does), locking pubkey to the key.
+function realSign(unsigned, sk) {
+  const pubkey = bytesToHex(schnorr.getPublicKey(sk));
+  const evt = { ...unsigned, pubkey };
+  const id = nostrEventId(evt);
+  const sig = bytesToHex(schnorr.sign(hexToBytes(id), sk));
+  return { ...evt, id, sig };
+}
 
 function signedFrom(unsigned, signer) {
   // Simulate NIP-07: the extension sets id + sig and locks pubkey to the signer.
@@ -148,69 +166,136 @@ describe('extractTravelResponse / readTravelResponses', () => {
   });
 });
 
-describe('verifyHandoff (SEC-2)', () => {
-  function makeAccept({ hostPubkey = HOST, travellerPubkey = TRAV, referencesRequestId = 'ev-req', spawn = 'https://foreign.example.com', accepted = true } = {}) {
-    return { hostPubkey, travellerPubkey, referencesRequestId, spawn, accepted };
+describe('verifyHandoff (SEC-2 + S1 real BIP-340 schnorr)', () => {
+  // Build a genuine host-signed accept through the real pipeline: traveller signs
+  // a request → host builds + schnorr-signs an accept referencing it → extract the
+  // sanitised response model (which now carries sig + signed for crypto verify).
+  // Returns { response, expectedRequestId } ready for verifyHandoff. `signWith`
+  // lets a test sign with a key OTHER than the envelope pubkey (forge attempt).
+  function makeSignedAccept({ spawn = 'https://foreign.example.com', signWith = HOST_SK, envelopeHost } = {}) {
+    const signedReq = realSign(
+      buildTravelRequest({ travellerPubkey: TRAV, toHostPubkey: HOST, toZone: 'z', requestId: 'req-1' }).event,
+      TRAV_SK,
+    );
+    const request = extractTravelRequest(signedReq).request;
+    const built = buildTravelResponse({ hostPubkey: HOST, request, accepted: true, spawn });
+    // Sign the host's accept. By default the envelope pubkey is the signer's; a
+    // forge test can pin envelopeHost while signing with a different key.
+    const signer = bytesToHex(schnorr.getPublicKey(signWith));
+    const evt = { ...built.event, pubkey: envelopeHost || signer };
+    const id = nostrEventId(evt);
+    const sig = bytesToHex(schnorr.sign(hexToBytes(id), signWith));
+    const signed = { ...evt, id, sig };
+    const response = extractTravelResponse(signed).response;
+    return { response, expectedRequestId: signedReq.id };
   }
 
-  it('clears a correctly-attributed accept (host-matched, structural)', () => {
+  it('(a) clears a valid BIP-340-signed accept → trust: crypto-verified', () => {
+    const { response, expectedRequestId } = makeSignedAccept();
     const v = verifyHandoff({
-      response: makeAccept({ referencesRequestId: 'ev-req' }),
-      expectedRequestId: 'ev-req', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
+      response, expectedRequestId, expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
     });
     expect(v.ok).toBe(true);
     expect(v.trusted).toBe(true);
-    expect(v.trust).toBe('host-matched');
+    expect(v.trust).toBe('crypto-verified');
     expect(v.errors).toHaveLength(0);
   });
 
-  it('fails closed on a deny', () => {
+  it('(b) fails closed when the signed body is tampered after signing', () => {
+    const { response, expectedRequestId } = makeSignedAccept();
+    response.signed.content = response.signed.content.replace('foreign', 'evil-host'); // recomputed id no longer matches
     const v = verifyHandoff({
-      response: makeAccept({ accepted: false }),
-      expectedRequestId: 'ev-req', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
+      response, expectedRequestId, expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
+    });
+    expect(v.trusted).toBe(false);
+    expect(v.errors.some((e) => e.includes('schnorr'))).toBe(true);
+  });
+
+  it('(c) fails closed when the sig is from the wrong key (envelope says host)', () => {
+    // Envelope pubkey claims HOST, but the signature was produced by EVIL's key.
+    const { response, expectedRequestId } = makeSignedAccept({ signWith: EVIL_SK, envelopeHost: HOST });
+    const v = verifyHandoff({
+      response, expectedRequestId, expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
+    });
+    expect(v.trusted).toBe(false);
+    expect(v.errors.some((e) => e.includes('schnorr'))).toBe(true);
+  });
+
+  it('(d) fails closed when the response carries no signature', () => {
+    const { response, expectedRequestId } = makeSignedAccept();
+    delete response.sig;
+    const v = verifyHandoff({
+      response, expectedRequestId, expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
+    });
+    expect(v.trusted).toBe(false);
+    expect(v.errors.some((e) => e.includes('not crypto-signed'))).toBe(true);
+  });
+
+  it('(e) a structurally-valid but UNSIGNED accept no longer arms (no trusted:true)', () => {
+    // The pre-S1 structural-only path: every structural field matches, but there
+    // is no signature. This must NOT yield trusted:true anymore.
+    const unsigned = {
+      hostPubkey: HOST, travellerPubkey: TRAV, referencesRequestId: 'ev-req',
+      spawn: 'https://foreign.example.com', accepted: true,
+    };
+    const v = verifyHandoff({
+      response: unsigned, expectedRequestId: 'ev-req', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
+    });
+    expect(v.trusted).toBe(false);
+    expect(v.trust).toBe('unverified');
+    expect(v.errors.some((e) => e.includes('not crypto-signed'))).toBe(true);
+  });
+
+  it('fails closed on a deny', () => {
+    const { response, expectedRequestId } = makeSignedAccept();
+    response.accepted = false;
+    const v = verifyHandoff({
+      response, expectedRequestId, expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
     });
     expect(v.trusted).toBe(false);
     expect(v.errors.some((e) => e.includes('not an accept'))).toBe(true);
   });
 
   it('fails closed when the response references a different request id', () => {
+    const { response } = makeSignedAccept();
     const v = verifyHandoff({
-      response: makeAccept({ referencesRequestId: 'someone-elses-req' }),
-      expectedRequestId: 'ev-req', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
+      response, expectedRequestId: 'a'.repeat(64), expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
     });
     expect(v.trusted).toBe(false);
     expect(v.errors.some((e) => e.includes('request id'))).toBe(true);
   });
 
   it('fails closed when signed by the wrong host', () => {
+    // Genuine accept fully signed by EVIL (envelope + sig both EVIL).
+    const { response, expectedRequestId } = makeSignedAccept({ signWith: EVIL_SK });
     const v = verifyHandoff({
-      response: makeAccept({ hostPubkey: EVIL }),
-      expectedRequestId: 'ev-req', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
+      response, expectedRequestId, expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
     });
     expect(v.trusted).toBe(false);
     expect(v.errors.some((e) => e.includes('host'))).toBe(true);
   });
 
   it('fails closed when not addressed to our traveller pubkey', () => {
+    const { response, expectedRequestId } = makeSignedAccept();
     const v = verifyHandoff({
-      response: makeAccept({ travellerPubkey: EVIL }),
-      expectedRequestId: 'ev-req', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
+      response, expectedRequestId, expectedHostPubkey: HOST, expectedTravellerPubkey: EVIL,
     });
     expect(v.trusted).toBe(false);
     expect(v.errors.some((e) => e.includes('traveller'))).toBe(true);
   });
 
   it('fails closed on a non-https / absent spawn', () => {
+    const { response, expectedRequestId } = makeSignedAccept({ spawn: 'http://insecure.example.com' });
     const v = verifyHandoff({
-      response: makeAccept({ spawn: 'http://insecure.example.com' }),
-      expectedRequestId: 'ev-req', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
+      response, expectedRequestId, expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV,
     });
     expect(v.trusted).toBe(false);
     expect(v.errors.some((e) => e.includes('spawn'))).toBe(true);
   });
 
   it('rejects malformed expectations (ok:false)', () => {
-    expect(verifyHandoff({ response: makeAccept(), expectedRequestId: '', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV }).ok).toBe(false);
+    const { response } = makeSignedAccept();
+    expect(verifyHandoff({ response, expectedRequestId: '', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV }).ok).toBe(false);
     expect(verifyHandoff({ response: null, expectedRequestId: 'x', expectedHostPubkey: HOST, expectedTravellerPubkey: TRAV }).ok).toBe(false);
   });
 });

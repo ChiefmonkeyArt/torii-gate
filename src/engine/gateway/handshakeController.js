@@ -159,7 +159,9 @@ export function createHandshakeController(opts = {}) {
             expectedHostPubkey: _pending.hostPubkey,
             expectedTravellerPubkey: _ourPubkey,
           });
-          if (v.trusted) {
+          // S1 (v0.2.263): arm ONLY on a real BIP-340 crypto-verified accept.
+          // A structural-only match no longer arms the hop.
+          if (v.trusted && v.trust === 'crypto-verified') {
             _armed = {
               toZone: _pending.toZone,
               spawn: resp.spawn,

@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.19.3",
+    "@noble/curves": "^2.2.0",
     "three": "^0.184.0"
   }
 }

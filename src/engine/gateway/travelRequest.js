@@ -275,6 +275,11 @@ export function extractTravelResponse(event) {
   const relays = _safeRelays(content.relays);
   const message = _safeText(content.message, 256);
 
+  // S1 (v0.2.263): carry the raw signed-event fields the SEC-2 verify seam needs
+  // to recompute the NIP-01 id and run the BIP-340 schnorr check. `signed` is the
+  // exact canonical-id input set; `sig` is the host's 64-byte schnorr signature.
+  // Every sanitised field above is derived from THIS event, so verifying its
+  // signature authenticates them all (host pubkey, traveller, requestId, spawn).
   return {
     ok: true,
     response: {
@@ -283,6 +288,15 @@ export function extractTravelResponse(event) {
       toZone: _safeText(content.to != null ? content.to : _tagValue(tags, 'to'), 128),
       spawn, relays, message,
       created_at: Number.isInteger(event.created_at) ? event.created_at : null,
+      id: typeof event.id === 'string' ? event.id : null,
+      sig: typeof event.sig === 'string' ? event.sig : null,
+      signed: {
+        pubkey: event.pubkey,
+        created_at: event.created_at,
+        kind: event.kind,
+        tags: Array.isArray(event.tags) ? event.tags : [],
+        content: typeof event.content === 'string' ? event.content : '',
+      },
     },
   };
 }
