@@ -1,13 +1,30 @@
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { defineConfig } from 'vite';
-import { CSP_VALUE, ENTRY_IMPORT_LINE, headersFileBody } from './tools/csp.mjs';
+import { CSP_VALUE, headersFileBody, headersFileBodyForSha, cspValueForSha } from './tools/csp.mjs';
 
 // CSP via HTTP header (S3, v0.2.266). The policy lives in tools/csp.mjs (single source).
 // This plugin: (1) rewrites the BUILT index.html so the trusted classic inline bootstrap
 // script `import()`s the pinned entry (assets/torii-entry.js) instead of a static
 // <script> tag — letting `strict-dynamic` cover the whole module graph; (2) writes
 // dist/_headers for the static host; (3) serves the same header from `vite preview`.
+//
+// v0.2.280: the entry import now carries a per-build cache-bust query (?v=<stamp>) so
+// Cloudflare's 4h edge cache can never serve a stale entry that points at a dead/old
+// chunk hash after a publish. Because that changes the inline-script text, the CSP sha is
+// recomputed from the EMITTED inline script at writeBundle time and written into
+// dist/_headers — so the policy always matches the shipped bootstrap.
+const BUILD_STAMP = Date.now().toString(36);
+const VERSIONED_IMPORT_LINE = `  import('/assets/torii-entry.js?v=${BUILD_STAMP}');`;
+
+// Recompute the sha256 of the single attribute-less inline <script> in dist/index.html.
+// Must match the extraction regex used by tools/regression-check.mjs (check 16c).
+function inlineScriptShaOf(html) {
+  const matches = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  if (!matches.length) return null;
+  return 'sha256-' + createHash('sha256').update(matches[0], 'utf8').digest('base64');
+}
 function cspHeaderPlugin() {
   return {
     name: 'torii-csp-http-header',
@@ -23,18 +40,36 @@ function cspHeaderPlugin() {
         let out = html
           .replace(/\s*<script\b[^>]*\bsrc="\/assets\/torii-entry\.js"[^>]*><\/script>/, '')
           .replace(/\s*<link\b[^>]*\bhref="\/assets\/torii-entry\.js"[^>]*>/g, '');
-        // Append the entry import to the single classic inline bootstrap script.
-        out = out.replace(/\n<\/script>\n<\/body>/, `\n${ENTRY_IMPORT_LINE}\n</script>\n</body>`);
+        // Append the versioned entry import to the single classic inline bootstrap
+        // script. The ?v=<stamp> query busts the 4h CDN edge cache on every publish so a
+        // stale entry (pointing at a dead chunk hash) can never reach a returning player.
+        out = out.replace(/\n<\/script>\n<\/body>/, `\n${VERSIONED_IMPORT_LINE}\n</script>\n</body>`);
         return out;
       },
     },
     writeBundle(options) {
       const dir = options.dir || join(process.cwd(), 'dist');
-      writeFileSync(join(dir, '_headers'), headersFileBody());
+      // Recompute the inline-bootstrap sha from the EMITTED dist/index.html (which now
+      // carries the versioned import line) and write _headers with the matching policy.
+      const htmlPath = join(dir, 'index.html');
+      let body = headersFileBody(); // fallback to the hardcoded sha
+      if (existsSync(htmlPath)) {
+        const sha = inlineScriptShaOf(readFileSync(htmlPath, 'utf8'));
+        if (sha) body = headersFileBodyForSha(sha);
+      }
+      writeFileSync(join(dir, '_headers'), body);
     },
     configurePreviewServer(server) {
+      // Serve the CSP that matches the built dist inline script if one exists; otherwise
+      // fall back to the hardcoded sha (pre-build preview of the source shell).
+      const distHtmlPath = join(process.cwd(), 'dist', 'index.html');
+      let csp = CSP_VALUE;
+      if (existsSync(distHtmlPath)) {
+        const sha = inlineScriptShaOf(readFileSync(distHtmlPath, 'utf8'));
+        if (sha) csp = cspValueForSha(sha);
+      }
       server.middlewares.use((_req, res, next) => {
-        res.setHeader('Content-Security-Policy', CSP_VALUE);
+        res.setHeader('Content-Security-Policy', csp);
         next();
       });
     },

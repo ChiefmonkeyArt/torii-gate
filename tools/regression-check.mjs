@@ -51,7 +51,7 @@ import { createHash } from 'node:crypto';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const EXPECTED_VERSION = 'v0.2.279-alpha';
+const EXPECTED_VERSION = 'v0.2.280-alpha';
 const SETTIMEOUT_ALLOWED = new Set(['src/nostr.js', 'src/hud.js']);
 // Files where a per-frame hot path must stay allocation-free.
 const NO_ALLOC_FILES = [
@@ -476,23 +476,32 @@ console.log('[16] CSP via HTTP header + vendored Draco (S3+S4)');
     if (!existsSync(headersP)) fail('dist/_headers missing (vite CSP plugin did not run)');
     else {
       const body = readFileSync(headersP, 'utf8');
-      if (body !== HEADERS_BODY) fail('dist/_headers does not match tools/csp.mjs headersFileBody()');
-      else if (!body.includes(CSP_VALUE)) fail('dist/_headers does not carry CSP_VALUE');
-      else pass('dist/_headers carries the CSP header matching tools/csp.mjs');
+      // v0.2.280: _headers now carries the sha recomputed from the emitted inline script
+      // (which has a per-build cache-bust query), so it no longer equals the legacy
+      // headersFileBody() constant. Validate it carries the required directives instead.
+      const needHeaders = ["Content-Security-Policy", "object-src 'none'", "'strict-dynamic'", "'wasm-unsafe-eval'", 'worker-src', 'connect-src'];
+      const missingH = needHeaders.filter((d) => !body.includes(d));
+      if (missingH.length) fail(`dist/_headers missing: ${missingH.join(', ')}`);
+      else pass('dist/_headers carries a CSP with the required directives');
     }
 
-    // Recompute the inline bootstrap sha from the BUILT html.
+    // Recompute the inline bootstrap sha from the BUILT html and verify dist/_headers
+    // carries THAT sha (self-consistency). v0.2.280: the inline import now carries a
+    // per-build ?v=<stamp> query, so the sha churns every build — comparing it to a
+    // hardcoded constant would be wrong; instead we require _headers to match the emit.
     const inlineScripts = [...distHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
     if (inlineScripts.length !== 1) fail(`expected exactly 1 attribute-less inline <script> in dist/index.html, found ${inlineScripts.length}`);
     else {
       const sha = 'sha256-' + createHash('sha256').update(inlineScripts[0], 'utf8').digest('base64');
-      if (sha !== INLINE_SHA) fail(`inline-script sha mismatch: built ${sha} != tools/csp.mjs ${INLINE_SHA} (update INLINE_SCRIPT_SHA256 + VPS_INSTALL.md)`);
-      else pass(`inline-script sha matches CSP (${sha.slice(0, 24)}…)`);
+      const headersBody = existsSync(headersP) ? readFileSync(headersP, 'utf8') : '';
+      if (!headersBody.includes(sha)) fail(`inline-script sha not found in dist/_headers: built ${sha} (plugin must recompute sha at writeBundle time)`);
+      else pass(`inline-script sha matches dist/_headers (${sha.slice(0, 24)}…)`);
     }
 
     if (/<script\b[^>]*\bsrc=["']\/assets\/torii-entry\.js["']/.test(distHtml)) fail('dist/index.html still has a static entry <script> tag (strict-dynamic needs it loaded by the trusted inline script)');
-    else if (!distHtml.includes("import('/assets/torii-entry.js')")) fail("dist/index.html missing import('/assets/torii-entry.js') in the inline bootstrap");
-    else pass('entry loaded via import() from the trusted inline bootstrap (strict-dynamic propagates)');
+    else if (!/import\(['"]\/assets\/torii-entry\.js(\?[^'"\)]*)?['"]\)/.test(distHtml)) fail("dist/index.html missing import('/assets/torii-entry.js[?v=...]') in the inline bootstrap");
+    else if (!/\?v=/.test(distHtml)) fail("dist/index.html entry import lacks a ?v= cache-bust query (CDN would serve stale entry)");
+    else pass('entry loaded via versioned import() from the trusted inline bootstrap (strict-dynamic + CDN cache-bust)');
 
     if (!existsSync(join(ROOT, 'dist/assets/torii-entry.js'))) fail('dist/assets/torii-entry.js (pinned entry) missing');
     else pass('pinned entry chunk dist/assets/torii-entry.js present');
