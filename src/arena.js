@@ -345,7 +345,7 @@ function _buildNapZone() {
   // near-black of the main arena floor.
   const NAP_W = NAP_FAR_X - NAP_X;
   const napFloorMat = new THREE.MeshStandardMaterial({
-    color: 0x2d5016, roughness: 0.9,
+    color: 0x96A78A, roughness: 0.9,
   });
   const napFloor = new THREE.Mesh(
     new THREE.PlaneGeometry(NAP_W, ARENA_HALF * 2),

@@ -68,7 +68,7 @@ function _buildGrass() {
   const BLADE_SEGS = 8;     // demo default: 8 height divisions (9 rows) — smooth, cheap.
   const BLADE_H    = 0.30;  // shorter + more upright (matches v0.2.266 scale).
   const BLADE_W    = 0.018; // thin but visible; per-blade taper widens the base.
-  const SPACING    = 0.085; // v0.2.270: doubled density (~140 blades/m²) vs 0.12 — user: "100% more".
+  const SPACING    = 0.060; // v0.2.271: 2x denser again (~280 blades/m²) — user still saw ground.
 
   // PlaneGeometry(width, height, 1, 8): 2 columns × 9 rows. Translate so the
   // base sits at y=0 and the blade grows upward to y=BLADE_H.

@@ -12,7 +12,7 @@ const BLADE_SEGS = 8;    // v0.2.267: demo default (8 height divisions, 9 rows)
 const BLADE_H    = 0.30; // shorter + more upright
 const BLADE_W    = 0.018;// thin but visible; per-blade taper widens the base
 const FIELD      = 14;          // field is FIELD × FIELD units
-const SPACING    = 0.085;        // v0.2.270: doubled density (~140 blades/m²)
+const SPACING    = 0.060;        // v0.2.271: 2x denser again (~280 blades/m²)
 const BLADES     = Math.floor(FIELD * FIELD / (SPACING * SPACING));
 
 // ── Renderer / scene / camera ────────────────────────────────────────────────
@@ -46,7 +46,7 @@ scene.add(sun);
 // ── Ground ────────────────────────────────────────────────────────────────────
 const ground = new THREE.Mesh(
   new THREE.CircleGeometry(FIELD * 1.4, 64),
-  new THREE.MeshStandardMaterial({ color: 0x2d5016, roughness: 1.0 })
+  new THREE.MeshStandardMaterial({ color: 0x96A78A, roughness: 1.0 })
 );
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.01;
