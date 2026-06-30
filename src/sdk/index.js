@@ -76,8 +76,13 @@ export * as liveUpdateCheck from '../engine/update/liveUpdateCheck.js';
 // — dashboard-only surfaces (~176 KB combined). They were dragging strings/HTML into
 // the runtime app chunk; build scripts and tests now import them from the dashboard
 // barrel directly. Do NOT re-add them here.
+// mvpReadiness stays on the runtime barrel — it has a runtime importer (shellReport.js
+// in the debug chain), unlike the dashboard-only surfaces above.
 export * as mvpReadiness from '../engine/status/mvpReadiness.js';
-export * as handoffControlPanel from '../engine/status/handoffControlPanel.js';
+// handoffControlPanel: moved to src/sdk/dashboard.js (R1 completed, v0.2.290) — a
+// Continuum/build-only oversight surface with NO game-runtime importer (consumed only by
+// continuumData.js + build tools + tests). The tree-shake-hostile `export * as` re-export
+// here dragged it into the runtime app chunk; it lives on the dashboard barrel now.
 export * as mvpLoop from '../engine/mvpLoop.js';
 export * as proofSurfaceSpecs from '../engine/world/proofSurfaceSpecs.js';
 export * as anchorTransforms from '../engine/world/anchorTransforms.js';
@@ -282,11 +287,8 @@ export const SDK_SURFACE = Object.freeze({
   // read-only rollup with an MVP percentage/status + next safe task; NO deploy,
   // NO network, never acts.
   mvpReadiness:    { tier: STABILITY.EXPERIMENTAL, module: '../engine/status/mvpReadiness.js' },
-  // Handoff / release control panel (v0.2.233) — pure single-source-of-truth for the one-glance
-  // project pickup posture (version + live URLs, entry/dashboard smoke evidence, the manual
-  // blocker, next safe task, do-not list, non-religious operating principles). GREEN-REQUIRES-
-  // EVIDENCE. READ-ONLY: approves/deploys/publishes NOTHING.
-  handoffControlPanel: { tier: STABILITY.EXPERIMENTAL, module: '../engine/status/handoffControlPanel.js' },
+  // handoffControlPanel: moved to DASHBOARD_SURFACE in src/sdk/dashboard.js (R1 completed,
+  // v0.2.290) — Continuum/build-only oversight surface; no game-runtime importer.
   // MVP loop header — frames the four PoC preview cards as one Travel→Market→Score→Update loop (v0.2.143).
   mvpLoop:         { tier: STABILITY.EXPERIMENTAL, module: '../engine/mvpLoop.js' },
   // continuum: moved to DASHBOARD_SURFACE in src/sdk/dashboard.js (R1, v0.2.261).

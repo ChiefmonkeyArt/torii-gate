@@ -23,6 +23,11 @@
 export * as continuum from '../engine/dashboard/continuumData.js';
 export * as hostRouteSmoke from '../engine/host/hostRouteSmoke.js';
 export * as updateFlowSmoke from '../engine/update/updateFlowSmoke.js';
+// handoffControlPanel (v0.2.290): the handoff/release control panel — a Continuum
+// project-oversight surface consumed ONLY by continuumData.js + build tools + tests,
+// never by a game-runtime entry. R1 originally left it on the runtime barrel; it lives
+// here now so the runtime chunk no longer carries it via the tree-shake-hostile re-export.
+export * as handoffControlPanel from '../engine/status/handoffControlPanel.js';
 
 // Re-export stability metadata so dashboard tests can assert tier without
 // reaching back through the runtime barrel.
@@ -48,5 +53,10 @@ export const DASHBOARD_SURFACE = Object.freeze({
     tier: _STABILITY.EXPERIMENTAL,
     module: '../engine/update/updateFlowSmoke.js',
     note: 'Update-flow read-only smoke rollup (build/dashboard-only).',
+  },
+  handoffControlPanel: {
+    tier: _STABILITY.EXPERIMENTAL,
+    module: '../engine/status/handoffControlPanel.js',
+    note: 'Handoff/release control panel — single-source project pickup posture (build/dashboard-only, READ-ONLY).',
   },
 });
