@@ -1,6 +1,6 @@
 {
-  "version": "v0.2.296-alpha",
-  "generatedAt": "2026-07-01T08:47:44.645Z",
+  "version": "v0.2.297-alpha",
+  "generatedAt": "2026-07-01T08:49:48.443Z",
   "badge": "PROJECT OVERSIGHT · STATIC · READ-ONLY",
   "totals": {
     "tasksAhead": 12,
@@ -48,7 +48,7 @@
       {
         "label": "Build version",
         "kind": "generated",
-        "value": "v0.2.296-alpha"
+        "value": "v0.2.297-alpha"
       },
       {
         "label": "Test files / profiles",
@@ -78,7 +78,7 @@
       {
         "label": "Release gate",
         "kind": "last-known",
-        "value": "16 / 16 regression checks GREEN · last green v0.2.296-alpha"
+        "value": "16 / 16 regression checks GREEN · last green v0.2.297-alpha"
       },
       {
         "label": "Source-of-truth docs",
@@ -155,8 +155,8 @@
   },
   "readiness": {
     "badge": "DEPLOY READINESS · STATIC HOST · READ-ONLY",
-    "status": "ready",
-    "statusLabel": "READY",
+    "status": "docs-ready",
+    "statusLabel": "DOCS READY · BUILD CHECK PENDING",
     "checks": [
       {
         "item": "SPA /zone/* fallback documented",
@@ -165,8 +165,8 @@
       },
       {
         "item": "Built dist route shape",
-        "state": "no-blocker",
-        "note": "dist/index.html present; no static file under /zone/* shadows the fallback"
+        "state": "deferred",
+        "note": "no dist/ this build — run npm run build then npm run zones:check"
       },
       {
         "item": "Host SPA fallback configured",
@@ -191,15 +191,15 @@
     "status": "not-ready",
     "statusLabel": "NOT READY",
     "ready": false,
-    "version": "v0.2.296-alpha",
-    "gitCommit": "7757f06",
+    "version": "v0.2.297-alpha",
+    "gitCommit": "b90c020",
     "signals": [
       {
         "key": "versionSync",
         "label": "Version sync",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "config v0.2.296-alpha / pkg 0.2.296-alpha"
+        "detail": "config v0.2.297-alpha / pkg 0.2.297-alpha"
       },
       {
         "key": "tests",
@@ -218,23 +218,23 @@
       {
         "key": "bundle",
         "label": "Bundle baseline",
-        "state": "advisory",
-        "pill": "manual",
-        "detail": "advisory — over limit: rapier-DE6a0vmv.js"
+        "state": "skipped",
+        "pill": "deferred",
+        "detail": "no dist/ — build then bundle:report"
       },
       {
         "key": "zoneFallback",
         "label": "/zone/* fallback",
         "state": "ok",
         "pill": "no-blocker",
-        "detail": "docs + dist ok"
+        "detail": "docs ok · dist check pending"
       },
       {
         "key": "docs",
         "label": "Docs consistency",
         "state": "blocked",
         "pill": "gated",
-        "detail": "todo.md does not reference current version v0.2.296-alpha (doc drift); progress.md does not reference current version v0.2.296-alpha (doc drift); HANDOFF.md does not reference current version v0.2.296-alpha (doc drift)"
+        "detail": "todo.md does not reference current version v0.2.297-alpha (doc drift); progress.md does not reference current version v0.2.297-alpha (doc drift); HANDOFF.md does not reference current version v0.2.297-alpha (doc drift)"
       }
     ],
     "blockers": [
@@ -254,7 +254,7 @@
     "band": "near",
     "statusLabel": "NEAR · LOCAL GATES",
     "pill": "manual",
-    "version": "v0.2.296-alpha",
+    "version": "v0.2.297-alpha",
     "manifestStatus": "COMPLETE",
     "manifestRequiredPresent": 6,
     "manifestRequired": 6,
@@ -269,7 +269,7 @@
     "metrics": [
       {
         "label": "Source version",
-        "value": "v0.2.296-alpha"
+        "value": "v0.2.297-alpha"
       },
       {
         "label": "Release manifest",
@@ -401,7 +401,7 @@
     "pill": "manual",
     "status": "pending",
     "approved": false,
-    "version": "v0.2.296-alpha",
+    "version": "v0.2.297-alpha",
     "approvedBy": null,
     "approvedAt": null,
     "metrics": [
@@ -411,7 +411,7 @@
       },
       {
         "label": "Version",
-        "value": "v0.2.296-alpha"
+        "value": "v0.2.297-alpha"
       },
       {
         "label": "Approved by",
@@ -563,7 +563,7 @@
     "metrics": [
       {
         "label": "Version",
-        "value": "v0.2.296-alpha"
+        "value": "v0.2.297-alpha"
       },
       {
         "label": "Live game",

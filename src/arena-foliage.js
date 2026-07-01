@@ -98,15 +98,11 @@ function _buildGrass() {
   for (let j = 0; j < _rows; j++) {
     const hr = j / BLADE_SEGS;                 // 0..1
     const y  = hr * BLADE_H;
-    // Taper: lower 60% holds width (wide base dominant). Top 40% is EXACTLY zero
-    // radius -> all top rows collapse to a single sharp point, so the tip cannot
-    // form any flat/angular cap. It reads as a true point.
-    let taper;
-    if (hr < 0.60) {
-      taper = 1.0 - (hr / 0.60) * 0.50;          // 1.0 -> 0.50 over lower 60% (wide base)
-    } else {
-      taper = 0.0;                               // top 40% = true sharp point
-    }
+    // Smooth quadratic taper: wide base -> narrow tip. Only the final row (hr=1)
+    // is a true point. Avoids degenerate normals/black big triangles from a
+    // large zero-radius region. Reads as a clean cone: wide base, pointy top.
+    let taper = (1.0 - hr) * (1.0 - hr);
+    if (hr >= 0.999) taper = 0.0;              // sharp point at the tip (in the air)
     const r = BLADE_R * taper;
     // lean peaks at the TIP (hr=1) so the pointed top is what sways.
     const lean = hr * hr * 0.06;
