@@ -80,7 +80,7 @@ function _buildGrass() {
                              // visible at the floor (breaks the tip-canopy illusion so the field
                              // reads point-up). 5-sided cross-section + quadratic taper keep it
                              // reading as a thin needle, not a fat shard.
-  const TARGET_BLADES = 80000;  // DIAG: red-tip/blue-base at full density
+  const TARGET_BLADES = 8000;  // DIAG: readable density for red/blue orientation test
                                 // software-GPU machines (SwiftShader crashed at 250k instances). 80k
                                 // 3-sided cones still read as a full field at ~95/m² over the NAP zone.
   const CAND_SPACING  = 0.040;  // fine candidate grid; partial Fisher-Yates selects TARGET_BLADES.
@@ -219,10 +219,13 @@ function _buildGrass() {
         // Brightening the base above the ground cover (0x3d5a2f ~= 0.24,0.35,0.18)
         // makes the wide base the visible anchor at the floor, so the silhouette
         // reads as a point-up cone: wide bright base -> narrow softer tip.
-        vec3 rootCol = vec3(0.27, 0.60, 0.15);  // BRIGHT wide base — lighter than ground cover
-        vec3 baseCol = vec3(0.24, 0.55, 0.14);
-        vec3 midCol  = vec3(0.21, 0.49, 0.13);
-        vec3 tipCol  = vec3(0.18, 0.43, 0.12);  // softer narrow tip (no bright top-heavy mass)
+        // DIAG v0.2.294: HARD red/blue split — BLUE at base (vT=0, floor), RED at tip (vT=1, top).
+        // No gradient ambiguity. If the rendered blade shows BLUE at bottom + RED at top,
+        // geometry is point-up. If RED at bottom + BLUE at top, something inverts it.
+        vec3 rootCol = vec3(0.0, 0.0, 1.0);  // BLUE base (floor)
+        vec3 baseCol = vec3(0.0, 0.0, 1.0);
+        vec3 midCol  = vec3(1.0, 0.0, 0.0);
+        vec3 tipCol  = vec3(1.0, 0.0, 0.0);  // RED tip (top)
 
         // Per-blade brightness variation (0.8..1.2).
         float bright = 0.8 + vBright * 0.4;
