@@ -75,10 +75,9 @@ function _buildGrass() {
   // vanishing) and never looks like a flat card. Cross-section radius is tiny so
   // each blade is a thin 3D needle, not a chunky prism.
   const BLADE_SEGS = 8;     // v0.2.294: more rows for a smooth cone silhouette (was 6).
-  const BLADE_H    = 0.30;  // shorter so the wide base is visible at the floor (no tip-canopy).
-  const BLADE_R    = 0.020; // 20mm base (3.3x wider): wide enough to read as a clear
-                             // wide base at the floor even in a dense field, so each blade reads
-                             // as wide-base -> narrow-tip (point-UP) instead of a tip-canopy.
+  const BLADE_H    = 0.20;  // shorter: less perspective foreshortening from downward view.
+  const BLADE_R    = 0.040; // 40mm base (2x wider): overpower downward-angle foreshortening
+                             // so the blue base reads as clearly the widest part at the floor.
   const TARGET_BLADES = 30000;  // thinned so tips separate and read as points, not a canopy
                                 // software-GPU machines (SwiftShader crashed at 250k instances). 80k
                                 // 3-sided cones still read as a full field at ~95/m² over the NAP zone.
@@ -90,7 +89,7 @@ function _buildGrass() {
   // gives a gentle lean (tips stay upright + pointed, not flopped flat).
   // v0.2.294: 5-sided cross-section (was 3). 3 flat sides at a 6mm base read as
   // fat angular shards; 5 sides is rounder so each blade reads as a thin needle.
-  const BLADE_SIDES = 5;
+  const BLADE_SIDES = 8; // 8-sided: smaller facets, reads smoother (less flat/angular).
   const _angles = Array.from({ length: BLADE_SIDES }, (_, k) => k * 2 * Math.PI / BLADE_SIDES);
   const _rows = BLADE_SEGS + 1;
   const _gPos = [];
