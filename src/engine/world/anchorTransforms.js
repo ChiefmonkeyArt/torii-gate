@@ -30,13 +30,9 @@ const NAP_MID_X = (NAP_X + NAP_FAR_X) / 2; // (20 + 45) / 2 = 32.5
 // plain data, not a live scene-graph node); `zone` is the NAP-zone region; the
 // `note` documents intent. Frozen so consumers treat it as a read-only contract.
 export const PROOF_SURFACE_ANCHORS = Object.freeze({
-  'torii-gate-threshold': Object.freeze({
-    id: 'torii-gate-threshold',
-    parent: 'torii-gate',
-    zone: 'nap-zone',
-    origin: Object.freeze({ x: NAP_X, y: 0, z: 0 }),
-    note: 'Ground at the torii gate threshold (east wall plane, z=0). Gateway panel stands just past it.',
-  }),
+  // v0.2.316: 'torii-gate-threshold' + 'nap-zone-south-board' anchors removed —
+  // the Travel (gateway) + Update-check specs were removed from the in-world proof
+  // surfaces (torii gateway realises Travel; homescreen realises Update-check).
   'nap-zone-north-stall': Object.freeze({
     id: 'nap-zone-north-stall',
     parent: 'nap-zone-floor',
@@ -50,13 +46,6 @@ export const PROOF_SURFACE_ANCHORS = Object.freeze({
     zone: 'nap-zone',
     origin: Object.freeze({ x: NAP_FAR_X - 5, y: 0, z: 0 }),
     note: 'Ground at the far-centre notice-board spot (deep NAP zone, on the central axis z=0).',
-  }),
-  'nap-zone-south-board': Object.freeze({
-    id: 'nap-zone-south-board',
-    parent: 'nap-zone-floor',
-    zone: 'nap-zone',
-    origin: Object.freeze({ x: NAP_MID_X, y: 0, z: 9 }),
-    note: 'Ground at the south update-board spot (mid NAP zone, south of the central walkway).',
   }),
 });
 

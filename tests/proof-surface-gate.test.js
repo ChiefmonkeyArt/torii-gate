@@ -22,9 +22,9 @@ describe('proofSurfaceGate — live gate passes', () => {
     expect(g.ok).toBe(true);
     expect(g.gates).toEqual({ specCheck: true, renderPlan: true, parentBinding: true });
     expect(g.reasons).toEqual([]);
-    expect(g.counts.panels).toBe(4);
-    expect(g.counts.groups).toBe(2);
-    expect(g.counts.bound).toBe(4);
+    expect(g.counts.panels).toBe(2);
+    expect(g.counts.groups).toBe(1);
+    expect(g.counts.bound).toBe(2);
     expect(g.counts.unbound).toBe(0);
   });
 

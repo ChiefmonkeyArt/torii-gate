@@ -45,23 +45,19 @@ describe('proofSurfaceParentBinding — name maps', () => {
 });
 
 describe('proofSurfaceParentBinding — resolveParentBindings (live plan)', () => {
-  it('binds all four panels into the torii-gate + nap-zone-floor groups', () => {
+  it('binds the two in-world panels into the nap-zone-floor group', () => {
     const binding = resolveParentBindings(buildProofSurfaceRenderPlan());
     expect(binding.badge).toBe(PARENT_BINDING_BADGE);
     expect(binding.group).toBe(PROOF_SURFACE_GROUP);
     expect(binding.ok).toBe(true);
-    expect(binding.count).toBe(4);
+    expect(binding.count).toBe(2);
     expect(binding.unbound).toEqual([]);
-    expect(binding.groups.map((g) => g.parent)).toEqual(['torii-gate', 'nap-zone-floor']);
+    expect(binding.groups.map((g) => g.parent)).toEqual(['nap-zone-floor']);
 
-    const [gate, floor] = binding.groups;
-    expect(gate.parentNode).toBe('torii-gate');
-    expect(gate.groupName).toBe('proof-surfaces::torii-gate');
-    expect(gate.panelIds).toEqual(['gateway-portal-panel']);
-
+    const [floor] = binding.groups;
     expect(floor.parentNode).toBe('nap-zone-floor');
     expect(floor.groupName).toBe('proof-surfaces::nap-zone-floor');
-    expect(floor.panelIds).toEqual(['product-stall-panel', 'leaderboard-board', 'update-prompt-board']);
+    expect(floor.panelIds).toEqual(['product-stall-panel', 'leaderboard-board']);
   });
 
   it('every panel id appears in exactly one group (partition of the plan)', () => {
@@ -91,7 +87,7 @@ describe('proofSurfaceParentBinding — resolveParentBindings (live plan)', () =
     const stripped = { panels: plan.panels.map(({ parent, ...rest }) => rest) };
     const binding = resolveParentBindings(stripped);
     expect(binding.ok).toBe(true);
-    expect(binding.groups.map((g) => g.parent)).toEqual(['torii-gate', 'nap-zone-floor']);
+    expect(binding.groups.map((g) => g.parent)).toEqual(['nap-zone-floor']);
   });
 });
 

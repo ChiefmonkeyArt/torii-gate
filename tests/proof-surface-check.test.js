@@ -28,8 +28,8 @@ describe('proofSurfaceCheck — the four current specs', () => {
     expect(r.ok).toBe(true);
     expect(r.errors).toEqual([]);
     expect(r.warnings).toEqual([]);
-    expect(r.checked).toBe(4);
-    expect(r.surfaces).toHaveLength(4);
+    expect(r.checked).toBe(2);
+    expect(r.surfaces).toHaveLength(2);
     expect(r.surfaces.every((s) => s.sdkOk && s.shellOk && s.inert)).toBe(true);
   });
 

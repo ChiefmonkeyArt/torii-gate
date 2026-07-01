@@ -13,13 +13,13 @@ const isPlainObject = (o) =>
   o !== null && typeof o === 'object' && Object.getPrototypeOf(o) === Object.prototype;
 
 describe('proofSurfaceSpecs — spec list', () => {
-  it('defines the four proof surfaces in MVP-loop order', () => {
-    expect(PROOF_SURFACE_SPECS).toHaveLength(4);
+  it('defines the two in-world proof surfaces in MVP-loop order', () => {
+    expect(PROOF_SURFACE_SPECS).toHaveLength(2);
     expect(PROOF_SURFACE_IDS).toEqual([
-      'gateway-portal-panel', 'product-stall-panel', 'leaderboard-board', 'update-prompt-board',
+      'product-stall-panel', 'leaderboard-board',
     ]);
-    expect(PROOF_SURFACE_SPECS.map((s) => s.step)).toEqual(['TRAVEL', 'MARKET', 'SCORE', 'UPDATE']);
-    expect(PROOF_SURFACE_SPECS.map((s) => s.lean)).toEqual(['LEAN-2', 'LEAN-3', 'LEAN-4', 'LEAN-5']);
+    expect(PROOF_SURFACE_SPECS.map((s) => s.step)).toEqual(['MARKET', 'SCORE']);
+    expect(PROOF_SURFACE_SPECS.map((s) => s.lean)).toEqual(['LEAN-3', 'LEAN-4']);
   });
 
   it('maps each surface to its SDK preview namespace + shells report', () => {
@@ -99,9 +99,9 @@ describe('proofSurfaceSpecs — getProofSurfaceSpec', () => {
 });
 
 describe('proofSurfaceSpecs — proofSurfaceLayout', () => {
-  it('summarises the four specs with an all-inert gate and NAP-zone bounds', () => {
+  it('summarises the two specs with an all-inert gate and NAP-zone bounds', () => {
     const l = proofSurfaceLayout();
-    expect(l.count).toBe(4);
+    expect(l.count).toBe(2);
     expect(l.anchorZone).toBe('nap-zone');
     expect(l.badge).toBe(PROOF_SURFACE_BADGE);
     expect(l.allInert).toBe(true);

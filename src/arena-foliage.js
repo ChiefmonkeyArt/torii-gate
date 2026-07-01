@@ -34,10 +34,20 @@ let _grassMat  = null;
 let _flowerMat = null;
 let _tulipMat  = null; // v0.2.263: 2nd flower archetype (tulip cup)
 
+// v0.2.311: JS smoothstep (GLSL has it built in, JS does not). Used by the
+// procedural blade/noise texture generators in _buildGrass. The earlier green
+// pass (v0.2.310) called smoothstep() in JS, throwing ReferenceError on Enter
+// Nap Zone and leaving the arena in a broken black-screen state.
+function smoothstep(edge0, edge1, x) {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
 export function buildFoliage() {
   _buildGrass();
-  _buildWildflowers();
-  _buildTulips(); // v0.2.263: 2nd flower archetype for shape variety
+  // v0.2.312: wildflowers + tulips removed at user request (grass-only NAP zone).
+  // _buildWildflowers();
+  // _buildTulips();
 }
 
 // Per-frame shader tick — advances the grass + flower uTime uniforms. Reads
@@ -55,169 +65,142 @@ export function getGrassMat()  { return _grassMat; }
 export function getFlowerMat() { return _flowerMat; }
 export function getTulipMat()  { return _tulipMat; } // v0.2.263
 
-// ── Instanced grass ───────────────────────────────────────────────────────────
+// ── Instanced grass (terra port, v0.2.310 — GREEN PASS) ──────────────────────
+// spacejack/terra flat-ribbon instanced grass (MIT, © 2016-2017 Mike Linkovich).
+// v0.2.309 proved the shape: the flat ribbon's geometric tip taper (1 - hpct^3)
+// reads as a true point from every angle, and the per-vertex curve*hpct rotation
+// bends each blade as one continuous curve — fixing the two issues the solid
+// cone (v0.2.286-308) plateaued on. The user confirmed "best grass by a long
+// way" on the v0.2.309 diagnostic.
+//
+// This GREEN PASS completes the terra port: procedural grass blade texture +
+// noise texture (no npm dep, generated as DataTextures at runtime), terra's
+// noise-texture wind (the big visual win over the cone's sin-gust), directional
+// sun + ambient + ambient-occlusion lighting, and hand-wired exponential-squared
+// fog matched to the arena's FogExp2(0xc8dde8, 0.008).
+//
+// DIAGNOSTIC PRESERVED: a uMode uniform (0=green/lit, 1=blue→red diagnostic)
+// lets the blue/red look the user called "very cool" be toggled back instantly
+// from the console: window._grassMat.uniforms.uMode.value = 1
+//
+// Paradigm: InstancedBufferGeometry + RawShaderMaterial. NO instanceMatrix —
+// positions computed in-shader from a `vindex` attribute; per-blade data in two
+// vec4 instanced attributes: `offset` (x, z, _, rot) and `shape` (width, height,
+// lean, curve). Y-up: blade grows +Y, ground is XZ, bend plane is Y/Z, blade
+// yaw rotates X/Z. (Z-up→Y-up conversion applied to terra's original GLSL.)
 function _buildGrass() {
-  // v0.2.267: FROM-SCRATCH BLADE based on the threejsdemos.com procedural grass
-  // demo (grass-controller.js). The flat-ribbon approach (v0.2.266c) still read
-  // as jagged shards in SwiftShader. The demo's proven recipe: a PlaneGeometry
-  // blade with a CPU piecewise taper (wide base → gradual middle → sharp tip) +
-  // a slight quadratic forward curve, driven by an InstancedMesh whose
-  // instanceColor carries (phase, brightness, hueShift). The organic multi-octave
-  // gust wind from v0.2.266 is retained on top — only the blade + colour pipeline
-  // are ported from the demo.
-  // v0.2.286: 3-SIDED BLADE (triangular-prism cross-section). The flat ribbon
-  // (PlaneGeometry, DoubleSide) read as a fat angular card whenever it faced the
-  // camera, and ~half the blades were invisible edge-on at any angle. Thinning a
-  // 2D plane only makes a thinner card; it never becomes thin 3D grass, which is
-  // why every width cut from v0.2.282->285 still read as "fat angular square".
-  // A 3-sided blade has real volume: 3 outward faces around a tiny triangular
-  // core, tapering to a 3-sided point. It occludes from every angle (no edge-on
-  // vanishing) and never looks like a flat card. Cross-section radius is tiny so
-  // each blade is a thin 3D needle, not a chunky prism.
-  // v0.2.301: SOLID WELDED CONE (restored). The flat cross-quad (v0.2.299-300)
-  // read as two separate flat planes with independently swaying tips — never one
-  // solid object. A solid N-sided cone is what grass-as-a-solid actually is.
-  // WHY the old cone (v0.2.294-298) read "large flat angular red TOP": the old
-  // fragment shader colored the entire top ~30% red (vT>0.7 gradient) AND used
-  // per-facet two-sided diffuse lighting, so the top was 8 flat red trapezoidal
-  // panels catching light differently. The geometry was already welded; it was
-  // the coloring + lighting that made the flat facets loud.
-  // FIX: (a) solid 8-sided cone, facets share vertices at every joint (welded);
-  // (b) a SINGLE shared tip vertex — every cap triangle references the one
-  // point (was 8 coincident tip verts) -> true point, "all tips locked together
-  // at the point"; (c) red ONLY at the tip (vT>=0.80, top ~20%), body blue — the
-  // flat facets are quiet blue, only the small tip cone reads red; (d) unlit
-  // diagnostic (no vWn/normals) so facets aren't emphasized; (e) sway is
-  // height-only (instance origin + position.y) -> every vertex in a height ring
-  // displaces identically -> cone bends as ONE rigid solid, cross-section never
-  // distorts, joints stay locked all the way to the tip.
-  const BLADE_H    = 0.50; // v0.2.306: knee-high (was 2.5 — jungle tall). ~0.5m = knee height.
-                          // Wind auto-scales with H, so proportional sway stays ~18%.
-  const BLADE_R    = 0.060; // v0.2.308: 60mm radius (was 75mm, -20%). Long thin blades —
-                            // height:width now ~8:1 at knee height, reads as slender grass.
-  const BLADE_SIDES = 12;   // v0.2.302: 12-sided (was 8). The 8-sided octagonal silhouette read
-                            // "flat angular" when a facet faced the camera (50% of the time). 12 sides
-                            // gives a rounder cross-section so the tip reads as a point from any angle.
-  const BLADE_SEGS  = 6;
-  const TARGET_BLADES = 30000;
-  const CAND_SPACING  = 0.040;
+  const BLADE_SEGS   = 5;
+  const BLADE_VERTS  = (BLADE_SEGS + 1) * 2;
+  const BLADE_INDICES = BLADE_SEGS * 12;
+  const BLADE_WIDTH  = 0.050;
+  const BLADE_HEIGHT_MIN = 0.42;
+  const BLADE_HEIGHT_MAX = 0.58;
+  // v0.2.314: doubled density to fill gaps. 60k blades over the NAP footprint
+  // (~874 sq units) ≈ 69 blades/sq unit, ~0.12m mean spacing → reads as a
+  // continuous sward instead of scattered clumps with bare ground between.
+  const TARGET_BLADES = 60000;
+  const CAND_SPACING  = 0.032;
 
-  // Build the cone as an indexed BufferGeometry: BLADE_SIDES corner columns
-  // (vertices SHARED between adjacent facets -> welded joints) up BLADE_SEGS
-  // height rings, radius tapering from BLADE_R at the base to 0 at the top,
-  // then ONE single tip vertex that every cap triangle references.
-  const _angles = Array.from({ length: BLADE_SIDES }, (_, k) => k * 2 * Math.PI / BLADE_SIDES);
-  const _gPos = [];
-  const _gIdx = [];
-  // Height rings 0..BLADE_SEGS-1 (BLADE_SEGS rings of BLADE_SIDES verts each).
-  for (let j = 0; j < BLADE_SEGS; j++) {
-    const hr = j / BLADE_SEGS;
-    const y  = hr * BLADE_H;
-    const taper = Math.pow(1.0 - hr, 1.5);  // v0.2.307: aggressive base taper (was linear 1-hr).
-                            // Radius drops fast at the base into a thin trunk, then tapers
-                            // to the tip. Strictly monotonic, no flare. Profile:
-                            // base 75mm -> 53mm -> 35mm -> 21mm -> 9mm -> 2mm -> 0.
-    const r = BLADE_R * taper;
-    for (let k = 0; k < BLADE_SIDES; k++) {
-      _gPos.push(r * Math.cos(_angles[k]), y, r * Math.sin(_angles[k]));
-    }
-  }
-  // Single shared tip vertex — all cap triangles reference this one point.
-  _gPos.push(0, BLADE_H, 0);
-  const TIP = _gPos.length / 3 - 1;
-  // Side faces: quads between ring j and ring j+1, vertices shared with neighbours.
-  for (let j = 0; j < BLADE_SEGS - 1; j++) {
-    for (let k = 0; k < BLADE_SIDES; k++) {
-      const k2 = (k + 1) % BLADE_SIDES;
-      const b0 = j * BLADE_SIDES + k,  b1 = j * BLADE_SIDES + k2;
-      const t0 = (j + 1) * BLADE_SIDES + k, t1 = (j + 1) * BLADE_SIDES + k2;
-      _gIdx.push(b0, b1, t0,  b1, t1, t0);
-    }
-  }
-  // Cap: last ring -> single tip vertex (locked-together point).
-  const lastRing = (BLADE_SEGS - 1) * BLADE_SIDES;
-  for (let k = 0; k < BLADE_SIDES; k++) {
-    const k2 = (k + 1) % BLADE_SIDES;
-    _gIdx.push(lastRing + k, lastRing + k2, TIP);
-  }
-
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(_gPos, 3));
-  geo.setIndex(_gIdx);
-
-  const mat = new THREE.ShaderMaterial({
-    uniforms: {
-      uTime:    { value: 0.0 },
-      uWindDir: { value: { x: 0.707, y: 0.707 } },
-    },
-    vertexShader: /* glsl */`
-      varying float vT;
-      varying float vBright;
-      uniform float uTime;
-      uniform vec2  uWindDir;
-      void main() {
-        float h = ${BLADE_H.toFixed(4)};
-        float t = clamp(position.y / h, 0.0, 1.0);
-        vT = t;
-        vBright = instanceColor.g;
-        // Instance origin ONLY (same for every vertex in this instance) — sway
-        // never depends on position.x/z, so every vertex in a height ring gets
-        // an identical displacement. The cone bends as one rigid solid: joints
-        // stay locked, the cross-section never distorts, tips never peel apart.
-        vec3 wpos = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-        float ph = instanceColor.r * 6.2832;
-        // v0.2.304: much stronger + faster wind (was 0.70/0.50 and 0.025+0.08).
-        float g1 = sin(wpos.x * 0.21 + uTime * 1.10 + ph);
-        float g2 = sin(wpos.z * 0.17 - uTime * 0.80 + ph * 1.7);
-        float gust = (g1 * 0.5 + g2 * 0.5) * 0.5 + 0.5;
-        gust = smoothstep(0.15, 0.85, gust);
-        float heightPower = mix(t * t, t, 0.55);   // v0.2.307: more trunk bend (was 0.35).
-          // Higher blend toward t -> the trunk itself bends more, not just the tip.
-        float amp = 0.6 + vBright * 0.4;
-        float sway = (0.06 + gust * 0.22) * heightPower * amp;   // v0.2.307: more bend (was 0.04+0.14)
-        sway *= ${BLADE_H.toFixed(4)};   // v0.2.305: scale wind to blade height so tall grass
-                                         // sways visibly (absolute deflection grows with height —
-                                         // ~0.45m tip on a 2.5m blade, ~18%, reads as real wind).
-        vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.0);
-        wp.xyz += vec3(uWindDir.x * sway, 0.0, uWindDir.y * sway);
-        // v0.2.303: REMOVED vertical compression (wp.y *= ...). The non-uniform Y
-        // squash bunched the upper rings together while their radius stayed the
-        // same, creating an hourglass/flared-top illusion. Pure horizontal bend
-        // now — the cone stays a clean monotonic taper and bends as one solid.
-        gl_Position = projectionMatrix * viewMatrix * wp;
+  // ── Procedural grass blade texture (no asset file, DataTexture) ───────────
+  // 8x64 RGBA. Vertical blade: soft alpha edges + faint midrib + green gradient
+  // (darker base → brighter mid → pale tip). Sampled with RepeatWrapping on T.
+  function makeBladeTexture() {
+    const W = 8, H = 64;
+    const data = new Uint8Array(W * H * 4);
+    for (let y = 0; y < H; y++) {
+      const v = y / (H - 1);                  // 0 base .. 1 tip
+      for (let x = 0; x < W; x++) {
+        const u = x / (W - 1) - 0.5;          // -0.5..0.5 across blade width
+        // Green gradient: rich base green → lighter mid → pale yellow-green tip
+        const r = 0.27 + (0.18 - 0.27) * v;
+        const g = 0.60 + (0.43 - 0.60) * v;
+        const b = 0.15 + (0.12 - 0.15) * v;
+        // Faint midrib (centre column slightly brighter)
+        const rib = 1.0 - smoothstep(0.0, 0.18, Math.abs(u));
+        // Soft alpha edge so blade silhouette isn't a hard rectangle
+        const edge = 1.0 - smoothstep(0.30, 0.50, Math.abs(u));
+        // Tip tapers in alpha too (top 15% fades to soft point)
+        const tipFade = 1.0 - smoothstep(0.85, 1.0, v) * 0.6;
+        const a = Math.max(edge, 0.0) * tipFade;
+        const o = (y * W + x) * 4;
+        data[o + 0] = Math.min(255, (r + rib * 0.05) * 255);
+        data[o + 1] = Math.min(255, (g + rib * 0.08) * 255);
+        data[o + 2] = Math.min(255, (b + rib * 0.03) * 255);
+        data[o + 3] = Math.min(255, a * 255);
       }
-    `,
-    fragmentShader: /* glsl */`
-      varying float vT;
-      varying float vBright;
-      void main() {
-        // v0.2.303: GREEN GRADIENT (red/blue diagnostic confirmed the shape works).
-        // Wide base reads as the bright visible anchor at the floor; tip softens.
-        // Even gradient across the full height for a continuous single-material read.
-        vec3 baseGreen = vec3(0.27, 0.60, 0.15);  // bright base (floor)
-        vec3 tipGreen  = vec3(0.18, 0.43, 0.12);  // softer tip (top)
-        vec3 col = mix(baseGreen, tipGreen, vT);
-        col *= 0.85 + vBright * 0.3;
-        gl_FragColor = vec4(col, 1.0);
-      }
-    `,
-    side: THREE.DoubleSide,
-  });
+    }
+    const tex = new THREE.DataTexture(data, W, H, THREE.RGBAFormat);
+    tex.wrapS = THREE.ClampToEdgeWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.needsUpdate = true;
+    return tex;
+  }
 
-  // Patch grid confined to NAP-zone footprint — see NAP_GRASS_* constants at
-  // the top of the file. Skip any patch that lands within ~1.5u of the tree
-  // trunk at (NAP_X+6, 0) so we don't bury the bonsai base in blades.
-  // v0.2.272: EXACTLY TARGET_BLADES blades. A fine candidate grid is collected,
-  // then a partial Fisher–Yates shuffle selects exactly TARGET_BLADES of them
-  // so the field stays evenly thinned (uniform, no clumps) at the requested
-  // count rather than being driven by spacing.
+  // ── Procedural noise texture (wind driver, DataTexture) ───────────────────
+  // 64x64 RGB smoothed value noise. Green channel is sampled with a time offset
+  // to drive organic, non-repeating wind gusts across the field (terra's trick:
+  // "using the lighting channel as noise makes the best looking wind").
+  function makeNoiseTexture() {
+    const S = 64;
+    const raw = new Float32Array(S * S);
+    for (let i = 0; i < raw.length; i++) raw[i] = Math.random();
+    // Box-blur a few passes → smooth low-frequency blobs (organic gusts)
+    const buf = new Float32Array(S * S);
+    for (let pass = 0; pass < 3; pass++) {
+      for (let y = 0; y < S; y++) {
+        for (let x = 0; x < S; x++) {
+          let s = 0, c = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const xx = (x + dx + S) % S, yy = (y + dy + S) % S;
+              s += raw[yy * S + xx]; c++;
+            }
+          }
+          buf[y * S + x] = s / c;
+        }
+      }
+      raw.set(buf);
+    }
+    // v0.2.312: RGBA, not RGB. RGBFormat triggers GL_INVALID_ENUM on
+    // glTexStorage2D in WebGL2/Three r184 (0x1907 is an unsized internal
+    // format), silently breaking the sampler and making the grass invisible.
+    const data = new Uint8Array(S * S * 4);
+    for (let i = 0; i < raw.length; i++) {
+      const v = Math.max(0, Math.min(255, raw[i] * 255));
+      data[i * 4 + 0] = v; data[i * 4 + 1] = v; data[i * 4 + 2] = v; data[i * 4 + 3] = 255;
+    }
+    const tex = new THREE.DataTexture(data, S, S, THREE.RGBAFormat);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  const grassTex = makeBladeTexture();
+  const noiseTex = makeNoiseTexture();
+
+  // ── terra initBladeIndices — two-sided ribbon ─────────────────────────────
+  function initBladeIndices(id, vc1, vc2) {
+    let i = 0, seg;
+    for (seg = 0; seg < BLADE_SEGS; ++seg) {
+      id[i++] = vc1 + 0; id[i++] = vc1 + 1; id[i++] = vc1 + 2;
+      id[i++] = vc1 + 2; id[i++] = vc1 + 1; id[i++] = vc1 + 3;
+      vc1 += 2;
+    }
+    for (seg = 0; seg < BLADE_SEGS; ++seg) {
+      id[i++] = vc2 + 2; id[i++] = vc2 + 1; id[i++] = vc2 + 0;
+      id[i++] = vc2 + 3; id[i++] = vc2 + 1; id[i++] = vc2 + 2;
+      vc2 += 2;
+    }
+    return i;
+  }
+
+  // ── Candidate grid → Fisher–Yates thinning (NAP-zone, bonsai cleared) ──────
   const TREE_X = NAP_X + 6;
   const TREE_Z = 0;
   const TREE_CLEAR_SQ = 1.5 * 1.5;
   const candidates = [];
   for (let x = NAP_GRASS_X0; x <= NAP_GRASS_X1; x += CAND_SPACING) {
     for (let z = NAP_GRASS_Z0; z <= NAP_GRASS_Z1; z += CAND_SPACING) {
-      // jitter scaled to spacing so blades stay evenly distributed (no re-clumping)
       const jx = x + (Math.random() - 0.5) * CAND_SPACING * 0.7;
       const jz = z + (Math.random() - 0.5) * CAND_SPACING * 0.7;
       const dx = jx - TREE_X, dz = jz - TREE_Z;
@@ -225,66 +208,217 @@ function _buildGrass() {
       candidates.push(jx, jz);
     }
   }
-  // Partial Fisher–Yates: pick exactly TARGET_BLADES (or fewer if the candidate
-  // pool ran short) uniformly at random — keeps the thinning even across the zone.
-  const patches = [];
   const pick = Math.min(TARGET_BLADES, Math.floor(candidates.length / 2));
   for (let k = 0; k < pick; k++) {
     const r = k + Math.floor(Math.random() * (Math.floor(candidates.length / 2) - k));
-    // swap candidate k and r (each is a (x,z) pair)
     const kx = candidates[k * 2], kz = candidates[k * 2 + 1];
     candidates[k * 2]     = candidates[r * 2];
     candidates[k * 2 + 1] = candidates[r * 2 + 1];
     candidates[r * 2]     = kx;
     candidates[r * 2 + 1] = kz;
-    patches.push({
-      x: candidates[k * 2],
-      z: candidates[k * 2 + 1],
-      ry: Math.random() * Math.PI * 2,
-      s:  0.85 + Math.random() * 0.35,  // tighter scale variance for even coverage
-      phase: Math.random(),
-      speed: Math.random(),
-      tint:  Math.random(),            // per-blade colour tint (cool→warm green)
-      tall:  Math.random() < 0.21,     // v0.2.285: 21% of blades get a further ×1.21 height
-    });
   }
 
-  const count = patches.length;
-  const mesh  = new THREE.InstancedMesh(geo, mat, count);
-  mesh.instanceColor = new THREE.BufferAttribute(new Float32Array(count * 3), 3);
+  const count = pick;
+  const vindexArr = new Float32Array(BLADE_VERTS * 2);
+  for (let i = 0; i < vindexArr.length; i++) vindexArr[i] = i;
+  const offsetArr = new Float32Array(count * 4);
+  const shapeArr  = new Float32Array(count * 4);
+  const indexArr  = new Uint16Array(BLADE_INDICES);
+  initBladeIndices(indexArr, 0, BLADE_VERTS);
 
   for (let i = 0; i < count; i++) {
-    const p = patches[i];
-    _pos.set(p.x, 0, p.z);
-    _quat.setFromAxisAngle(_up, p.ry);
-    // v0.2.285: non-uniform scale — tall blades get ×1.21 on Y (a further 21% on top
-    // of the global +69%). XZ scale stays even so coverage/thinning is unchanged.
-    const sy = p.s * (p.tall ? 1.21 : 1.0);
-    _scl.set(p.s, sy, p.s);
-    _m4.compose(_pos, _quat, _scl);
-    mesh.setMatrixAt(i, _m4);
-    mesh.instanceColor.setXYZ(i, p.phase, p.speed, p.tint);
+    const x  = candidates[i * 2];
+    const z  = candidates[i * 2 + 1];
+    const ry = Math.random() * Math.PI * 2;
+    const s  = 0.85 + Math.random() * 0.35;
+    const tall = Math.random() < 0.21;
+    const h = (BLADE_HEIGHT_MIN + Math.pow(Math.random(), 4.0) * (BLADE_HEIGHT_MAX - BLADE_HEIGHT_MIN)) * s * (tall ? 1.21 : 1.0);
+    const w = BLADE_WIDTH * s * (0.9 + Math.random() * 0.2);
+    offsetArr[i * 4 + 0] = x;
+    offsetArr[i * 4 + 1] = z;
+    offsetArr[i * 4 + 2] = 0.0;
+    offsetArr[i * 4 + 3] = ry;
+    shapeArr[i * 4 + 0] = w;
+    shapeArr[i * 4 + 1] = h;
+    shapeArr[i * 4 + 2] = Math.random() * 0.3;       // lean
+    shapeArr[i * 4 + 3] = 0.05 + Math.random() * 0.3; // curve
   }
-  mesh.instanceMatrix.needsUpdate = true;
-  mesh.instanceColor.needsUpdate  = true;
-  // v0.2.265: fix instanced frustum culling. computeBoundingSphere() on the
-  // geometry only bounds a single blade at the origin, so the whole field was
-  // being culled when the camera wasn't aimed at the origin. InstancedMesh has
-  // its own computeBoundingSphere() that accounts for every instance matrix.
-  mesh.computeBoundingSphere();
-  mesh.frustumCulled = true;
-  // v0.2.275: sink the whole field 5cm so blade ROOTS sit below the floor
-  // surface (Y=-0.05). Blades are zero-thickness ribbons rooted flush with the
-  // floor (Y=0), so the bare floor stays visible through the gaps at ground
-  // level no matter how dense the field is. Burying the root line below the
-  // floor + the ground-cover plane below occludes that base gap — visible blade
-  // now starts at the surface, not on it.
+
+  const geo = new THREE.InstancedBufferGeometry();
+  geo.setIndex(new THREE.BufferAttribute(indexArr, 1));
+  geo.setAttribute('vindex', new THREE.BufferAttribute(vindexArr, 1));
+  geo.setAttribute('offset', new THREE.InstancedBufferAttribute(offsetArr, 4));
+  geo.setAttribute('shape',  new THREE.InstancedBufferAttribute(shapeArr, 4));
+  geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 10000);
+
+  const mat = new THREE.RawShaderMaterial({
+    uniforms: {
+      uTime:          { value: 0.0 },
+      uMode:          { value: 0.0 }, // 0 = green/lit, 1 = blue→red diagnostic
+      uMap:           { value: grassTex },
+      uNoise:         { value: noiseTex },
+      uNoiseScale:    { value: 0.025 },    // wind noise frequency across the field
+      uWindIntensity: { value: 0.30 },
+      uLightDir:      { value: new THREE.Vector3(0.743, 0.371, -0.557) }, // toward arena sunrise sun (40,20,-30)
+      uFogColor:      { value: new THREE.Color(0xc8dde8) },
+      uFogDensity:    { value: 0.008 },    // matches scene FogExp2
+      uGrassFadeFar:   { value: 60.0 },
+    },
+    vertexShader: /* glsl */`
+      precision highp float;
+
+      attribute float vindex;
+      attribute vec4 offset;  // (x, z, _, rot)
+      attribute vec4 shape;   // (width, height, lean, curve)
+
+      uniform float uTime;
+      uniform vec3 uLightDir;
+      uniform sampler2D uNoise;
+      uniform float uNoiseScale;
+      uniform float uWindIntensity;
+
+      uniform mat4 modelViewMatrix;
+      uniform mat4 projectionMatrix;
+
+      varying vec2 vUv;
+      varying vec4 vColor;
+      varying float vT;
+
+      #define BLADE_SEGS  ${BLADE_SEGS.toFixed(1)}
+      #define BLADE_VERTS ${BLADE_VERTS.toFixed(1)}
+
+      vec2 rotate(float x, float y, vec2 r) {
+        return vec2(x * r.x - y * r.y, x * r.y + y * r.x);
+      }
+
+      void main() {
+        float vi    = mod(vindex, BLADE_VERTS);
+        float di    = floor(vi / 2.0);
+        float hpct  = di / BLADE_SEGS;
+        float bside = floor(vindex / BLADE_VERTS);
+        float bedge = mod(vi, 2.0);
+        vT = hpct;
+
+        // Build blade local: X = width, Y = up (height), Z = forward bend axis.
+        // Edges taper geometrically toward a true point at the tip.
+        vec3 vpos = vec3(
+          shape.x * (bedge - 0.5) * (1.0 - pow(hpct, 3.0)),
+          shape.y * di / BLADE_SEGS,
+          0.0
+        );
+
+        // Blade face normal (±Z in Y-up local) pre-rotated by blade yaw (X/Z).
+        float n = bside * 2.0 - 1.0;
+        vec2 yawv = vec2(cos(offset.w), sin(offset.w));
+        vec3 normal = vec3(rotate(0.0, n, yawv).x, 0.0, rotate(0.0, n, yawv).y);
+
+        // Natural lean + animated curve. Bend lives in the vertical Y/Z plane.
+        float curve = shape.w + 0.125 * sin(uTime * 4.0 + offset.w * 0.2 * shape.y + offset.x + offset.y);
+        float rot = shape.z + curve * hpct;
+        vec2 rotv = vec2(cos(rot), sin(rot));
+        vpos.yz = rotate(vpos.y, vpos.z, rotv);
+        normal.yz = rotate(normal.y, normal.z, rotv);
+
+        // Blade yaw around Y-up (rotate ground plane X/Z).
+        vpos.xz = rotate(vpos.x, vpos.z, yawv);
+
+        // World ground position (XZ). offset = (x, z, _, rot): world X in .x,
+        // world Z in .y. (v0.2.313: the green-pass refactor wrongly used offset.xz,
+        // which read the unused .z slot as 0 → every blade collapsed to z=0, the
+        // "diagonal strip" bug. .xy is correct.)
+        vec2 bladePos = offset.xy;
+
+        // Wind — terra's noise-texture wind. Sample the noise green channel with a
+        // time-scrolling offset → organic, non-repeating gusts that vary across
+        // the field (vs the cone's uniform sin). Clamped, cubed, scaled by height.
+        vec2 samplePos = bladePos * uNoiseScale + 0.5;
+        float wind = texture2D(uNoise,
+          vec2(samplePos.x - uTime / 25.0, samplePos.y - uTime / 2.0) * 6.0).g;
+        wind = (clamp(wind, 0.25, 1.0) - 0.25) * (1.0 / 0.75);
+        wind = wind * wind * uWindIntensity;
+        wind *= hpct;                       // tall parts sway more
+        wind = -wind;
+        rotv = vec2(cos(wind), sin(wind));
+        vpos.yz = rotate(vpos.y, vpos.z, rotv);   // wind bends Y/Z (axis-aligned)
+        normal.yz = rotate(normal.y, normal.z, rotv);
+
+        // ── Lighting (ported from terra) ───────────────────────────────────
+        // Directional sun (abs so both faces catch light) + ambient, then
+        // ambient occlusion darkening the base, then per-blade colour jitter.
+        float diffuse = abs(dot(normal, uLightDir));
+        float light = 0.35 * diffuse + 0.65;
+        float heightLight = 1.0 - hpct;
+        heightLight = heightLight * heightLight;
+        light = max(light - heightLight * 0.5, 0.0);
+
+        // Green gradient base→tip (the colours the user settled on in v0.2.303).
+        vec3 bladeCol = mix(vec3(0.27, 0.60, 0.15), vec3(0.18, 0.43, 0.12), hpct);
+        vColor = vec4(
+          light * 0.75 + cos(offset.x * 80.0) * 0.1,
+          light * 0.95 + sin(offset.y * 140.0) * 0.05,
+          light * 0.95 + sin(offset.x * 99.0) * 0.05,
+          1.0
+        );
+        vColor.rgb *= bladeCol;
+        vColor.rgb = min(vColor.rgb, 1.0);
+
+        // Grass texture coordinate: x = blade edge (0..1), y = height (0..1).
+        vUv = vec2(bedge, di / BLADE_SEGS);
+
+        // Translate to world (ground XZ, blade grows +Y).
+        vpos.x += bladePos.x;
+        vpos.z += bladePos.y;
+
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(vpos, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */`
+      precision highp float;
+
+      uniform sampler2D uMap;
+      uniform vec3 uFogColor;
+      uniform float uFogDensity;
+      uniform float uGrassFadeFar;
+      uniform float uMode;
+
+      varying vec2 vUv;
+      varying vec4 vColor;
+      varying float vT;
+
+      void main() {
+        vec4 color;
+        if (uMode > 0.5) {
+          // DIAGNOSTIC: blue base → red tip (the look the user called "very cool")
+          vec3 base = vec3(0.10, 0.30, 0.95);
+          vec3 tip  = vec3(0.95, 0.15, 0.15);
+          color = vec4(mix(base, tip, vT), 1.0);
+        } else {
+          // Lit green: vertex colour × blade texture (alpha silhouette + midrib)
+          color = vColor * texture2D(uMap, vUv);
+        }
+
+        float depth = gl_FragCoord.z / gl_FragCoord.w;
+
+        // Distance alpha fade so the patch edge doesn't pop.
+        color.a = 1.0 - smoothstep(uGrassFadeFar * 0.55, uGrassFadeFar * 0.8, depth);
+
+        // Arena-matched exponential-squared fog (scene uses FogExp2 0.008).
+        float fogFactor = 1.0 - exp(-uFogDensity * uFogDensity * depth * depth);
+        color.rgb = mix(color.rgb, uFogColor, fogFactor);
+
+        gl_FragColor = color;
+      }
+    `,
+    side: THREE.DoubleSide,
+    transparent: true,
+  });
+
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.frustumCulled = false;
   mesh.position.y = -0.05;
 
   // v0.2.275: ground-cover mat. Flat dark-green plane 5mm above the floor
-  // spanning the full NAP-zone grass footprint. Reads as mossy ground in the
-  // gaps between blades so the bare sage floor (0x96A78A) never shows through
-  // at the base. Pairs with the root sink above to fully hide the floor.
+  // spanning the NAP-zone footprint — reads as mossy ground between blades.
   const gcX = NAP_GRASS_X0 + NAP_GRASS_W / 2;
   const gcZ = NAP_GRASS_Z0 + NAP_GRASS_D / 2;
   const groundCover = new THREE.Mesh(
@@ -300,12 +434,11 @@ function _buildGrass() {
   _grassMat = mat;
   window._grassMat = mat; // DEPRECATED debug alias (v0.2.118) — internal code uses tickFoliage()/getGrassMat()
 
-  // v0.2.274: diagnostic stamp. Open the browser console (F12) and look for
-  // the line starting with [grass-build] — it prints the EXACT params the
-  // browser is actually running, so you can confirm whether you're seeing a
-  // cached old build or the live one. If this line is missing entirely, the
-  // grass code never ran (stale bundle). flare 5.6 + count 500000 = live v0.2.274.
-  const stamp = `[grass-build] v0.2.308 blades=${count} bladeR=${BLADE_R} bladeH=${BLADE_H} sides=${BLADE_SIDES} segs=${BLADE_SEGS} shape=SOLID-WELDED-CONE taper=(1-hr)^1.5-THIN-TRUNK tip=SINGLE-VERTEX POINT-UP grad=GREEN bend=mix(t^2,t,0.55) sway=height-only+H-scaled windGust=0.22 windSpeed=1.10/0.80 KNEE-HIGH THIN-BLADES`;
+  // v0.2.274: diagnostic stamp. Open the browser console (F12) and look for the
+  // line starting with [grass-build] — it prints the EXACT params the browser is
+  // running, so you can confirm live vs cached. If this line is missing, the grass
+  // code never ran (stale bundle).
+  const stamp = `[grass-build] v0.2.313 blades=${count} bladeW=${BLADE_WIDTH} bladeH=${BLADE_HEIGHT_MIN}-${BLADE_HEIGHT_MAX} segs=${BLADE_SEGS} shape=TERRA-FLAT-RIBBON taper=(1-hpct^3)-GEOMETRIC-POINT bend=curve*hpct-YZ yaw=XZ wind=NOISE-TEXTURE-RGBA(uWindIntensity=${0.30},noiseScale=${0.025}) lighting=SUN+AMBIENT+AO green=(0.27,0.60,0.15)->(0.18,0.43,0.12) fog=EXP2(0xc8dde8,0.008) placement=offset.xy-XZ DIAGNOSTIC=uMode(blue->red,set uniforms.uMode.value=1) FLOWERS=REMOVED Y-UP`;
   console.info(stamp);
   window.__GRASS_BUILD = stamp;
 }

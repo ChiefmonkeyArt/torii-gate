@@ -25,12 +25,10 @@ const isVec3 = (v) =>
   v && typeof v === 'object' && isPlainNum(v.x) && isPlainNum(v.y) && isPlainNum(v.z);
 
 describe('anchorTransforms — registry', () => {
-  it('exposes exactly the four current anchor ids', () => {
+  it('exposes exactly the two current anchor ids', () => {
     expect(ANCHOR_IDS).toEqual([
-      'torii-gate-threshold',
       'nap-zone-north-stall',
       'nap-zone-far-centre',
-      'nap-zone-south-board',
     ]);
   });
 
@@ -46,7 +44,7 @@ describe('anchorTransforms — registry', () => {
   });
 
   it('getAnchor returns the frozen anchor or null for unknown', () => {
-    expect(getAnchor('torii-gate-threshold')).toBe(PROOF_SURFACE_ANCHORS['torii-gate-threshold']);
+    expect(getAnchor('nap-zone-north-stall')).toBe(PROOF_SURFACE_ANCHORS['nap-zone-north-stall']);
     expect(getAnchor('does-not-exist')).toBe(null);
     expect(Object.isFrozen(PROOF_SURFACE_ANCHORS)).toBe(true);
   });
@@ -128,7 +126,7 @@ describe('anchorTransforms — resolveAllAnchors', () => {
 
   it('reports unresolved anchors instead of throwing', () => {
     const specs = [
-      { id: 'good', anchor: 'torii-gate-threshold', position: { x: 21, y: 2, z: 0 }, size: { width: 1, height: 1, depth: 0.1 }, yawRad: 0 },
+      { id: 'good', anchor: 'nap-zone-north-stall', position: { x: 21, y: 2, z: 0 }, size: { width: 1, height: 1, depth: 0.1 }, yawRad: 0 },
       { id: 'bad', anchor: 'mystery-anchor', position: { x: 0, y: 0, z: 0 }, size: { width: 1, height: 1, depth: 0.1 }, yawRad: 0 },
     ];
     const r = resolveAllAnchors(specs);

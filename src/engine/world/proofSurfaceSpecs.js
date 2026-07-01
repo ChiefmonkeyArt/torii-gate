@@ -25,24 +25,13 @@ export const PROOF_SURFACE_BADGE = 'SPEC · INERT · LAYOUT-ONLY';
 // Centre of the NAP-zone floor along X — a convenient anchor for the stalls/boards.
 const NAP_MID_X = (NAP_X + NAP_FAR_X) / 2; // (20 + 45) / 2 = 32.5
 
-// The four ordered proof-surface specs, in MVP-loop order (Travel→Market→Score→
-// Update). Positions/sizes are APPROXIMATE placement hints in world metres for the
-// future mesh pass — plain data, never THREE objects. `yawRad` is an approximate
+// The ordered proof-surface specs, in MVP-loop order (Market→Score remain in-world;
+// Travel + Update were removed v0.2.316 — the torii gateway realises Travel and the
+// homescreen realises Update-check). Positions/sizes are APPROXIMATE placement hints
+// in world metres — plain data, never THREE objects. `yawRad` is an approximate
 // facing (radians about +Y); the mesh pass owns the exact transform. Every spec is
 // frozen so a consumer can treat it as a read-only contract.
 export const PROOF_SURFACE_SPECS = Object.freeze([
-  Object.freeze({
-    id: 'gateway-portal-panel',
-    step: 'TRAVEL', lean: 'LEAN-2',
-    title: 'GATEWAY', kind: 'portal-panel',
-    previewSdk: 'gatewayPreview', shell: 'gatewayPreview',
-    anchor: 'torii-gate-threshold',
-    note: 'Stands just past the torii gate; previews a NAP-to-NAP hop. Never navigates.',
-    position: Object.freeze({ x: NAP_X + 1.5, y: 2.2, z: 0 }),
-    size: Object.freeze({ width: 2.6, height: 1.8, depth: 0.1 }),
-    yawRad: -Math.PI / 2, // faces back toward the approaching player (west)
-    invariants: Object.freeze({ readOnly: true, actionable: false }),
-  }),
   Object.freeze({
     id: 'product-stall-panel',
     step: 'MARKET', lean: 'LEAN-3',
@@ -66,18 +55,6 @@ export const PROOF_SURFACE_SPECS = Object.freeze([
     size: Object.freeze({ width: 3.2, height: 2.2, depth: 0.12 }),
     yawRad: -Math.PI / 2, // faces back toward the gate (west)
     invariants: Object.freeze({ readOnly: true, actionable: false, signed: false, published: false }),
-  }),
-  Object.freeze({
-    id: 'update-prompt-board',
-    step: 'UPDATE', lean: 'LEAN-5',
-    title: 'UPDATE CHECK', kind: 'prompt-board',
-    previewSdk: 'updatePreview', shell: 'updatePreview',
-    anchor: 'nap-zone-south-board',
-    note: 'torii.quest update-check board; previews a sampled release. No fetch/install/auto-update.',
-    position: Object.freeze({ x: NAP_MID_X, y: 2.0, z: 9 }),
-    size: Object.freeze({ width: 2.4, height: 1.6, depth: 0.1 }),
-    yawRad: Math.PI, // faces the central walkway (north, -Z)
-    invariants: Object.freeze({ readOnly: true, actionable: false }),
   }),
 ]);
 
