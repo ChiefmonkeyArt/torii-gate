@@ -75,11 +75,10 @@ function _buildGrass() {
   // vanishing) and never looks like a flat card. Cross-section radius is tiny so
   // each blade is a thin 3D needle, not a chunky prism.
   const BLADE_SEGS = 8;     // v0.2.294: more rows for a smooth cone silhouette (was 6).
-  const BLADE_H    = 0.507; // 69% taller than original 0.30; 21% of blades get a further x1.21 Y.
-  const BLADE_R    = 0.006; // v0.2.294: 6mm base — wide enough that the bright base is
-                             // visible at the floor (breaks the tip-canopy illusion so the field
-                             // reads point-up). 5-sided cross-section + quadratic taper keep it
-                             // reading as a thin needle, not a fat shard.
+  const BLADE_H    = 0.30;  // shorter so the wide base is visible at the floor (no tip-canopy).
+  const BLADE_R    = 0.020; // 20mm base (3.3x wider): wide enough to read as a clear
+                             // wide base at the floor even in a dense field, so each blade reads
+                             // as wide-base -> narrow-tip (point-UP) instead of a tip-canopy.
   const TARGET_BLADES = 80000;  // production density
                                 // software-GPU machines (SwiftShader crashed at 250k instances). 80k
                                 // 3-sided cones still read as a full field at ~95/m² over the NAP zone.
