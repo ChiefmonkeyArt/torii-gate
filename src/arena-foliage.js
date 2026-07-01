@@ -98,11 +98,17 @@ function _buildGrass() {
   for (let j = 0; j < _rows; j++) {
     const hr = j / BLADE_SEGS;                 // 0..1
     const y  = hr * BLADE_H;
-    // v0.2.294: QUADRATIC taper — wide base collapses FAST to a thin point, so the
-    // blade reads as a clear cone (wide base -> thin pointy top) and the wide
-    // base stays the dominant visible feature at the floor instead of a tip-canopy.
-    let taper = (1.0 - hr) * (1.0 - hr);
-    if (hr >= 0.999) taper = 0.0;              // sharp point at the tip (in the air)
+    // Taper: wide base collapses to a TRUE sharp point fast. Top 35% is a near-zero
+    // radius spike so tips cannot form a flat angular cap — they read as a point.
+    // Lower 65% holds width so the wide base stays the dominant visible feature.
+    let taper;
+    if (hr < 0.65) {
+      taper = 1.0 - (hr / 0.65) * 0.55;          // 1.0 -> 0.45 over lower 65% (wide base)
+    } else {
+      const u = (hr - 0.65) / 0.35;              // 0..1 over top 35%
+      taper = 0.45 * (1.0 - u) * (1.0 - u);      // 0.45 -> 0 fast (sharp spike)
+    }
+    if (hr >= 0.999) taper = 0.0;              // exact point at the tip (in the air)
     const r = BLADE_R * taper;
     // lean peaks at the TIP (hr=1) so the pointed top is what sways.
     const lean = hr * hr * 0.06;
