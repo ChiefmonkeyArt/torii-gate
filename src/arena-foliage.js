@@ -79,7 +79,7 @@ function _buildGrass() {
   const BLADE_R    = 0.020; // 20mm base (3.3x wider): wide enough to read as a clear
                              // wide base at the floor even in a dense field, so each blade reads
                              // as wide-base -> narrow-tip (point-UP) instead of a tip-canopy.
-  const TARGET_BLADES = 80000;  // production density
+  const TARGET_BLADES = 30000;  // thinned so tips separate and read as points, not a canopy
                                 // software-GPU machines (SwiftShader crashed at 250k instances). 80k
                                 // 3-sided cones still read as a full field at ~95/m² over the NAP zone.
   const CAND_SPACING  = 0.040;  // fine candidate grid; partial Fisher-Yates selects TARGET_BLADES.
@@ -98,17 +98,15 @@ function _buildGrass() {
   for (let j = 0; j < _rows; j++) {
     const hr = j / BLADE_SEGS;                 // 0..1
     const y  = hr * BLADE_H;
-    // Taper: wide base collapses to a TRUE sharp point fast. Top 35% is a near-zero
-    // radius spike so tips cannot form a flat angular cap — they read as a point.
-    // Lower 65% holds width so the wide base stays the dominant visible feature.
+    // Taper: lower 60% holds width (wide base dominant). Top 40% is EXACTLY zero
+    // radius -> all top rows collapse to a single sharp point, so the tip cannot
+    // form any flat/angular cap. It reads as a true point.
     let taper;
-    if (hr < 0.65) {
-      taper = 1.0 - (hr / 0.65) * 0.55;          // 1.0 -> 0.45 over lower 65% (wide base)
+    if (hr < 0.60) {
+      taper = 1.0 - (hr / 0.60) * 0.50;          // 1.0 -> 0.50 over lower 60% (wide base)
     } else {
-      const u = (hr - 0.65) / 0.35;              // 0..1 over top 35%
-      taper = 0.45 * (1.0 - u) * (1.0 - u);      // 0.45 -> 0 fast (sharp spike)
+      taper = 0.0;                               // top 40% = true sharp point
     }
-    if (hr >= 0.999) taper = 0.0;              // exact point at the tip (in the air)
     const r = BLADE_R * taper;
     // lean peaks at the TIP (hr=1) so the pointed top is what sways.
     const lean = hr * hr * 0.06;
