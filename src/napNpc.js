@@ -10,9 +10,9 @@ import { sampleNapHeight } from './terrain/heightmap.js';
 let _root  = null;
 let _mixer = null;
 
-// Placed clear of the bonsai trunk (which sits at x=NAP_X+6=26, z=0) so the NPC
-// no longer reads as walking into the tree. Off the central walkway, facing the
-// gate to greet the incoming player.
+// Placed clear of the bonsai trunk (now at x=NAP_TREE_X=34, z=7, v0.2.339) so
+// the NPC no longer reads as walking into the tree. Off the central walkway,
+// facing the gate to greet the incoming player.
 const NPC_X = 30;
 const NPC_Z = 5;
 

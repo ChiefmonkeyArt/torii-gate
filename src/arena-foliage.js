@@ -3,7 +3,7 @@
 // reads as a clean turquoise underlit floor with mist swirls.
 import * as THREE from 'three';
 import { scene } from './scene.js';
-import { ARENA_HALF, NAP_X, NAP_FAR_X, CRATES } from './config.js';
+import { ARENA_HALF, NAP_X, NAP_FAR_X, CRATES, NAP_TREE_X, NAP_TREE_Z } from './config.js';
 import { sampleNapHeight, sampleArenaHeight, riverCenterX, RIVER_HALF } from './terrain/heightmap.js';
 import { SEA_LEVEL } from './terrain/seaConfig.js';
 
@@ -221,8 +221,8 @@ function _buildGrass() {
   // Each candidate is a TRIPLE (x, z, zone): zone 0 = NAP (green), 1 = arena
   // (purple→orange). The bonsai in the NAP zone and the arena crates are cleared
   // so blades don't grow through solid props.
-  const TREE_X = NAP_X + 6;
-  const TREE_Z = 0;
+  const TREE_X = NAP_TREE_X;
+  const TREE_Z = NAP_TREE_Z;
   const TREE_CLEAR_SQ = 1.5 * 1.5;
   // Arena crate footprints (+0.15m margin) — reject blades inside so they don't
   // poke through the crate boxes. CRATES = [cx, cz, hw, hd, ch].
@@ -649,8 +649,8 @@ function _buildWildflowers() {
 
   // Flowers also confined to the NAP zone. Reject any sample inside the tree
   // exclusion radius to keep the trunk base clean.
-  const TREE_X = NAP_X + 6;
-  const TREE_Z = 0;
+  const TREE_X = NAP_TREE_X;
+  const TREE_Z = NAP_TREE_Z;
   const TREE_CLEAR_SQ = 1.5 * 1.5;
   const mesh = new THREE.InstancedMesh(geo, mat, FLOWER_COUNT);
   const _col = new THREE.Color();
@@ -767,8 +767,8 @@ function _buildTulips() {
     side: THREE.DoubleSide,
   });
 
-  const TREE_X = NAP_X + 6;
-  const TREE_Z = 0;
+  const TREE_X = NAP_TREE_X;
+  const TREE_Z = NAP_TREE_Z;
   const TREE_CLEAR_SQ = 1.5 * 1.5;
   const mesh = new THREE.InstancedMesh(geo, mat, TULIP_COUNT);
   const _col = new THREE.Color();

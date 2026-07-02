@@ -1,5 +1,5 @@
 // config.js — ALL constants. Never scatter magic numbers.
-export const VERSION   = 'v0.2.338-alpha';
+export const VERSION   = 'v0.2.339-alpha';
 export const GAME_NAME = 'Torii Quest';
 export const ARENA_HALF     = 20;
 export const WALL_H         = 2.6;  // was 8 → 5.5 → 4.4 → 3.52 → 2.6 (reduced again, user request v0.2.57)
@@ -31,6 +31,15 @@ export const TRAVEL_GATE_Z  = 16; // far-right NAP corner (player's right, +z)
 export const NAP_SPAWN_X   = NAP_FAR_X - 5;   // 40 — deep in NAP, 2u clear of the travel gate
 export const NAP_SPAWN_Z   = -(ARENA_HALF - 3); // -17 — south (player's left) corner
 export const NAP_SPAWN_YAW = Math.PI / 2;     // face west (-X) across the grass toward the gate
+
+// Bonsai tree position in the NAP zone (v0.2.339). Moved FURTHER from the bridge
+// (x=20, z=0) and CLOSER to the east beach (x=NAP_FAR_X=45): relocated off the
+// z=0 bridge walkway axis and pushed east so it no longer crowds the bridge
+// entrance. x=34 is ~11m from the east beach (was 19m), ~15.6m from the bridge
+// (was 6m), and stays clear of the river (x≈20±3.5), the NAP NPC (30,5), the
+// travel gate (42,16), and the spawn corner (40,-17).
+export const NAP_TREE_X = NAP_X + 14;   // 34 — further from bridge, closer to east beach
+export const NAP_TREE_Z = 7;            // off the z=0 bridge axis
 // Clockwise (top-down) yaw delta applied to BOTH the procedural fallback and the
 // GLB gate so they stay in sync. Three.js +Y rotation is CCW from above, so
 // clockwise is negative. The two base yaws differ (fallback π/2, GLB π) because
@@ -103,7 +112,7 @@ export const CRATES = [
 // Same shape as CRATES: [cx, cz, halfW, halfD, fullH]. Player + bots run AABB
 // pushout against this list in addition to CRATES; weapons sweep both lists
 // for bullet impacts. Add anything solid that doesn't belong in CRATES.
-//   - Bonsai tree trunk at (NAP_X+6, 0) — the NAP-zone tree must be solid.
+//   - Bonsai tree trunk at (NAP_TREE_X, NAP_TREE_Z) — the NAP-zone tree must be solid.
 //   - Torii pillars at the east gate — z=±3.0 just inside EAST_GAP_HALF (3.5)
 //     so the central walkway stays clear. Half-width 0.4 covers the GLB pillar.
 // v0.2.333: the east-wall collider segments were REMOVED along with the rest of
@@ -112,7 +121,7 @@ export const CRATES = [
 // deck, not the wall), and the bonsai trunk stays solid.
 export const OBSTACLES = [
   // cx              cz                 hw    hd                 fullH
-  [ ARENA_HALF + 6,  0,                 0.55, 0.55,              4.4 ], // bonsai trunk (NAP zone)
+  [ NAP_TREE_X,     NAP_TREE_Z,        0.55, 0.55,              4.4 ], // bonsai trunk (NAP zone)
   [ ARENA_HALF,     -3.0,               0.4,  0.4,               WALL_H * 1.3 ], // torii pillar (north) — matches gate ×1.3 scale
   [ ARENA_HALF,      3.0,               0.4,  0.4,               WALL_H * 1.3 ], // torii pillar (south) — matches gate ×1.3 scale
 ];

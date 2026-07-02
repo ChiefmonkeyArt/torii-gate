@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene } from './scene.js';
-import { ARENA_HALF, WALL_H, CRATES, NAP_X, NAP_FAR_X, TRAVEL_GATE_X, TRAVEL_GATE_Z, TRAVEL_GATE_YAW_DELTA, BRIDGE_DECK_Y } from './config.js';
+import { ARENA_HALF, WALL_H, CRATES, NAP_X, NAP_FAR_X, NAP_TREE_X, NAP_TREE_Z, TRAVEL_GATE_X, TRAVEL_GATE_Z, TRAVEL_GATE_YAW_DELTA, BRIDGE_DECK_Y } from './config.js';
 import { buildFoliage } from './arena-foliage.js';
 import { buildProofSurfaceMeshes } from './engine/world/proofSurfaceMeshes.js';
 import { buildNapTerrainMesh, buildArenaTerrainMesh } from './terrain/terrainMesh.js';
@@ -251,7 +251,7 @@ function _buildNapZone() {
   napLight.position.set(NAP_X + NAP_W * 0.55, 5 + ISLAND_BASE_Y, 0);
   scene.add(napLight);
 
-  _buildNapTree(NAP_X + 6, 0); // ~x=26 just past the gate, centred on z=0
+  _buildNapTree(NAP_TREE_X, NAP_TREE_Z); // moved off the bridge axis, closer to the east beach (v0.2.339)
 
   // Display-only proof-surface panels (v0.2.150). One-time setup; inert visual
   // markers gated behind the pure render plan. No interaction/hot-path work.
