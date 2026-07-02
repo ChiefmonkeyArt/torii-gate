@@ -268,7 +268,9 @@ function _buildGrass() {
       // two-layer wave+gust field (see the vertex shader). Slow scrolls + explicit
       // LinearFilter on uNoise keep it jitter-free (v0.2.321 proved wind was the
       // jitter cause; v0.2.322 fixes the params, not the pipeline).
-      uWindIntensity: { value: 0.18 },
+      // v0.2.323: amplitude boosted 0.18 -> 0.38 for obvious, visible waves.
+      // v0.2.325: 0.38 -> 0.50 — bigger bend so wave crest bands read clearly.
+      uWindIntensity: { value: 0.50 },
       uLightDir:      { value: new THREE.Vector3(0.743, 0.371, -0.557) }, // toward arena sunrise sun (40,20,-30)
       uFogColor:      { value: new THREE.Color(0xc8dde8) },
       uFogDensity:    { value: 0.008 },    // matches scene FogExp2
@@ -326,7 +328,8 @@ function _buildGrass() {
         // v0.2.322: gentle per-blade-phased base sway (slow, low amplitude, small
         // spatial phase scale) → independent waving, no global unison. (v0.2.321
         // zeroed this for the wind-vs-aliasing diagnostic.)
-        float curve = shape.w + 0.05 * sin(uTime * 1.3 + offset.x * 0.12 + offset.y * 0.09 + shape.y);
+        // v0.2.323: amplitude + speed boosted so the sway reads as obvious motion.
+        float curve = shape.w + 0.09 * sin(uTime * 1.8 + offset.x * 0.12 + offset.y * 0.09 + shape.y);
         float rot = shape.z + curve * hpct;
         vec2 rotv = vec2(cos(rot), sin(rot));
         vpos.yz = rotate(vpos.y, vpos.z, rotv);
@@ -348,16 +351,36 @@ function _buildGrass() {
         // murmuration, not a uniform lean. LinearFilter on uNoise (set in JS)
         // guarantees smooth interpolation; slow scrolls (≤~9 texels/sec) keep it
         // jitter-free (v0.2.321 proved the old fast scroll was the jitter cause).
+        // v0.2.323: amplitude + wave-travel boosted for OBVIOUS motion (was too subtle).
+        // v0.2.324: directional sine waves gated by drifting envelopes.
+        // v0.2.325: SHORTER WAVELENGTH + cleaner axis-aligned travel + bigger
+        // amplitude so distinct wave CREST BANDS are visible sweeping across
+        // large areas of the field (v0.2.324's ~11u period made whole regions
+        // bend in unison → looked like one mass rising). Period now ~5-6u →
+        // many visible crests; crest speed ~2u/s reads as a clear sweep. Pure
+        // sines of (pos*k - t*speed): smooth everywhere, can't reintroduce jitter.
         vec2 sp = bladePos * uNoiseScale + 0.5;
-        float wave = texture2D(uNoise,
-          vec2(sp.x - uTime / 45.0, sp.y - uTime / 70.0) * 2.0).g;
-        wave = (clamp(wave, 0.25, 1.0) - 0.25) * (1.0 / 0.75);
-        float gust = texture2D(uNoise,
-          vec2(sp.x - uTime / 22.0, sp.y + uTime / 28.0) * 3.0).g;
-        gust = (clamp(gust, 0.25, 1.0) - 0.25) * (1.0 / 0.75);
-        gust = smoothstep(0.15, 1.0, gust);
-        gust = gust * gust;
-        float wind = (wave * 0.45 + gust * 0.55) * uWindIntensity;
+
+        // Ambient fine low-freq sway (the underlying murmur beneath the waves).
+        float base = texture2D(uNoise,
+          vec2(sp.x - uTime / 30.0, sp.y - uTime / 45.0) * 2.0).g;
+        base = (clamp(base, 0.25, 1.0) - 0.25) * (1.0 / 0.75);
+        base = base * base;
+
+        // Traveling wave A — sweeps +X. Short wavelength so crests are VISIBLE
+        // moving across the field. Broad low-threshold envelope so it covers large
+        // areas but still breathes in/out (not a flat uniform sine everywhere).
+        float envA = texture2D(uNoise, vec2(sp.y * 1.2 + 0.4, sp.x - uTime / 55.0) * 1.6).g;
+        envA = smoothstep(0.15, 1.0, envA);
+        float waveA = sin(bladePos.x * 1.1 - uTime * 2.4) * envA;
+
+        // Traveling wave B — sweeps +Z, different wavelength + speed + phase,
+        // crosses wave A so the two never sync (independent waves of wind).
+        float envB = texture2D(uNoise, vec2((sp.x + sp.y) * 0.9, sp.y + uTime / 45.0) * 1.9).g;
+        envB = smoothstep(0.20, 1.0, envB);
+        float waveB = sin(bladePos.y * 1.5 + uTime * 1.8) * envB;
+
+        float wind = (base * 0.20 + waveA * 0.55 + waveB * 0.50) * uWindIntensity;
         wind *= hpct;                       // tall parts sway more
         wind = -wind;
         rotv = vec2(cos(wind), sin(wind));
@@ -460,7 +483,7 @@ function _buildGrass() {
   // line starting with [grass-build] — it prints the EXACT params the browser is
   // running, so you can confirm live vs cached. If this line is missing, the grass
   // code never ran (stale bundle).
-  const stamp = `[grass-build] v0.2.322 blades=${count} bladeW=${BLADE_WIDTH} bladeH=${BLADE_HEIGHT_MIN}-${BLADE_HEIGHT_MAX} segs=${BLADE_SEGS} shape=TERRA-FLAT-RIBBON taper=(1-hpct^3)-GEOMETRIC-POINT bend=curve*hpct-YZ yaw=XZ wind=MURMURATION-WIND(wave*0.45+gust*0.55,smoothstep+sqr,noiseScale=${0.025},uWindIntensity=${0.18},LinearFilter,noMipmap) sway=0.05*sin(uTime*1.3+off*0.12) VERTEX_ANIM=ON lighting=SUN+AMBIENT+AO green=(0.27,0.60,0.15)->(0.18,0.43,0.12) fog=EXP2(0xc8dde8,0.008) placement=offset.xy-XZ DIAGNOSTIC=uMode(blue->red,set uniforms.uMode.value=1) FLOWERS=REMOVED Y-UP`;
+  const stamp = `[grass-build] v0.2.325 blades=${count} bladeW=${BLADE_WIDTH} bladeH=${BLADE_HEIGHT_MIN}-${BLADE_HEIGHT_MAX} segs=${BLADE_SEGS} shape=TERRA-FLAT-RIBBON taper=(1-hpct^3)-GEOMETRIC-POINT bend=curve*hpct-YZ yaw=XZ wind=TRAVELING-WAVES-SHORTWL(base*0.20+waveA*0.55+waveB*0.50,axis-aligned,period~5.5u,crest~2u/s,gated-env,noiseScale=${0.025},uWindIntensity=${0.50},LinearFilter,noMipmap) sway=0.09*sin(uTime*1.8+off*0.12) VERTEX_ANIM=ON lighting=SUN+AMBIENT+AO green=(0.27,0.60,0.15)->(0.18,0.43,0.12) fog=EXP2(0xc8dde8,0.008) placement=offset.xy-XZ DIAGNOSTIC=uMode(blue->red,set uniforms.uMode.value=1) FLOWERS=REMOVED Y-UP`;
   console.info(stamp);
   window.__GRASS_BUILD = stamp;
 }
