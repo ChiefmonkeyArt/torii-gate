@@ -3,8 +3,8 @@
 // reads as a clean turquoise underlit floor with mist swirls.
 import * as THREE from 'three';
 import { scene } from './scene.js';
-import { ARENA_HALF, NAP_X, NAP_FAR_X } from './config.js';
-import { sampleHeight } from './terrain/heightmap.js';
+import { ARENA_HALF, NAP_X, NAP_FAR_X, CRATES } from './config.js';
+import { sampleNapHeight, sampleArenaHeight } from './terrain/heightmap.js';
 
 // NAP-zone footprint shared by both grass + flowers.
 //   x: just inside the gate edge → just inside the far wall (small inset so
@@ -16,6 +16,14 @@ const NAP_GRASS_Z0 = -ARENA_HALF + 1.0;
 const NAP_GRASS_Z1 =  ARENA_HALF - 1.0;
 const NAP_GRASS_W  = NAP_GRASS_X1 - NAP_GRASS_X0;
 const NAP_GRASS_D  = NAP_GRASS_Z1 - NAP_GRASS_Z0;
+
+// Arena footprint (west of the gate), inset from the walls so blades don't poke
+// through them. Stage 3 (v0.2.329): grass now covers the arena island too, tinted
+// purple→orange (vs the NAP zone's green) via a per-blade zone flag.
+const ARENA_GRASS_X0 = -ARENA_HALF + 1.0;
+const ARENA_GRASS_X1 =  ARENA_HALF - 1.0;
+const ARENA_GRASS_Z0 = -ARENA_HALF + 1.0;
+const ARENA_GRASS_Z1 =  ARENA_HALF - 1.0;
 
 // Module-level scratch — shared with arena.js equivalents but isolated here
 const _up   = new THREE.Vector3(0, 1, 0);
@@ -96,10 +104,12 @@ function _buildGrass() {
   const BLADE_WIDTH  = 0.050;
   const BLADE_HEIGHT_MIN = 0.42;
   const BLADE_HEIGHT_MAX = 0.58;
-  // v0.2.314: doubled density to fill gaps. 60k blades over the NAP footprint
-  // (~874 sq units) ≈ 69 blades/sq unit, ~0.12m mean spacing → reads as a
-  // continuous sward instead of scattered clumps with bare ground between.
-  const TARGET_BLADES = 60000;
+  // v0.2.314: doubled density to fill gaps. v0.2.329: grass now spans BOTH the NAP
+  // footprint (~874 sq units) AND the arena footprint (~1444 sq units, ~2318 total).
+  // 110k blades ≈ 47 blades/sq unit across both zones → a continuous sward without
+  // the huge instance count a full-density arena would need. Candidates from both
+  // zones are interleaved then Fisher–Yates thinned to TARGET_BLADES.
+  const TARGET_BLADES = 110000;
   const CAND_SPACING  = 0.032;
 
   // ── Procedural grass blade texture (no asset file, DataTexture) ───────────
@@ -201,28 +211,57 @@ function _buildGrass() {
     return i;
   }
 
-  // ── Candidate grid → Fisher–Yates thinning (NAP-zone, bonsai cleared) ──────
+  // ── Candidate grid → Fisher–Yates thinning (both zones, obstacles cleared) ──
+  // Each candidate is a TRIPLE (x, z, zone): zone 0 = NAP (green), 1 = arena
+  // (purple→orange). The bonsai in the NAP zone and the arena crates are cleared
+  // so blades don't grow through solid props.
   const TREE_X = NAP_X + 6;
   const TREE_Z = 0;
   const TREE_CLEAR_SQ = 1.5 * 1.5;
+  // Arena crate footprints (+0.15m margin) — reject blades inside so they don't
+  // poke through the crate boxes. CRATES = [cx, cz, hw, hd, ch].
+  const crateBoxes = CRATES.map(([cx, cz, hw, hd]) => ({
+    x0: cx - hw - 0.15, x1: cx + hw + 0.15,
+    z0: cz - hd - 0.15, z1: cz + hd + 0.15,
+  }));
+  const inCrate = (x, z) => {
+    for (const b of crateBoxes) {
+      if (x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1) return true;
+    }
+    return false;
+  };
+
   const candidates = [];
+  // NAP zone (green) — bonsai cleared.
   for (let x = NAP_GRASS_X0; x <= NAP_GRASS_X1; x += CAND_SPACING) {
     for (let z = NAP_GRASS_Z0; z <= NAP_GRASS_Z1; z += CAND_SPACING) {
       const jx = x + (Math.random() - 0.5) * CAND_SPACING * 0.7;
       const jz = z + (Math.random() - 0.5) * CAND_SPACING * 0.7;
       const dx = jx - TREE_X, dz = jz - TREE_Z;
       if (dx * dx + dz * dz < TREE_CLEAR_SQ) continue;
-      candidates.push(jx, jz);
+      candidates.push(jx, jz, 0);
     }
   }
-  const pick = Math.min(TARGET_BLADES, Math.floor(candidates.length / 2));
+  // Arena zone (purple→orange) — crates cleared.
+  for (let x = ARENA_GRASS_X0; x <= ARENA_GRASS_X1; x += CAND_SPACING) {
+    for (let z = ARENA_GRASS_Z0; z <= ARENA_GRASS_Z1; z += CAND_SPACING) {
+      const jx = x + (Math.random() - 0.5) * CAND_SPACING * 0.7;
+      const jz = z + (Math.random() - 0.5) * CAND_SPACING * 0.7;
+      if (inCrate(jx, jz)) continue;
+      candidates.push(jx, jz, 1);
+    }
+  }
+  const total = Math.floor(candidates.length / 3);
+  const pick = Math.min(TARGET_BLADES, total);
   for (let k = 0; k < pick; k++) {
-    const r = k + Math.floor(Math.random() * (Math.floor(candidates.length / 2) - k));
-    const kx = candidates[k * 2], kz = candidates[k * 2 + 1];
-    candidates[k * 2]     = candidates[r * 2];
-    candidates[k * 2 + 1] = candidates[r * 2 + 1];
-    candidates[r * 2]     = kx;
-    candidates[r * 2 + 1] = kz;
+    const r = k + Math.floor(Math.random() * (total - k));
+    const kx = candidates[k * 3], kz = candidates[k * 3 + 1], kzone = candidates[k * 3 + 2];
+    candidates[k * 3]     = candidates[r * 3];
+    candidates[k * 3 + 1] = candidates[r * 3 + 1];
+    candidates[k * 3 + 2] = candidates[r * 3 + 2];
+    candidates[r * 3]     = kx;
+    candidates[r * 3 + 1] = kz;
+    candidates[r * 3 + 2] = kzone;
   }
 
   const count = pick;
@@ -230,12 +269,14 @@ function _buildGrass() {
   for (let i = 0; i < vindexArr.length; i++) vindexArr[i] = i;
   const offsetArr = new Float32Array(count * 4);
   const shapeArr  = new Float32Array(count * 4);
+  const zoneArr   = new Float32Array(count); // 0 = NAP (green), 1 = arena (purple→orange)
   const indexArr  = new Uint16Array(BLADE_INDICES);
   initBladeIndices(indexArr, 0, BLADE_VERTS);
 
   for (let i = 0; i < count; i++) {
-    const x  = candidates[i * 2];
-    const z  = candidates[i * 2 + 1];
+    const x    = candidates[i * 3];
+    const z    = candidates[i * 3 + 1];
+    const zone = candidates[i * 3 + 2];
     const ry = Math.random() * Math.PI * 2;
     const s  = 0.85 + Math.random() * 0.35;
     const tall = Math.random() < 0.21;
@@ -243,12 +284,13 @@ function _buildGrass() {
     const w = BLADE_WIDTH * s * (0.9 + Math.random() * 0.2);
     offsetArr[i * 4 + 0] = x;
     offsetArr[i * 4 + 1] = z;
-    offsetArr[i * 4 + 2] = sampleHeight(x, z);
+    offsetArr[i * 4 + 2] = zone > 0.5 ? sampleArenaHeight(x, z) : sampleNapHeight(x, z);
     offsetArr[i * 4 + 3] = ry;
     shapeArr[i * 4 + 0] = w;
     shapeArr[i * 4 + 1] = h;
     shapeArr[i * 4 + 2] = Math.random() * 0.3;       // lean
     shapeArr[i * 4 + 3] = 0.05 + Math.random() * 0.3; // curve
+    zoneArr[i] = zone;
   }
 
   const geo = new THREE.InstancedBufferGeometry();
@@ -256,6 +298,7 @@ function _buildGrass() {
   geo.setAttribute('vindex', new THREE.BufferAttribute(vindexArr, 1));
   geo.setAttribute('offset', new THREE.InstancedBufferAttribute(offsetArr, 4));
   geo.setAttribute('shape',  new THREE.InstancedBufferAttribute(shapeArr, 4));
+  geo.setAttribute('aZone',  new THREE.InstancedBufferAttribute(zoneArr, 1));
   geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 10000);
 
   const mat = new THREE.RawShaderMaterial({
@@ -283,6 +326,7 @@ function _buildGrass() {
       attribute float vindex;
       attribute vec4 offset;  // (x, z, _, rot)
       attribute vec4 shape;   // (width, height, lean, curve)
+      attribute float aZone;  // 0 = NAP (green), 1 = arena (purple→orange)
 
       uniform float uTime;
       uniform vec3 uLightDir;
@@ -296,6 +340,7 @@ function _buildGrass() {
       varying vec2 vUv;
       varying vec4 vColor;
       varying float vT;
+      varying float vZone;
 
       #define BLADE_SEGS  ${BLADE_SEGS.toFixed(1)}
       #define BLADE_VERTS ${BLADE_VERTS.toFixed(1)}
@@ -311,6 +356,7 @@ function _buildGrass() {
         float bside = floor(vindex / BLADE_VERTS);
         float bedge = mod(vi, 2.0);
         vT = hpct;
+        vZone = aZone;
 
         // Build blade local: X = width, Y = up (height), Z = forward bend axis.
         // Edges taper geometrically toward a true point at the tip.
@@ -397,8 +443,13 @@ function _buildGrass() {
         heightLight = heightLight * heightLight;
         light = max(light - heightLight * 0.5, 0.0);
 
-        // Green gradient base→tip (the colours the user settled on in v0.2.303).
-        vec3 bladeCol = mix(vec3(0.27, 0.60, 0.15), vec3(0.18, 0.43, 0.12), hpct);
+        // Per-blade vertical gradient base→tip, using the blade's LOCAL vertical
+        // (hpct = di/BLADE_SEGS), NOT world Y — so every blade shows the full
+        // gradient regardless of terrain height. NAP zone stays green (v0.2.303);
+        // arena zone goes PURPLE base → ORANGE tip (v0.2.329).
+        vec3 bladeCol = aZone > 0.5
+          ? mix(vec3(0.45, 0.20, 0.65), vec3(0.95, 0.55, 0.15), hpct)
+          : mix(vec3(0.27, 0.60, 0.15), vec3(0.18, 0.43, 0.12), hpct);
         vColor = vec4(
           light * 0.75 + cos(offset.x * 80.0) * 0.1,
           light * 0.95 + sin(offset.y * 140.0) * 0.05,
@@ -431,6 +482,7 @@ function _buildGrass() {
       varying vec2 vUv;
       varying vec4 vColor;
       varying float vT;
+      varying float vZone;
 
       void main() {
         vec4 color;
@@ -439,6 +491,10 @@ function _buildGrass() {
           vec3 base = vec3(0.10, 0.30, 0.95);
           vec3 tip  = vec3(0.95, 0.15, 0.15);
           color = vec4(mix(base, tip, vT), 1.0);
+        } else if (vZone > 0.5) {
+          // Arena: purple→orange blade colour, texture used only for its ALPHA
+          // silhouette (multiplying RGB would drag the gradient back toward green).
+          color = vec4(vColor.rgb, texture2D(uMap, vUv).a);
         } else {
           // Lit green: vertex colour × blade texture (alpha silhouette + midrib)
           color = vColor * texture2D(uMap, vUv);
@@ -475,7 +531,7 @@ function _buildGrass() {
   // line starting with [grass-build] — it prints the EXACT params the browser is
   // running, so you can confirm live vs cached. If this line is missing, the grass
   // code never ran (stale bundle).
-  const stamp = `[grass-build] v0.2.325 blades=${count} bladeW=${BLADE_WIDTH} bladeH=${BLADE_HEIGHT_MIN}-${BLADE_HEIGHT_MAX} segs=${BLADE_SEGS} shape=TERRA-FLAT-RIBBON taper=(1-hpct^3)-GEOMETRIC-POINT bend=curve*hpct-YZ yaw=XZ wind=TRAVELING-WAVES-SHORTWL(base*0.20+waveA*0.55+waveB*0.50,axis-aligned,period~5.5u,crest~2u/s,gated-env,noiseScale=${0.025},uWindIntensity=${0.50},LinearFilter,noMipmap) sway=0.09*sin(uTime*1.8+off*0.12) VERTEX_ANIM=ON lighting=SUN+AMBIENT+AO green=(0.27,0.60,0.15)->(0.18,0.43,0.12) fog=EXP2(0xc8dde8,0.008) placement=offset.xy-XZ DIAGNOSTIC=uMode(blue->red,set uniforms.uMode.value=1) FLOWERS=REMOVED Y-UP`;
+  const stamp = `[grass-build] v0.2.329 blades=${count} zones=NAP+ARENA bladeW=${BLADE_WIDTH} bladeH=${BLADE_HEIGHT_MIN}-${BLADE_HEIGHT_MAX} segs=${BLADE_SEGS} shape=TERRA-FLAT-RIBBON taper=(1-hpct^3)-GEOMETRIC-POINT bend=curve*hpct-YZ yaw=XZ wind=TRAVELING-WAVES-SHORTWL(base*0.20+waveA*0.55+waveB*0.50,axis-aligned,period~5.5u,crest~2u/s,gated-env,noiseScale=${0.025},uWindIntensity=${0.50},LinearFilter,noMipmap) sway=0.09*sin(uTime*1.8+off*0.12) VERTEX_ANIM=ON lighting=SUN+AMBIENT+AO nap-green=(0.27,0.60,0.15)->(0.18,0.43,0.12) arena-purple->orange=(0.45,0.20,0.65)->(0.95,0.55,0.15,per-blade-hpct) fog=EXP2(0xc8dde8,0.008) placement=offset.xy-XZ height=per-zone-sample DIAGNOSTIC=uMode(blue->red,set uniforms.uMode.value=1) FLOWERS=REMOVED Y-UP`;
   console.info(stamp);
   window.__GRASS_BUILD = stamp;
 }

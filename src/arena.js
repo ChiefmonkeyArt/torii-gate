@@ -6,12 +6,11 @@ import { scene } from './scene.js';
 import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X, TRAVEL_GATE_X, TRAVEL_GATE_Z, TRAVEL_GATE_YAW_DELTA } from './config.js';
 import { buildFoliage } from './arena-foliage.js';
 import { buildProofSurfaceMeshes } from './engine/world/proofSurfaceMeshes.js';
-import { buildNapTerrainMesh } from './terrain/terrainMesh.js';
+import { buildNapTerrainMesh, buildArenaTerrainMesh } from './terrain/terrainMesh.js';
+import { sampleNapHeight, sampleArenaHeight, ISLAND_BASE_Y } from './terrain/heightmap.js';
 import { buildSeaMesh } from './terrain/sea.js';
 
 // ── Colours ───────────────────────────────────────────────────────────────────
-const C_FLOOR  = 0x0a1f23; // deep teal-black, underlit by floor light
-const C_FLOOR_EMI = 0x1ad6c4; // turquoise emissive
 const C_WALL   = 0x1e3020;
 const C_CRATE  = 0x4a4458;
 const C_ORANGE = 0xf7931a;
@@ -21,11 +20,6 @@ const C_TURQ   = 0x1ad6c4;
 // perf: shared fallback materials (overwritten by texture load for walls)
 const _wallFallback = new THREE.MeshBasicMaterial({ color: C_WALL });
 const crateMat      = new THREE.MeshStandardMaterial({ color: C_CRATE, roughness: 0.7 });
-// Arena floor — turquoise emissive, faintly underlit. Reads as cool, otherworldly.
-const floorMat      = new THREE.MeshStandardMaterial({
-  color: C_FLOOR, emissive: C_FLOOR_EMI, emissiveIntensity: 0.35,
-  roughness: 0.6, metalness: 0.1,
-});
 
 export const wallMeshes = [];
 
@@ -52,37 +46,25 @@ export function buildArena() {
 }
 
 // ── Floor ─────────────────────────────────────────────────────────────────────
-// Turquoise emissive solid floor with two underlights pushing teal glow up
-// through the surface. No grass, no grid — mist swirls (atmosphere.js) sit
-// just above the floor for the underlit-fog look.
+// Stage 3 (v0.2.329): the flat turquoise emissive plane is replaced by the ARENA
+// ISLAND — an undulating heightmap-displaced ground mesh (terrain/terrainMesh.js)
+// raised to ISLAND_BASE_Y, matching the NAP island and rising from the Stage-2
+// sea. Grass + physics heightfield read the same sampleArenaHeight(), so all three
+// agree exactly. Overhead turquoise accent light kept for the arena's cool read.
 function _buildFloor() {
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(ARENA_HALF * 2, ARENA_HALF * 2),
-    floorMat
-  );
-  mesh.rotation.x = -Math.PI / 2;
-  mesh.receiveShadow = true;
-  scene.add(mesh);
+  buildArenaTerrainMesh(scene); // name 'arena-floor'
 
-  // Orange perimeter trim — keeps the arena edge readable against the teal floor
+  // Orange perimeter trim — sits on the raised plateau edge.
   const trim = new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.BoxGeometry(ARENA_HALF*2, 0.08, ARENA_HALF*2)),
     new THREE.LineBasicMaterial({ color: C_ORANGE })
   );
-  trim.position.y = 0.04;
+  trim.position.y = ISLAND_BASE_Y + 0.04;
   scene.add(trim);
 
-  // Underlight rig — two point lights mounted just below the floor plane,
-  // shining up. With the emissive material this fakes a glowing translucent
-  // floor (no real subsurface scattering, just a vibe). Range tuned so the
-  // light pool stays inside the arena and doesn't bleed across walls.
-  const l1 = new THREE.PointLight(C_TURQ, 4.0, ARENA_HALF * 1.4);
-  l1.position.set(-8, -0.6, -8); scene.add(l1);
-  const l2 = new THREE.PointLight(C_TURQ, 4.0, ARENA_HALF * 1.4);
-  l2.position.set( 8, -0.6,  8); scene.add(l2);
-  // Single overhead accent so crates and bots still get a top-down read
+  // Overhead accent so crates and bots still get a top-down turquoise read.
   const top = new THREE.PointLight(C_TURQ, 1.2, ARENA_HALF * 2.4);
-  top.position.set(0, WALL_H + 4, 0); scene.add(top);
+  top.position.set(0, WALL_H + 4 + ISLAND_BASE_Y, 0); scene.add(top);
 }
 
 // ── Walls ─────────────────────────────────────────────────────────────────────
@@ -93,12 +75,14 @@ function _buildWalls() {
   // Each segment runs from a corner to the gap edge along Z.
   const eastSegLen = ARENA_HALF - EAST_GAP_HALF + 0.25; // extends past corner
   const eastSegZ   = (EAST_GAP_HALF + ARENA_HALF) / 2;   // midpoint of segment
+  // Walls sit on the raised island plateau → base at ISLAND_BASE_Y.
+  const WY = WALL_H / 2 + ISLAND_BASE_Y;
   const wallDefs = [
-    [A,    WALL_H, 0.5,  0,          WALL_H/2, -ARENA_HALF, A],            // north
-    [A,    WALL_H, 0.5,  0,          WALL_H/2,  ARENA_HALF, A],            // south
-    [0.5,  WALL_H, A,   -ARENA_HALF, WALL_H/2,  0,          A],            // west
-    [0.5,  WALL_H, eastSegLen,  ARENA_HALF, WALL_H/2, -eastSegZ, eastSegLen], // east-north
-    [0.5,  WALL_H, eastSegLen,  ARENA_HALF, WALL_H/2,  eastSegZ, eastSegLen], // east-south
+    [A,    WALL_H, 0.5,  0,          WY, -ARENA_HALF, A],            // north
+    [A,    WALL_H, 0.5,  0,          WY,  ARENA_HALF, A],            // south
+    [0.5,  WALL_H, A,   -ARENA_HALF, WY,  0,          A],            // west
+    [0.5,  WALL_H, eastSegLen,  ARENA_HALF, WY, -eastSegZ, eastSegLen], // east-north
+    [0.5,  WALL_H, eastSegLen,  ARENA_HALF, WY,  eastSegZ, eastSegLen], // east-south
   ];
 
   const capMat    = new THREE.MeshBasicMaterial({ color: C_ORANGE });
@@ -118,7 +102,7 @@ function _buildWalls() {
 
     // Orange cap
     const cap = new THREE.Mesh(new THREE.BoxGeometry(w, 0.22, d + 0.1), capMat);
-    cap.position.set(x, WALL_H + 0.11, z);
+    cap.position.set(x, WALL_H + 0.11 + ISLAND_BASE_Y, z);
     scene.add(cap);
   });
 
@@ -127,7 +111,7 @@ function _buildWalls() {
    [-ARENA_HALF, ARENA_HALF],[ARENA_HALF,  ARENA_HALF]]
   .forEach(([px, pz]) => {
     const p = new THREE.Mesh(new THREE.BoxGeometry(0.8, WALL_H + 0.5, 0.8), pillarMat);
-    p.position.set(px, (WALL_H + 0.5) / 2, pz);
+    p.position.set(px, (WALL_H + 0.5) / 2 + ISLAND_BASE_Y, pz);
     scene.add(p);
   });
 }
@@ -136,7 +120,11 @@ function _buildWalls() {
 function _buildCrates() {
   CRATES.forEach(([cx, cz, hw, hd, ch]) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, ch, hd * 2), crateMat);
-    m.position.set(cx, ch / 2, cz);
+    // Crate sits ON the undulating arena surface: its base is the terrain height
+    // sampled at the crate centre, so it rides the hills instead of floating over
+    // a dip or sinking into a rise (v0.2.330). Must match the collider in
+    // physics.js, which samples the same height.
+    m.position.set(cx, ch / 2 + sampleArenaHeight(cx, cz), cz);
     m.castShadow = m.receiveShadow = true;
     scene.add(m);
     wallMeshes.push(m);
@@ -155,16 +143,16 @@ function _buildToriiGate() {
   const rp = lp.clone(); rp.position.set(0, 2.5, 3); fallback.add(rp);
   const cb = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 6.5), mat);
   cb.position.set(0, 5.2, 0); fallback.add(cb);
-  fallback.position.set(ARENA_HALF, 0, 0);
+  fallback.position.set(ARENA_HALF, ISLAND_BASE_Y, 0); // gate sits on the flat gate seam
   fallback.rotation.y = Math.PI / 2; // match GLB — crossbar parallel to east wall
   // Named for the proof-surface parent binding (v0.2.151), discoverable via
   // scene.getObjectByName('torii-gate'); the GLB below inherits the same name.
   fallback.name = 'torii-gate';
   scene.add(fallback);
 
-  // Accent light — stays regardless of GLB
+  // Accent light — stays regardless of GLB. Raised onto the island plateau.
   const gl = new THREE.PointLight(C_PURPLE, 3, 10);
-  gl.position.set(ARENA_HALF - 1, 4, 0); scene.add(gl);
+  gl.position.set(ARENA_HALF - 1, 4 + ISLAND_BASE_Y, 0); scene.add(gl);
 
   // Load GLB asynchronously — replaces fallback when ready
   const draco = new DRACOLoader();
@@ -192,7 +180,7 @@ function _buildToriiGate() {
     // crossbar runs north–south, parallel to the east wall — players walk
     // through it along the X axis.
     box.setFromObject(gate);
-    gate.position.set(ARENA_HALF - 0.2, -box.min.y, 0);
+    gate.position.set(ARENA_HALF - 0.2, -box.min.y + ISLAND_BASE_Y, 0);
     // Spin 180° from the previous 0-rad orientation — user request, makes the
     // "front" face of the torii (and its plaque/markings) read from inside the
     // arena rather than from the NAP zone side.
@@ -216,6 +204,9 @@ function _buildToriiGate() {
 // rings, spinning diamond, detection zone and "Press F to travel" prompt all sit
 // here (wired in main.js) — the entrance gate stays a pure marker, no travel.
 function _buildTravelGateway() {
+  // Ground height at the far-side portal: it sits in the NAP island interior, so
+  // its feet ride the undulating NAP surface, not y=0.
+  const gwY = sampleNapHeight(TRAVEL_GATE_X, TRAVEL_GATE_Z);
   // Fallback procedural gateway shown immediately; GLB replaces it on load.
   const mat = new THREE.MeshStandardMaterial({
     color: C_TURQ, emissive: 0x0e8f86, emissiveIntensity: 0.6, roughness: 0.4,
@@ -226,14 +217,14 @@ function _buildTravelGateway() {
   const rp = lp.clone(); rp.position.set(0, 2.5, 3); fallback.add(rp);
   const cb = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 6.5), mat);
   cb.position.set(0, 5.2, 0); fallback.add(cb);
-  fallback.position.set(TRAVEL_GATE_X, 0, TRAVEL_GATE_Z);
+  fallback.position.set(TRAVEL_GATE_X, gwY, TRAVEL_GATE_Z);
   fallback.rotation.y = Math.PI / 2 + TRAVEL_GATE_YAW_DELTA;
   fallback.name = 'travel-gateway';
   scene.add(fallback);
 
   // Accent light — turquoise, marks the travel portal regardless of GLB.
   const gl = new THREE.PointLight(C_TURQ, 3, 12);
-  gl.position.set(TRAVEL_GATE_X - 1, 4, TRAVEL_GATE_Z); scene.add(gl);
+  gl.position.set(TRAVEL_GATE_X - 1, 4 + gwY, TRAVEL_GATE_Z); scene.add(gl);
 
   // nostrich: the travel gateway GLB is DECORATIVE and OPTIONAL. It loads async,
   // long after boot, and must NEVER block arena entry. The turquoise procedural
@@ -271,7 +262,7 @@ function _buildTravelGateway() {
         // Centre on the far-side travel plane, feet on the floor, front facing the
         // approaching player (who walks east from the entrance).
         box.setFromObject(gate);
-        gate.position.set(TRAVEL_GATE_X, -box.min.y, TRAVEL_GATE_Z);
+        gate.position.set(TRAVEL_GATE_X, -box.min.y + gwY, TRAVEL_GATE_Z);
         gate.rotation.y = Math.PI + TRAVEL_GATE_YAW_DELTA;
 
         gate.traverse(o => {
@@ -352,7 +343,7 @@ function _buildNapZone() {
   // Soft teal accent light to mark the peace zone
   const napLight = new THREE.PointLight(0x6ad9d0, 2.0, 22);
   const NAP_W = NAP_FAR_X - NAP_X;
-  napLight.position.set(NAP_X + NAP_W * 0.55, 5, 0);
+  napLight.position.set(NAP_X + NAP_W * 0.55, 5 + ISLAND_BASE_Y, 0);
   scene.add(napLight);
 
   _buildNapTree(NAP_X + 6, 0); // ~x=26 just past the gate, centred on z=0
@@ -465,7 +456,7 @@ function _buildNapTree(x, z) {
     group.add(cluster);
   }
 
-  group.position.set(x, 0, z);
+  group.position.set(x, sampleNapHeight(x, z), z);
   // Subtle yaw - just enough to break machine-placed symmetry
   group.rotation.y = 0.35;
   scene.add(group);

@@ -12,8 +12,15 @@ import { createBotBody, createBotHead, setBotBodyPos, physicsReady,
          BOT_BODY_CENTRE_Y_OFFSET, BOT_HEAD_CENTRE_Y_OFFSET } from './physics.js';
 import { raycastService } from './engine/physics/raycastService.js';
 import { engageSpeed, steerComponent, inEngageRange } from './engine/entities/bot-agent.js';
+import { sampleArenaHeight } from './terrain/heightmap.js';
 
 export const bots = [];
+
+// Foot ground height for a bot at arena (x,z). Stage 3 (v0.2.329): the arena is
+// a raised undulating island, so a bot's feet ride sampleArenaHeight() (which
+// already includes ISLAND_BASE_Y) instead of the old flat y=0. Kinematic bots
+// don't gravity-settle, so we plant them on the sampled surface explicitly.
+function _footY(x, z) { return sampleArenaHeight(x, z); }
 
 // Scratch — no hot-path allocations
 const _toPlayer = new THREE.Vector3();
@@ -62,7 +69,7 @@ function _spawnBot(i) {
   const { x, z } = _safeSpawnPos();
 
   const model = new BotModel();
-  model.init({ x, y: 0, z });
+  model.init({ x, y: _footY(x, z), z });
 
   const bot = {
     model,
@@ -96,17 +103,18 @@ function _spawnBot(i) {
 // Head  centre = foot + BOT_HEAD_CENTRE_Y_OFFSET (1.55, v0.2.128 — was 1.65)
 function _ensureBotColliders(bot, x, z) {
   if (!physicsReady) return;
+  const fy = _footY(x, z);
   if (!bot.rapierBody) {
-    const h = createBotBody(bot, x, BOT_BODY_CENTRE_Y_OFFSET, z);
+    const h = createBotBody(bot, x, fy + BOT_BODY_CENTRE_Y_OFFSET, z);
     if (h) { bot.rapierBody = h.body; bot.rapierCollider = h.collider; }
   } else {
-    setBotBodyPos(bot.rapierBody, x, BOT_BODY_CENTRE_Y_OFFSET, z);
+    setBotBodyPos(bot.rapierBody, x, fy + BOT_BODY_CENTRE_Y_OFFSET, z);
   }
   if (!bot.rapierHeadBody) {
-    const h = createBotHead(bot, x, BOT_HEAD_CENTRE_Y_OFFSET, z);
+    const h = createBotHead(bot, x, fy + BOT_HEAD_CENTRE_Y_OFFSET, z);
     if (h) { bot.rapierHeadBody = h.body; bot.rapierHeadCollider = h.collider; }
   } else {
-    setBotBodyPos(bot.rapierHeadBody, x, BOT_HEAD_CENTRE_Y_OFFSET, z);
+    setBotBodyPos(bot.rapierHeadBody, x, fy + BOT_HEAD_CENTRE_Y_OFFSET, z);
   }
 }
 
@@ -120,7 +128,7 @@ function _spawnCapsuleBots() {
       _botGeo,
       new THREE.MeshStandardMaterial({ color: _colors[i % _colors.length], roughness: 0.6 })
     );
-    mesh.position.set(x, 1.15, z);
+    mesh.position.set(x, 1.15 + _footY(x, z), z);
     scene.add(mesh);
     const pos = new THREE.Vector3(x, 0, z);
     bots.push({ model: null, mesh, hp: BOT_HP, alive: true,
@@ -168,11 +176,12 @@ export function tickBots(dt) {
         bot._blowVz *= Math.pow(FRICTION, dt * 60);
         bot.pos.x += bot._blowVx * dt;
         bot.pos.z += bot._blowVz * dt;
-        bot._blowY = Math.max(0, bot._blowY + bot._blowVy * dt);
         // Clamp to arena bounds
         const A = ARENA_HALF - 0.5;
         bot.pos.x = Math.max(-A, Math.min(A, bot.pos.x));
         bot.pos.z = Math.max(-A, Math.min(A, bot.pos.z));
+        // Body rests on the raised island surface, not y=0.
+        bot._blowY = Math.max(_footY(bot.pos.x, bot.pos.z), bot._blowY + bot._blowVy * dt);
         // Sync model to blown-back position
         if (bot.model?.root) {
           bot.model.tick(dt);
@@ -226,8 +235,13 @@ export function tickBots(dt) {
     if (!bot.rapierBody || !bot.rapierHeadBody) {
       _ensureBotColliders(bot, nx, nz);
     } else {
-      setBotBodyPos(bot.rapierBody,     nx, BOT_BODY_CENTRE_Y_OFFSET, nz);
-      setBotBodyPos(bot.rapierHeadBody, nx, BOT_HEAD_CENTRE_Y_OFFSET, nz);
+      // Hit capsule + head sphere ride the undulating arena surface with the
+      // visual model — their centres are the sampled foot height plus the fixed
+      // body/head offsets (NOT a flat offset), so headshots/bodyshots stay
+      // aligned to the bot as it climbs and descends the hills (v0.2.330).
+      const fy = _footY(nx, nz);
+      setBotBodyPos(bot.rapierBody,     nx, fy + BOT_BODY_CENTRE_Y_OFFSET, nz);
+      setBotBodyPos(bot.rapierHeadBody, nx, fy + BOT_HEAD_CENTRE_Y_OFFSET, nz);
     }
 
     const rotY = Math.atan2(pp.x - nx, pp.z - nz);
@@ -265,14 +279,14 @@ export function tickBots(dt) {
 
     // Sync model
     if (bot.model?.loaded) {
-      bot.model.syncTo(nx, 0, nz, rotY);
+      bot.model.syncTo(nx, _footY(nx, nz), nz, rotY);
       if (lod === 'full') {
         bot.model.updateAnim(dist, isShooting, false, bot._isHit);
         bot.model.tick(dt);
       }
     } else if (bot.mesh && !bot.model) {
       // Capsule fallback
-      bot.mesh.position.set(nx, 1.15, nz);
+      bot.mesh.position.set(nx, 1.15 + _footY(nx, nz), nz);
       bot.mesh.rotation.y = rotY;
     }
   });
@@ -303,10 +317,10 @@ export function killBot(bot) {
     bot._blowVx = (dx / len) * BLOWBACK;
     bot._blowVz = (dz / len) * BLOWBACK;
     bot._blowVy = 9.0; // strong upward arc
-    bot._blowY  = 0;   // current Y offset
+    bot._blowY  = _footY(bot.pos.x, bot.pos.z); // current foot Y (island surface)
   } else {
     bot._blowVx = bot._blowVz = bot._blowVy = 0;
-    bot._blowY  = 0;
+    bot._blowY  = _footY(bot.pos.x, bot.pos.z);
   }
 
   // Trigger death animation
@@ -342,10 +356,10 @@ function _reviveBot(bot) {
 
   if (bot.model?.root) {
     bot.model.show();
-    bot.model.syncTo(bot.pos.x, 0, bot.pos.z, 0);
+    bot.model.syncTo(bot.pos.x, _footY(bot.pos.x, bot.pos.z), bot.pos.z, 0);
     bot.model.play('Walking', true);
   } else if (bot.mesh) {
-    bot.mesh.position.set(bot.pos.x, 1.15, bot.pos.z);
+    bot.mesh.position.set(bot.pos.x, 1.15 + _footY(bot.pos.x, bot.pos.z), bot.pos.z);
     bot.mesh.visible = true;
   }
 }

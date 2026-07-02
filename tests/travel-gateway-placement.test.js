@@ -120,9 +120,11 @@ describe('v0.2.245 — travel gateway moved to the far-right NAP corner', () => 
   });
 
   it('arena.js anchors every travel-gateway position to TRAVEL_GATE_Z (not z=0)', () => {
-    // fallback, accent light, and GLB gate all use the corner z.
-    expect(ARENA).toContain('fallback.position.set(TRAVEL_GATE_X, 0, TRAVEL_GATE_Z)');
-    expect(ARENA).toContain('gate.position.set(TRAVEL_GATE_X, -box.min.y, TRAVEL_GATE_Z)');
+    // fallback, accent light, and GLB gate all use the corner z. Stage 3 (v0.2.329)
+    // lifts the Y onto the raised NAP island surface (gwY = sampleNapHeight(...)),
+    // so the feet ride the terrain; the X/Z corner anchoring is unchanged.
+    expect(ARENA).toContain('fallback.position.set(TRAVEL_GATE_X, gwY, TRAVEL_GATE_Z)');
+    expect(ARENA).toContain('gate.position.set(TRAVEL_GATE_X, -box.min.y + gwY, TRAVEL_GATE_Z)');
   });
 
   it('main.js anchors the portal trigger + gateway component to TRAVEL_GATE_Z', () => {

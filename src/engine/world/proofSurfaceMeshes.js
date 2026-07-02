@@ -15,6 +15,7 @@
 import * as THREE from 'three';
 import { buildProofSurfaceRenderPlan, RENDER_PLAN_BADGE } from './proofSurfaceRenderPlan.js';
 import { resolveParentBindings, parentGroupName, PROOF_SURFACE_GROUP } from './proofSurfaceParentBinding.js';
+import { sampleNapHeight } from '../../terrain/heightmap.js';
 
 // Render state mirrored for the debug surface. `rendered` is true ONLY after a
 // successful build; `reasons` carries the plan's gate failures otherwise. Frozen
@@ -92,7 +93,14 @@ export function buildProofSurfaceMeshes(scene, opts = {}) {
       new THREE.BoxGeometry(panel.size.width, panel.size.height, panel.size.depth),
       boardMat,
     );
-    board.position.set(panel.position.x, panel.position.y, panel.position.z);
+    // The pure plan authors panel.position.y relative to ground=0. Stage 3
+    // (v0.2.329) raised the NAP zone onto an island, so lift each board by the
+    // NAP surface height at its footprint to keep it standing on the ground.
+    board.position.set(
+      panel.position.x,
+      panel.position.y + sampleNapHeight(panel.position.x, panel.position.z),
+      panel.position.z,
+    );
     board.rotation.y = panel.yawRad;
     board.castShadow = false;
     board.receiveShadow = true;

@@ -46,7 +46,7 @@ let _recoilTimer = 0;
 const RECOIL_DUR = 0.08;
 
 export function initPlayer() {
-  playerObj.position.set(0, 1.7, 0);
+  playerObj.position.set(0, SPAWN_Y, 0);
 
   onKeyDown(code => {
     if (!isPlaying()) return;

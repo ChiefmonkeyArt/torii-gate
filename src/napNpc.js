@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { scene } from './scene.js';
+import { sampleNapHeight } from './terrain/heightmap.js';
 
 let _root  = null;
 let _mixer = null;
@@ -51,7 +52,8 @@ export function buildNapNpc() {
     if (!Number.isFinite(minY)) minY = 0;
 
     _root.scale.setScalar(1.0);
-    _root.position.set(NPC_X, -minY, NPC_Z);
+    // Seat feet on the raised NAP island surface (Stage 3, v0.2.329) — not y=0.
+    _root.position.set(NPC_X, -minY + sampleNapHeight(NPC_X, NPC_Z), NPC_Z);
     _root.rotation.y = -Math.PI / 2; // face back toward the gate
     scene.add(_root);
 

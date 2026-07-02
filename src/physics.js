@@ -17,7 +17,11 @@ import { ARENA_HALF, WALL_H, NAP_X, NAP_FAR_X, CRATES, OBSTACLES } from './confi
 import { initBodies, createStatic, createHeightfield } from './engine/physics/bodies.js';
 import { initRaycast } from './engine/physics/raycast.js';
 // Pure (node-safe) terrain heightmap — static import is fine: no THREE/RAPIER.
-import { NAP_GRID, NAP_TERRAIN, buildNapHeightfieldArray, napTerrainPeak } from './terrain/heightmap.js';
+import {
+  NAP_GRID, NAP_TERRAIN, buildNapHeightfieldArray, napTerrainPeak,
+  ARENA_GRID, ARENA_TERRAIN, buildArenaHeightfieldArray, arenaTerrainPeak,
+  sampleArenaHeight, ISLAND_BASE_Y,
+} from './terrain/heightmap.js';
 
 // Re-export the SDK boundary surface so existing import sites are unchanged.
 export {
@@ -82,44 +86,57 @@ export function movePlayer(playerCollider, desiredDX, desiredDY, desiredDZ) {
 // split east-wall segments (gate gap is a real hole in the collider, not just
 // in the manual code path).
 export function buildArenaColliders() {
-  // Floors — arena + NAP zone. Arena floor at y=-0.1 (top surface at y=0).
-  createStatic(ARENA_HALF, 0.1, ARENA_HALF, 0, -0.1, 0);
-  // NAP floor: was a flat cuboid; now an undulating Rapier HEIGHTFIELD (v0.2.326).
-  // heights are column-major (col*rowsZ + row), centred at the NAP footprint
-  // centre. scale = full extent (25 × 40), scale.y=1 → heights already metres.
+  // Floors — BOTH zones are now undulating Rapier HEIGHTFIELDS (Stage 3, v0.2.329).
+  // The old flat arena cuboid floor (createStatic at y=-0.1) is GONE; the arena is
+  // an island like the NAP zone. Heights are column-major (col*rowsZ + row) over
+  // each zone's EXTENDED extent (footprint + outward shore), scale.y=1 → the values
+  // are absolute world-Y metres (they already include ISLAND_BASE_Y and the shore
+  // slope), so the collider translation Y is 0.
+  //
   // Rapier's nrows/ncols are CELL counts (subdivisions), not vertex counts: it
   // builds a (nrows+1)×(ncols+1) height matrix internally, so heights.length must
   // equal (nrows+1)*(ncols+1). We have rowsZ×colsX VERTICES, so pass one fewer of
   // each (rowsZ-1 rows along Z, colsX-1 cols along X). Passing the vertex counts
-  // panics the WASM ("unreachable") on a matrix size mismatch. (v0.2.327 fix.)
+  // panics the WASM ("unreachable") on a matrix size mismatch. (v0.2.327 guard.)
+  const arenaHeights = buildArenaHeightfieldArray();
+  createHeightfield(
+    ARENA_GRID.rowsZ - 1, ARENA_GRID.colsX - 1, arenaHeights,
+    ARENA_TERRAIN.gWidth, 1, ARENA_TERRAIN.gDepth,
+    ARENA_TERRAIN.gCenterX, 0, ARENA_TERRAIN.gCenterZ,
+  );
   const napHeights = buildNapHeightfieldArray();
   createHeightfield(
     NAP_GRID.rowsZ - 1, NAP_GRID.colsX - 1, napHeights,
-    NAP_TERRAIN.width, 1, NAP_TERRAIN.depth,
-    NAP_TERRAIN.centerX, 0, NAP_TERRAIN.centerZ,
+    NAP_TERRAIN.gWidth, 1, NAP_TERRAIN.gDepth,
+    NAP_TERRAIN.gCenterX, 0, NAP_TERRAIN.gCenterZ,
   );
-  const _peak = napTerrainPeak();
-  console.info(`[nap-terrain] heightfield ${NAP_GRID.colsX}x${NAP_GRID.rowsZ} ` +
-    `colsXxrowsZ scale=(${NAP_TERRAIN.width},1,${NAP_TERRAIN.depth}) ` +
-    `centre=(${NAP_TERRAIN.centerX},0,${NAP_TERRAIN.centerZ}) ` +
-    `peak h=${_peak.height.toFixed(3)} at (${_peak.x.toFixed(1)},${_peak.z.toFixed(1)})`);
+  const _ap = arenaTerrainPeak(), _np = napTerrainPeak();
+  console.info(`[island-terrain] arena ${ARENA_GRID.colsX}x${ARENA_GRID.rowsZ} ` +
+    `peak=${_ap.height.toFixed(3)} · nap ${NAP_GRID.colsX}x${NAP_GRID.rowsZ} ` +
+    `peak=${_np.height.toFixed(3)} · baseY=${ISLAND_BASE_Y}`);
 
+  // Walls, crates and obstacles sit ON the raised plateau, so their base rises by
+  // ISLAND_BASE_Y (their footprints are on full-height plateau ground, not shore).
+  const B = ISLAND_BASE_Y;
   // Walls — north, south, west are solid full-length planes.
   // East wall is split into two segments to leave the gate gap.
-  createStatic(ARENA_HALF + 0.3, WALL_H / 2, 0.25, 0, WALL_H / 2, -ARENA_HALF); // north
-  createStatic(ARENA_HALF + 0.3, WALL_H / 2, 0.25, 0, WALL_H / 2,  ARENA_HALF); // south
-  createStatic(0.25, WALL_H / 2, ARENA_HALF + 0.3, -ARENA_HALF, WALL_H / 2, 0); // west
+  createStatic(ARENA_HALF + 0.3, WALL_H / 2, 0.25, 0, WALL_H / 2 + B, -ARENA_HALF); // north
+  createStatic(ARENA_HALF + 0.3, WALL_H / 2, 0.25, 0, WALL_H / 2 + B,  ARENA_HALF); // south
+  createStatic(0.25, WALL_H / 2, ARENA_HALF + 0.3, -ARENA_HALF, WALL_H / 2 + B, 0); // west
 
   // East wall: two segments flanking the gate. Geometry already lives in
   // OBSTACLES (split at EAST_GAP_HALF). We add them below in the OBSTACLES
   // loop, so don't add a solid east plane here.
 
-  // CRATES — visual + collidable cover.
+  // CRATES — visual + collidable cover. Each crate rests ON the undulating arena
+  // surface: its collider base is the terrain height sampled at the crate centre
+  // (v0.2.330), matching the visual mesh in arena.js so the collision box lines
+  // up with what the player sees on the hills.
   for (const [cx, cz, hw, hd, ch] of CRATES) {
-    createStatic(hw, ch / 2, hd, cx, ch / 2, cz);
+    createStatic(hw, ch / 2, hd, cx, ch / 2 + sampleArenaHeight(cx, cz), cz);
   }
   // OBSTACLES — collision-only (tree trunk, torii pillars, east wall segments).
   for (const [cx, cz, hw, hd, ch] of OBSTACLES) {
-    createStatic(hw, ch / 2, hd, cx, ch / 2, cz);
+    createStatic(hw, ch / 2, hd, cx, ch / 2 + B, cz);
   }
 }

@@ -20,6 +20,7 @@
 // defined) rather than the physics.js facade, so this boundary — and its unit
 // tests — stay free of the Three/Rapier import chain.
 import { PLAYER_BODY_CENTRE_OFFSET } from '../physics/bodies.js';
+import { ISLAND_BASE_Y } from '../../terrain/heightmap.js';
 
 // --- Geometry ---------------------------------------------------------------
 // Eye sits 1.7 m above the foot. The capsule CENTRE sits PLAYER_BODY_CENTRE_OFFSET
@@ -32,7 +33,12 @@ export const BODY_FROM_EYE = PLAYER_BODY_CENTRE_OFFSET - EYE; // -0.8
 // furthest from the bots.
 export const SPAWN_X = -14;
 export const SPAWN_Z = -14;
-export const SPAWN_Y = 1.7;
+// Stage 3 (v0.2.329): both zones are raised islands (ISLAND_BASE_Y = 0.6) with
+// hills up to ~+0.5 more. Spawn the eye high enough that the capsule FOOT
+// (SPAWN_Y − EYE) starts clear above the tallest terrain, so the kinematic
+// controller drops the player cleanly onto the heightfield instead of spawning
+// buried inside it. Foot ≈ 1.4 m clears both the NAP (~1.1) and arena (~0.8) peaks.
+export const SPAWN_Y = EYE + ISLAND_BASE_Y + 0.8; // 3.1 → foot at 1.4
 // Face NE into the arena from the SW corner toward centre (0,0).
 // Three.js fwd = (-sin(yaw),0,-cos(yaw)); need fwd=(+0.707,0,+0.707)
 // => sin(yaw)=-0.707, cos(yaw)=-0.707 => yaw = -3π/4.

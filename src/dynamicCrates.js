@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { scene } from './scene.js';
 import { createDynamicCrate } from './engine/physics/bodies.js';
+import { sampleArenaHeight } from './terrain/heightmap.js';
 
 const _crates = []; // { body, mesh }
 
@@ -19,7 +20,11 @@ export function buildDynamicCrates() {
   _crates.length = 0;
 
   for (const [x, z] of SPOTS) {
-    const y = HALF + 0.05; // rest just above the floor
+    // Spawn a hair above the undulating arena surface so gravity drops the crate
+    // cleanly onto the heightfield collider instead of into a hill (v0.2.330).
+    // These are DYNAMIC bodies — physics settles them onto the terrain; we only
+    // need a non-buried start height.
+    const y = sampleArenaHeight(x, z) + HALF + 0.05;
     const handle = createDynamicCrate(x, y, z, HALF);
     if (!handle) continue;
     const mesh = new THREE.Mesh(_geo, _mat);

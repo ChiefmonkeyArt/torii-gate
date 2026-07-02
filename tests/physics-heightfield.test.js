@@ -13,7 +13,10 @@
 // Rapier expected (rowsZ+1)*(colsX+1) heights and panicked ("unreachable"). The fix
 // passes rowsZ-1 / colsX-1 (cell counts) so (nrows+1)*(ncols+1) == the array length.
 import { describe, it, expect, beforeAll } from 'vitest';
-import { NAP_GRID, NAP_TERRAIN, buildNapHeightfieldArray } from '../src/terrain/heightmap.js';
+import {
+  NAP_GRID, NAP_TERRAIN, buildNapHeightfieldArray,
+  ARENA_GRID, ARENA_TERRAIN, buildArenaHeightfieldArray,
+} from '../src/terrain/heightmap.js';
 
 let RAPIER;
 beforeAll(async () => {
@@ -24,6 +27,8 @@ beforeAll(async () => {
 // The cell counts physics.js passes to createHeightfield (rows along Z, cols along X).
 const HF_NROWS = NAP_GRID.rowsZ - 1;
 const HF_NCOLS = NAP_GRID.colsX - 1;
+const AR_NROWS = ARENA_GRID.rowsZ - 1;
+const AR_NCOLS = ARENA_GRID.colsX - 1;
 
 describe('NAP terrain heightfield — real Rapier collider', () => {
   it("length invariant: heights.length === (nrows+1)*(ncols+1)", () => {
@@ -39,10 +44,13 @@ describe('NAP terrain heightfield — real Rapier collider', () => {
     const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
     const heights = buildNapHeightfieldArray();
     expect(() => {
+      // Mirror physics.js exactly: the collider spans the EXTENDED grid extent
+      // (footprint + outward shore), so scale = gWidth/gDepth and translation =
+      // gCenterX/gCenterZ (NOT the footprint width/depth/centre).
       const desc = RAPIER.ColliderDesc.heightfield(
         HF_NROWS, HF_NCOLS, heights,
-        { x: NAP_TERRAIN.width, y: 1, z: NAP_TERRAIN.depth },
-      ).setTranslation(NAP_TERRAIN.centerX, 0, NAP_TERRAIN.centerZ);
+        { x: NAP_TERRAIN.gWidth, y: 1, z: NAP_TERRAIN.gDepth },
+      ).setTranslation(NAP_TERRAIN.gCenterX, 0, NAP_TERRAIN.gCenterZ);
       const collider = world.createCollider(desc);
       expect(collider).toBeTruthy();
     }).not.toThrow();
@@ -57,10 +65,33 @@ describe('NAP terrain heightfield — real Rapier collider', () => {
     expect(() => {
       const desc = RAPIER.ColliderDesc.heightfield(
         NAP_GRID.rowsZ, NAP_GRID.colsX, heights,   // WRONG: vertex counts
-        { x: NAP_TERRAIN.width, y: 1, z: NAP_TERRAIN.depth },
+        { x: NAP_TERRAIN.gWidth, y: 1, z: NAP_TERRAIN.gDepth },
       );
       world.createCollider(desc);
     }).toThrow();
+    world.free();
+  });
+});
+
+describe('ARENA terrain heightfield — real Rapier collider (Stage 3, v0.2.329)', () => {
+  it("length invariant: heights.length === (nrows+1)*(ncols+1)", () => {
+    const heights = buildArenaHeightfieldArray();
+    expect(heights.length).toBe((AR_NROWS + 1) * (AR_NCOLS + 1));
+    expect(heights.length).toBe(ARENA_GRID.rowsZ * ARENA_GRID.colsX);
+    expect(heights).toBeInstanceOf(Float32Array);
+  });
+
+  it('builds the arena heightfield collider without a WASM panic', () => {
+    const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
+    const heights = buildArenaHeightfieldArray();
+    expect(() => {
+      const desc = RAPIER.ColliderDesc.heightfield(
+        AR_NROWS, AR_NCOLS, heights,
+        { x: ARENA_TERRAIN.gWidth, y: 1, z: ARENA_TERRAIN.gDepth },
+      ).setTranslation(ARENA_TERRAIN.gCenterX, 0, ARENA_TERRAIN.gCenterZ);
+      const collider = world.createCollider(desc);
+      expect(collider).toBeTruthy();
+    }).not.toThrow();
     world.free();
   });
 });
