@@ -7,6 +7,7 @@ import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X, TRAVEL_GAT
 import { buildFoliage } from './arena-foliage.js';
 import { buildProofSurfaceMeshes } from './engine/world/proofSurfaceMeshes.js';
 import { buildNapTerrainMesh } from './terrain/terrainMesh.js';
+import { buildSeaMesh } from './terrain/sea.js';
 
 // ── Colours ───────────────────────────────────────────────────────────────────
 const C_FLOOR  = 0x0a1f23; // deep teal-black, underlit by floor light
@@ -45,6 +46,7 @@ export function buildArena() {
   _buildToriiGate();
   _buildTravelGateway(); // far-side metaverse travel portal model (v0.2.239)
   _buildNapZone();     // floor extension + tree past the torii gate
+  buildSeaMesh(scene); // Stage 2 SEA — visual-only ocean around the land (terrain/sea.js)
   buildFoliage();      // grass + wildflowers — arena-foliage.js (NAP zone only)
   _loadWallTexture();  // async, deferred 1 rAF
 }

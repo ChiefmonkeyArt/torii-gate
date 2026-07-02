@@ -18,6 +18,7 @@ import { renderer, renderFrame, scene, camera } from './scene.js';
 import { initAtmosphere, tickAtmosphere } from './atmosphere.js';
 import { buildArena } from './arena.js';
 import { tickFoliage, getGrassMat, getFlowerMat } from './arena-foliage.js';
+import { tickSea } from './terrain/sea.js';
 import { buildMirror, tickMirror, getMirror } from './mirror.js';
 import { initLoop, startLoop } from './loop.js';
 import { onKeyDown, requestLock, setYaw, setPitch, onPointerLockLost, keys } from './input.js';
@@ -190,6 +191,7 @@ export function createArenaRuntime(hooks = {}) {
     tickAtmosphere(dt);
     tickMirror(dt);
     tickFoliage(dt);
+    tickSea(dt);
     if (++_minimapTick >= 4) { _minimapTick = 0; drawMinimap(playerObj.position, bots); }
     // v0.2.264 (R2): the title-screen n2n handshake + presence polling moved to the
     // shell's own rAF ticker (main.js) — it must keep running before the arena (and
