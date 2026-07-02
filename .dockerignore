@@ -1,0 +1,25 @@
+# Build artefacts (regenerated inside the image)
+node_modules
+dist
+dist-ssr
+
+# VCS / CI
+.git
+.gitignore
+.github
+
+# Tests + docs not needed for the build
+tests
+**/*.md
+**/*.mdx
+LICENSE
+
+# Dev tooling / temp
+*.log
+.DS_Store
+tmp
+.cache
+uploaded_attachments
+space_files
+current_session_context
+skills

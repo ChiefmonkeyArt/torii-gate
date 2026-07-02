@@ -1,0 +1,39 @@
+# Torii Quest — self-hosting stack
+# Brings up the static game (Caddy, auto-HTTPS) + a strfry nostr relay sidecar.
+#
+#   web     Caddy: serves https://$DOMAIN/  +  proxies wss://$DOMAIN/relay -> strfry:7777
+#   strfry  nostr relay (internal only, not published)
+#
+# Quick start:  cp .env.example .env  &&  edit .env  &&  docker compose up -d
+
+services:
+  web:
+    build: .
+    image: torii-quest-web
+    container_name: torii-quest-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - strfry
+
+  strfry:
+    image: ghcr.io/hoytech/strfry:latest
+    container_name: torii-quest-relay
+    restart: unless-stopped
+    volumes:
+      - strfry_data:/app/strfry-db
+      - ./strfry.conf:/app/strfry.conf:ro
+    # Not published — reached only via Caddy's reverse_proxy at /relay
+
+volumes:
+  caddy_data:
+  caddy_config:
+  strfry_data:

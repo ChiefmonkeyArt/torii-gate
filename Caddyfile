@@ -1,0 +1,32 @@
+# Torii Quest — Caddy reverse proxy + static file server
+# Env vars (passed via docker-compose, from .env):
+#   DOMAIN      e.g. quest.torii.rocks
+#   ACME_EMAIL  e.g. you@torii.rocks   (Let's Encrypt renewal notices)
+#
+# Serves:
+#   https://$DOMAIN/         -> static game (dist/) with SPA fallback for /zone/*
+#   wss://  $DOMAIN/relay    -> strfry nostr relay (sidecar container)
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Nostr relay: strip the /relay prefix so strfry (which listens on "/")
+	# receives a root-path websocket. Both exact and sub-path are covered.
+	handle_path /relay {
+		reverse_proxy strfry:7777
+	}
+	handle_path /relay/* {
+		reverse_proxy strfry:7777
+	}
+
+	# Static game + SPA fallback (so /zone/* deep links return index.html)
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
