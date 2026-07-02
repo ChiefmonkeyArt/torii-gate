@@ -136,6 +136,26 @@ export function createStatic(hw, hh, hd, x, y, z) {
   );
 }
 
+// Heightfield collider for undulating terrain (Stage 1, v0.2.326).
+// Rapier's heightfield: nrows/ncols are CELL counts (subdivisions). Rapier builds
+// a (nrows+1)×(ncols+1) column-major height matrix internally, so `heights` MUST
+// have length (nrows+1)*(ncols+1) — passing the wrong length panics the WASM with
+// "unreachable" (v0.2.327). Heights lie in the local XZ plane with heights on +Y
+// and are CENTRED at the collider's translation. `scale` is the FULL extent
+// {x: totalWidth, y: verticalScale, z: totalDepth} — heightfield spans
+// [-scale.x/2, scale.x/2] × [-scale.z/2, scale.z/2]; heights are multiplied by
+// scale.y. We pass scale.y=1 so the heights array already holds world metres.
+// (cx,cy,cz) is the world centre the heightfield is translated to.
+export function createHeightfield(nrows, ncols, heights, scaleX, scaleY, scaleZ, cx, cy, cz) {
+  if (!_world) return;
+  const desc = _RAPIER.ColliderDesc.heightfield(
+    nrows, ncols, heights,
+    { x: scaleX, y: scaleY, z: scaleZ },
+  );
+  desc.setTranslation(cx, cy, cz);
+  _world.createCollider(desc);
+}
+
 // Dynamic crate — physics-driven cuboid that bullets and players can shove.
 export function createDynamicCrate(x, y, z, half) {
   if (!_world) return null;

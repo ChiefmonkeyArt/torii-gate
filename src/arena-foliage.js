@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { scene } from './scene.js';
 import { ARENA_HALF, NAP_X, NAP_FAR_X } from './config.js';
+import { sampleHeight } from './terrain/heightmap.js';
 
 // NAP-zone footprint shared by both grass + flowers.
 //   x: just inside the gate edge → just inside the far wall (small inset so
@@ -242,7 +243,7 @@ function _buildGrass() {
     const w = BLADE_WIDTH * s * (0.9 + Math.random() * 0.2);
     offsetArr[i * 4 + 0] = x;
     offsetArr[i * 4 + 1] = z;
-    offsetArr[i * 4 + 2] = 0.0;
+    offsetArr[i * 4 + 2] = sampleHeight(x, z);
     offsetArr[i * 4 + 3] = ry;
     shapeArr[i * 4 + 0] = w;
     shapeArr[i * 4 + 1] = h;
@@ -413,6 +414,7 @@ function _buildGrass() {
         // Translate to world (ground XZ, blade grows +Y).
         vpos.x += bladePos.x;
         vpos.z += bladePos.y;
+        vpos.y += offset.z;  // terrain height (Stage 1 v0.2.326)
 
         gl_Position = projectionMatrix * modelViewMatrix * vec4(vpos, 1.0);
       }
@@ -462,18 +464,8 @@ function _buildGrass() {
   mesh.frustumCulled = false;
   mesh.position.y = -0.05;
 
-  // v0.2.275: ground-cover mat. Flat dark-green plane 5mm above the floor
-  // spanning the NAP-zone footprint — reads as mossy ground between blades.
-  const gcX = NAP_GRASS_X0 + NAP_GRASS_W / 2;
-  const gcZ = NAP_GRASS_Z0 + NAP_GRASS_D / 2;
-  const groundCover = new THREE.Mesh(
-    new THREE.PlaneGeometry(NAP_GRASS_W, NAP_GRASS_D),
-    new THREE.MeshStandardMaterial({ color: 0x3d5a2f, roughness: 1.0 }),
-  );
-  groundCover.rotation.x = -Math.PI / 2;
-  groundCover.position.set(gcX, 0.005, gcZ);
-  groundCover.receiveShadow = true;
-  scene.add(groundCover);
+  // v0.2.326: the flat ground-cover plane was removed — the NAP terrain mesh
+  // (terrainMesh.js) now provides the ground surface between blades.
 
   scene.add(mesh);
   _grassMat = mat;

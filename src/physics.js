@@ -14,8 +14,10 @@
 // 2*(halfHeight + radius). Player body is positioned at the *capsule centre*
 // (foot + halfHeight + radius), NOT the eye. player.js maps body↔eye.
 import { ARENA_HALF, WALL_H, NAP_X, NAP_FAR_X, CRATES, OBSTACLES } from './config.js';
-import { initBodies, createStatic } from './engine/physics/bodies.js';
+import { initBodies, createStatic, createHeightfield } from './engine/physics/bodies.js';
 import { initRaycast } from './engine/physics/raycast.js';
+// Pure (node-safe) terrain heightmap — static import is fine: no THREE/RAPIER.
+import { NAP_GRID, NAP_TERRAIN, buildNapHeightfieldArray, napTerrainPeak } from './terrain/heightmap.js';
 
 // Re-export the SDK boundary surface so existing import sites are unchanged.
 export {
@@ -80,13 +82,27 @@ export function movePlayer(playerCollider, desiredDX, desiredDY, desiredDZ) {
 // split east-wall segments (gate gap is a real hole in the collider, not just
 // in the manual code path).
 export function buildArenaColliders() {
-  // Floors — arena + NAP zone. Both at y=-0.1 (top surface at y=0).
-  // Arena floor: full ARENA_HALF square centred at origin.
+  // Floors — arena + NAP zone. Arena floor at y=-0.1 (top surface at y=0).
   createStatic(ARENA_HALF, 0.1, ARENA_HALF, 0, -0.1, 0);
-  // NAP floor: rectangle from x=NAP_X to x=NAP_FAR_X, same z-extent as arena.
-  const napHalfW = (NAP_FAR_X - NAP_X) / 2;
-  const napMidX  = (NAP_FAR_X + NAP_X) / 2;
-  createStatic(napHalfW, 0.1, ARENA_HALF, napMidX, -0.1, 0);
+  // NAP floor: was a flat cuboid; now an undulating Rapier HEIGHTFIELD (v0.2.326).
+  // heights are column-major (col*rowsZ + row), centred at the NAP footprint
+  // centre. scale = full extent (25 × 40), scale.y=1 → heights already metres.
+  // Rapier's nrows/ncols are CELL counts (subdivisions), not vertex counts: it
+  // builds a (nrows+1)×(ncols+1) height matrix internally, so heights.length must
+  // equal (nrows+1)*(ncols+1). We have rowsZ×colsX VERTICES, so pass one fewer of
+  // each (rowsZ-1 rows along Z, colsX-1 cols along X). Passing the vertex counts
+  // panics the WASM ("unreachable") on a matrix size mismatch. (v0.2.327 fix.)
+  const napHeights = buildNapHeightfieldArray();
+  createHeightfield(
+    NAP_GRID.rowsZ - 1, NAP_GRID.colsX - 1, napHeights,
+    NAP_TERRAIN.width, 1, NAP_TERRAIN.depth,
+    NAP_TERRAIN.centerX, 0, NAP_TERRAIN.centerZ,
+  );
+  const _peak = napTerrainPeak();
+  console.info(`[nap-terrain] heightfield ${NAP_GRID.colsX}x${NAP_GRID.rowsZ} ` +
+    `colsXxrowsZ scale=(${NAP_TERRAIN.width},1,${NAP_TERRAIN.depth}) ` +
+    `centre=(${NAP_TERRAIN.centerX},0,${NAP_TERRAIN.centerZ}) ` +
+    `peak h=${_peak.height.toFixed(3)} at (${_peak.x.toFixed(1)},${_peak.z.toFixed(1)})`);
 
   // Walls — north, south, west are solid full-length planes.
   // East wall is split into two segments to leave the gate gap.

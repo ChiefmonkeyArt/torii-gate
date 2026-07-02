@@ -6,6 +6,7 @@ import { scene } from './scene.js';
 import { ARENA_HALF, WALL_H, CRATES, EAST_GAP_HALF, NAP_X, NAP_FAR_X, TRAVEL_GATE_X, TRAVEL_GATE_Z, TRAVEL_GATE_YAW_DELTA } from './config.js';
 import { buildFoliage } from './arena-foliage.js';
 import { buildProofSurfaceMeshes } from './engine/world/proofSurfaceMeshes.js';
+import { buildNapTerrainMesh } from './terrain/terrainMesh.js';
 
 // ── Colours ───────────────────────────────────────────────────────────────────
 const C_FLOOR  = 0x0a1f23; // deep teal-black, underlit by floor light
@@ -340,27 +341,15 @@ function _loadWallTexture() {
 
 // ── NAP Zone — peaceful area past the torii gate ─────────────────────────
 function _buildNapZone() {
-  // Floor extension past the east wall. v0.2.270: a clear shade of green so
-  // the grass field reads as growing from soil/turf rather than the dark
-  // near-black of the main arena floor.
-  const NAP_W = NAP_FAR_X - NAP_X;
-  const napFloorMat = new THREE.MeshStandardMaterial({
-    color: 0x96A78A, roughness: 0.9,
-  });
-  const napFloor = new THREE.Mesh(
-    new THREE.PlaneGeometry(NAP_W, ARENA_HALF * 2),
-    napFloorMat,
-  );
-  napFloor.rotation.x = -Math.PI / 2;
-  napFloor.position.set(NAP_X + NAP_W / 2, 0, 0);
-  napFloor.receiveShadow = true;
-  // Named so the proof-surface parent binding (v0.2.151) is discoverable via
-  // scene.getObjectByName('nap-zone-floor'). Display-only; no behaviour attached.
-  napFloor.name = 'nap-zone-floor';
-  scene.add(napFloor);
+  // Ground: undulating terrain mesh (Stage 1, v0.2.326). Replaces the flat
+  // green floor plane — vertices are baked from the same sampleHeight() the
+  // grass + physics heightfield use, so all three agree exactly. Named
+  // 'nap-zone-floor' to preserve the scene.getObjectByName lookup.
+  buildNapTerrainMesh(scene);
 
   // Soft teal accent light to mark the peace zone
   const napLight = new THREE.PointLight(0x6ad9d0, 2.0, 22);
+  const NAP_W = NAP_FAR_X - NAP_X;
   napLight.position.set(NAP_X + NAP_W * 0.55, 5, 0);
   scene.add(napLight);
 
